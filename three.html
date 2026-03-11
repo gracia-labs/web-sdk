@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vega Three.js Testbed</title>
+    <script type="importmap">
+    { "imports": {
+        "@gracia/VegaDemo": "./dist/VegaDemo.js?v=__BUILD_HASH__",
+        "@gracia/vega/wasm": "./dist/Vega.js?v=__BUILD_HASH__"
+    } }
+    </script>
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: #000; color: #fff;
+        --dim: rgba(255,255,255,.4); --mid: rgba(255,255,255,.65);
+        --hi: #fff; --sh: 0 1px 3px rgba(0,0,0,.7);
+        --glass: rgba(18,18,22,.72); --glass-border: rgba(255,255,255,.1);
+        --hover: rgba(255,255,255,.08); --accent: rgba(120,160,255,.55);
+        --panel-r: 10px;
+    }
+    canvas { display: block; }
+
+    /* overlay layout */
+    .ov { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 16px; }
+    .ov > * { pointer-events: auto; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .bot { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .spacer { flex: 1; pointer-events: none; }
+
+    /* glass panels */
+    .panel {
+        display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+        background: var(--glass); backdrop-filter: blur(18px) saturate(1.4);
+        border: 1px solid var(--glass-border); border-radius: var(--panel-r);
+        box-shadow: 0 4px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .panel-v { flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 10px; }
+
+    .lbl { font: 600 9px/1 inherit; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); text-shadow: var(--sh); }
+    .row { display: flex; gap: 5px; align-items: center; }
+    .divider { width: 1px; height: 18px; background: var(--glass-border); margin: 0 2px; flex-shrink: 0; }
+
+    /* buttons */
+    .btn {
+        padding: 5px 11px; border: 0; border-radius: 6px;
+        background: transparent; color: var(--dim); cursor: pointer;
+        font: 600 11px/1.1 inherit; white-space: nowrap;
+        text-shadow: var(--sh); transition: color .15s, background .15s;
+    }
+    .btn:hover:not(:disabled) { color: var(--hi); background: var(--hover); }
+    .btn:disabled { opacity: .2; cursor: not-allowed; }
+    .btn.on, .btn.active { color: var(--hi); background: rgba(255,255,255,.1); }
+
+    /* dropdowns */
+    .dropdown { position: relative; display: inline-block; }
+    .dd-toggle {
+        padding: 5px 24px 5px 10px; border: 1px solid var(--glass-border); border-radius: 6px;
+        background: rgba(255,255,255,.05); color: var(--mid); cursor: pointer;
+        font: 600 11px/1.1 inherit; white-space: nowrap; text-shadow: var(--sh);
+        transition: border-color .15s, color .15s, background .15s; appearance: none;
+    }
+    .dd-toggle::after { content: ''; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); border: 3.5px solid transparent; border-top: 3.5px solid var(--dim); transition: transform .15s; }
+    .dd-toggle:hover { border-color: rgba(255,255,255,.25); color: var(--hi); background: rgba(255,255,255,.08); }
+    .dropdown.open .dd-toggle { border-color: rgba(255,255,255,.25); }
+    .dropdown.open .dd-toggle::after { transform: translateY(-50%) rotate(180deg); }
+    .dd-menu {
+        display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; min-width: 100%;
+        border: 1px solid rgba(255,255,255,.1); border-radius: 8px;
+        background: rgba(16,16,20,.94); backdrop-filter: blur(20px) saturate(1.3);
+        box-shadow: 0 10px 32px rgba(0,0,0,.55); padding: 4px;
+    }
+    .dropdown.open .dd-menu { display: block; }
+    .dd-item {
+        display: block; width: 100%; padding: 7px 12px; border: 0; border-radius: 5px;
+        background: 0; color: var(--mid); cursor: pointer;
+        font: 500 11px/1.3 inherit; text-align: left; white-space: nowrap;
+        text-shadow: var(--sh); transition: background .1s, color .1s;
+    }
+    .dd-item:hover { background: var(--hover); color: var(--hi); }
+    .dd-item.active { color: var(--hi); background: rgba(255,255,255,.06); }
+    .dd-sep { height: 1px; background: var(--hover); margin: 3px 4px; }
+
+    /* playback bar */
+    .vb { display: flex; align-items: center; gap: 10px; padding: 2px 0; width: 100%; }
+    .vb-btn { width: 30px; min-width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,.12); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .15s; color: #fff; font-size: 14px; }
+    .vb-btn:hover { background: rgba(255,255,255,.22); }
+    .vb-track { flex: 1; height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; position: relative; cursor: pointer; }
+    .vb-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: rgba(255,255,255,.45); width: 0; pointer-events: none; }
+    .vb-thumb { position: absolute; top: 50%; width: 12px; height: 12px; background: #fff; border-radius: 50%; transform: translate(-50%,-50%); left: 0; box-shadow: 0 1px 6px #0008; }
+    .vb-time { color: var(--dim); font: 500 11px/1 inherit; min-width: 70px; text-align: right; text-shadow: var(--sh); }
+    .bar-panel { width: min(520px, calc(100% - 32px)); }
+
+    /* bottom-right reset */
+    .bot-right { position: fixed; bottom: 16px; right: 16px; z-index: 11; pointer-events: auto; }
+
+    /* attribution */
+    .ph-credit { position: fixed; bottom: 6px; left: 10px; z-index: 11; font: 400 9px/1 inherit; color: rgba(255,255,255,.2); text-decoration: none; pointer-events: auto; transition: color .15s; }
+    .ph-credit:hover { color: rgba(255,255,255,.5); }
+
+    @media (max-width: 720px) {
+        .ov { padding: 10px; }
+        .top { gap: 8px; flex-wrap: wrap; }
+        .panel { padding: 5px 8px; gap: 4px; }
+        .btn { padding: 4px 8px; font-size: 10px; }
+        .dd-toggle { padding: 4px 20px 4px 8px; font-size: 10px; }
+        .hide-sm { display: none; }
+        .vb-time { font-size: 10px; min-width: 50px; }
+        .bar-panel { width: calc(100% - 20px); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="ov">
+        <div class="top">
+            <div class="panel">
+                <div class="dropdown" id="srcDD">
+                    <button type="button" class="dd-toggle" id="srcToggle">Source&hellip;</button>
+                    <div class="dd-menu" id="srcMenu"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <span class="lbl">Scene</span>
+                <div class="dropdown" id="sceneDD">
+                    <button type="button" class="dd-toggle" id="sceneToggle">Golden</button>
+                    <div class="dd-menu" id="sceneMenu"></div>
+                </div>
+                <button type="button" class="btn" id="toggleVSM">VSM</button>
+                <div class="divider"></div>
+                <button type="button" class="btn on" id="toggleProbe">Relight</button>
+            </div>
+            <div class="panel hide-sm">
+                <span class="lbl">Gizmo</span>
+                <button type="button" class="btn active" id="gizTranslate">W</button>
+                <button type="button" class="btn" id="gizRotate">E</button>
+                <button type="button" class="btn" id="gizScale">R</button>
+            </div>
+            <div class="spacer"></div>
+        </div>
+        <div class="bot">
+            <div class="panel bar-panel" id="barWrap"></div>
+        </div>
+    </div>
+    <div class="bot-right">
+        <div class="panel"><button type="button" class="btn" id="resetCam">Reset</button></div>
+    </div>
+    <a class="ph-credit" href="https://polyhaven.com" target="_blank" rel="noopener">HDRI assets by Poly Haven</a>
+
+    <script type="module">
+    import { buildApiSources, EnvLighting, HDRLoader, LightProbeGenerator, OrbitControls, Sky, 
+             SplatsMesh, Stats, THREE, TransformControls } from '@gracia/VegaDemo';
+    import ModuleFactory from '@gracia/vega/wasm';
+
+    const $ = id => document.getElementById(id);
+    const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
+    const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
+    const fmt = t => (!Number.isFinite(t) || t < 0) ? '0:00' : `${~~(t / 60)}:${String(~~t % 60).padStart(2, '0')}`;
+
+    /* ── Three.js scene ──────────────────────────── */
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.debug.checkShaderErrors = false;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    document.body.prepend(renderer.domElement);
+
+    const stats = new Stats();
+    stats.dom.style.cssText = 'position:fixed;top:14px;right:16px;z-index:20;cursor:pointer;opacity:0.8;';
+    document.body.appendChild(stats.dom);
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 200);
+    camera.position.set(0, 1.2, 2.8);
+
+    const orbit = new OrbitControls(camera, renderer.domElement);
+    orbit.enableDamping = true; orbit.dampingFactor = 0.08;
+    orbit.target.set(0, 0.3, 0); orbit.update();
+
+    /* ── Lights ── */
+
+    const amb = new THREE.AmbientLight(0xffffff, 0.3);
+    scene.add(amb);
+    const dir = new THREE.DirectionalLight(0xffffff, 2.0);
+    dir.position.set(3, 8, 4);
+    dir.castShadow = true;
+    dir.shadow.mapSize.set(2048, 2048);
+    dir.shadow.camera.near = 0.1;
+    dir.shadow.camera.far = 20;
+    dir.shadow.camera.left = -4;
+    dir.shadow.camera.right = 4;
+    dir.shadow.camera.top = 4;
+    dir.shadow.camera.bottom = -4;
+    dir.shadow.bias = -0.0005;
+    dir.shadow.radius = 4;
+    dir.shadow.blurSamples = 8;
+    scene.add(dir);
+
+    /* ── Sky & PMREM environment ── */
+
+    const sky = new Sky();
+    sky.scale.setScalar(10000);
+    const envScene = new THREE.Scene();
+    envScene.add(sky);
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    let envTarget;
+
+    function updateSkyEnv() {
+        if (envTarget) envTarget.dispose();
+        envTarget = pmremGenerator.fromScene(envScene);
+        scene.background = envTarget.texture;
+        scene.environment = envTarget.texture;
+    }
+
+    /* ── HDRI loading ── */
+
+    const hdrLoader = new HDRLoader();
+    const hdriCache = new Map();
+
+    async function loadHDRI(url) {
+        if (hdriCache.has(url)) return hdriCache.get(url);
+        const hdr = await hdrLoader.loadAsync(url);
+        hdr.mapping = THREE.EquirectangularReflectionMapping;
+        const tmpScene = new THREE.Scene();
+        tmpScene.background = hdr;
+        const pmrem = pmremGenerator.fromScene(tmpScene).texture;
+        hdriCache.set(url, { bg: hdr, env: pmrem });
+        return hdriCache.get(url);
+    }
+
+    /* ── Probe for Vega splats ── */
+
+    const cubeRT = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType });
+    const cubeCamera = new THREE.CubeCamera(0.1, 100, cubeRT);
+    const probe = new THREE.LightProbe();
+
+    /* ── Ground ── */
+
+    const grid = new THREE.GridHelper(8, 16, 0x888888, 0x666666);
+    grid.material.transparent = true; grid.material.opacity = 0.25;
+    grid.visible = false;
+    scene.add(grid);
+
+    const ground = new THREE.Mesh(
+        new THREE.CircleGeometry(1.8, 64),
+        new THREE.MeshStandardMaterial({ color: 0x9a9590, roughness: 0.75, metalness: 0.0 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    /* ── Scene objects ── */
+
+    const refMaterials = [];
+    const objects = new THREE.Group(); scene.add(objects);
+
+    const pedestal = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.35, 0.38, 0.04, 48),
+        new THREE.MeshStandardMaterial({ color: 0xc8c0b8, roughness: 0.15, metalness: 0.02 })
+    );
+    pedestal.position.y = 0.02;
+    pedestal.receiveShadow = true; pedestal.castShadow = true;
+    objects.add(pedestal);
+
+    const chromeSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 48, 32),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.02, metalness: 1.0 })
+    );
+    chromeSphere.position.set(0.5, 0.08, 0.3);
+    chromeSphere.castShadow = true;
+    objects.add(chromeSphere);
+
+    const matteSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 48, 32),
+        new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 1.0, metalness: 0.0 })
+    );
+    matteSphere.position.set(-0.5, 0.08, 0.3);
+    matteSphere.castShadow = true;
+    objects.add(matteSphere);
+
+    const torusKnot = new THREE.Mesh(
+        new THREE.TorusKnotGeometry(0.06, 0.02, 64, 16),
+        new THREE.MeshStandardMaterial({ color: 0xcc6644, roughness: 0.35, metalness: 0.4 })
+    );
+    torusKnot.position.set(0.4, 0.12, -0.4);
+    torusKnot.castShadow = true;
+    objects.add(torusKnot);
+
+    const box = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, 0.14, 0.14),
+        new THREE.MeshStandardMaterial({ color: 0x556060, roughness: 0.7, metalness: 0.05 })
+    );
+    box.position.set(-0.4, 0.07, -0.4);
+    box.rotation.y = Math.PI / 6;
+    box.castShadow = true; box.receiveShadow = true;
+    objects.add(box);
+
+    refMaterials.push(pedestal.material, chromeSphere.material, matteSphere.material,
+        torusKnot.material, box.material, ground.material);
+
+    addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+    /* ── Transform gizmo ─────────────────────────── */
+
+    const gizmo = new TransformControls(camera, renderer.domElement);
+    gizmo.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; });
+    gizmo.setSize(0.75);
+    scene.add(gizmo.getHelper());
+
+    /* ── Vega splats ─────────────────────────────── */
+
+    const SPLAT_DEFAULTS = { pos: [0, -0.7, 0.9], scl: 0.5 };
+    let splats = null;
+
+    async function initVega() {
+        splats = await SplatsMesh.create(
+            opts => ModuleFactory({ ...opts, print: console.log, printErr: console.error }),
+            renderer
+        );
+        splats.enableMesh = true;
+        scene.add(splats);
+        gizmo.attach(splats);
+    }
+
+    /* ── Sources & dropdown ───────────────────────── */
+
+    const MARKET = 'https://market.gracia.ai';
+    const DEMO_URL = '/api/market/api/v1/demo';
+    const STREAMING_BASE = `${MARKET}/api/v1/streaming/content`;
+    const DEMO_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
+
+    const sources = [];
+
+    async function loadSources() {
+        const results = await Promise.allSettled([
+            (async () => {
+                const demos = await (await fetch(DEMO_URL)).json();
+                return Promise.all(demos.map(async (d) => {
+                    const res = await fetch(`${STREAMING_BASE}/${d.streamingId}`, {
+                        headers: { 'X-VIEW-TOKEN': DEMO_TOKEN },
+                    });
+                    const { metadata, audioFileLink } = res.ok ? await res.json() : {};
+                    return {
+                        id: d.streamingId,
+                        label: d.label ?? metadata?.name ?? d.streamingId,
+                        url: `${STREAMING_BASE}/${d.streamingId}/`,
+                        token: DEMO_TOKEN,
+                        displayName: metadata?.name ?? undefined,
+                        audio: (audioFileLink && metadata?.withAudio !== false) ? audioFileLink : undefined,
+                        initialTransform: metadata?.initialSpawn ?? null,
+                        locked: false,
+                        resetPositionOnStart: true,
+                        autoSwitchToNext: false,
+                    };
+                }));
+            })(),
+            (async () => {
+                const raw = (await (await fetch('/api/sources')).json()).sources ?? [];
+                const resolved = [];
+                for (const src of raw)
+                    if (src.items?.length) resolved.push(...await buildApiSources(src.items, src.baseUrl));
+                    else resolved.push(src);
+                return resolved;
+            })(),
+        ]);
+        for (const r of results) if (r.status === 'fulfilled') sources.push(...r.value);
+
+        for (const s of sources) Object.assign(mk('button', 'dd-item', $('srcMenu')), { textContent: s.label }).dataset.src = s.id;
+    }
+
+    function openSource(src) {
+        if (!splats) return;
+        const p = splats.player; p.close();
+
+        const tf = src.initialTransform;
+        if (tf) {
+            if (tf.rotation) splats.quaternion.set(tf.rotation.x, tf.rotation.y, tf.rotation.z, tf.rotation.w);
+            else splats.quaternion.identity();
+            if (tf.translation) splats.position.set(tf.translation.x + SPLAT_DEFAULTS.pos[0], tf.translation.y + SPLAT_DEFAULTS.pos[1], tf.translation.z + SPLAT_DEFAULTS.pos[2]);
+            else splats.position.set(...SPLAT_DEFAULTS.pos);
+            if (tf.scale) splats.scale.set(tf.scale.x * SPLAT_DEFAULTS.scl, tf.scale.y * SPLAT_DEFAULTS.scl, tf.scale.z * SPLAT_DEFAULTS.scl);
+            else splats.scale.setScalar(SPLAT_DEFAULTS.scl);
+        } else {
+            splats.position.set(0, 0, 0);
+            splats.quaternion.identity();
+            splats.scale.set(1, 1, 1);
+        }
+
+        p.open(src);
+        p.play();
+        if (probeOn) applyProbe();
+    }
+
+    function initDropdown() {
+        const dd = $('srcDD'), tog = $('srcToggle'), menu = $('srcMenu');
+        tog.onclick = () => dd.classList.toggle('open');
+        document.addEventListener('click', e => { if (!dd.contains(e.target)) dd.classList.remove('open'); });
+
+        menu.onclick = e => {
+            const item = e.target.closest('.dd-item'); if (!item) return;
+            dd.classList.remove('open');
+            const src = sources.find(s => s.id === item.dataset.src);
+            if (src) { tog.textContent = src.label; for (const i of menu.querySelectorAll('.dd-item')) i.classList.toggle('active', i.dataset.src === src.id); openSource(src); }
+        };
+
+    }
+
+    /* ── Player bar (tick-based variant) ──────────── */
+
+    function mountBar(container) {
+        const bar = mk('div', 'vb', container), btn = mk('button', 'vb-btn', bar);
+        const track = mk('div', 'vb-track', bar), fill = mk('div', 'vb-fill', track);
+        const thumb = mk('div', 'vb-thumb', track), time = mk('span', 'vb-time', bar);
+        const ICO = { play: '\u25B6', pause: '\u23F8', spin: '\u27F3' };
+        let cur = '', drag = false;
+
+        const pos = n => fill.style.width = thumb.style.left = `${n * 100}%`;
+        const pct = e => clamp((e.clientX - track.getBoundingClientRect().left) / track.offsetWidth);
+        const dur = () => splats?.player.duration ?? 0;
+
+        function icon(s) {
+            if (s === cur) return; cur = s;
+            const sz = s === 'play' ? 14 : 12, ml = s === 'play' ? ';margin-left:2px' : '';
+            const anim = s === 'spin' ? ';animation:spin .7s linear infinite;display:inline-block' : '';
+            btn.innerHTML = `<span style="color:#fff;font-size:${sz}px${ml}${anim}">${ICO[s]}</span>`;
+        }
+        icon('play');
+        btn.onclick = () => { if (!splats) return; const p = splats.player; p.isPlaying ? p.pause() : p.play(); };
+
+        track.onpointerdown = e => { e.preventDefault(); drag = true; track.setPointerCapture(e.pointerId); pos(pct(e)); splats?.player.seek(pct(e) * dur()); };
+        track.onpointermove = e => { if (!drag) return; pos(pct(e)); splats?.player.seek(pct(e) * dur()); };
+        track.onpointerup = e => { drag = false; track.releasePointerCapture(e.pointerId); };
+        track.onpointercancel = () => { drag = false; };
+
+        return () => {
+            if (!splats) return;
+            const p = splats.player;
+            icon(p.isBuffering || p.isSeeking ? 'spin' : p.isPlaying ? 'pause' : 'play');
+            const c = p.currentTime, d = dur();
+            if (!drag && d > 0) pos(clamp(c / d));
+            time.textContent = `${fmt(c)} / ${fmt(d)}`;
+        };
+    }
+
+    /* ── Scene toggles & stats ───────────────────── */
+
+    $('toggleVSM').onclick = () => {
+        const useVSM = renderer.shadowMap.type !== THREE.VSMShadowMap;
+        renderer.shadowMap.type = useVSM ? THREE.VSMShadowMap : THREE.PCFShadowMap;
+        dir.shadow.radius = useVSM ? 2 : 4;
+        dir.shadow.blurSamples = useVSM ? 6 : 8;
+        dir.shadow.needsUpdate = true;
+        scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
+        $('toggleVSM').classList.toggle('on', useVSM);
+    };
+    $('resetCam').onclick     = () => { camera.position.set(0, 1.2, 2.8); orbit.target.set(0, 0.3, 0); orbit.update(); };
+
+    function setGizmoMode(mode) {
+        gizmo.setMode(mode);
+        $('gizTranslate').classList.toggle('active', mode === 'translate');
+        $('gizRotate').classList.toggle('active', mode === 'rotate');
+        $('gizScale').classList.toggle('active', mode === 'scale');
+    }
+    $('gizTranslate').onclick = () => setGizmoMode('translate');
+    $('gizRotate').onclick    = () => setGizmoMode('rotate');
+    $('gizScale').onclick     = () => setGizmoMode('scale');
+
+    addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT') return;
+        switch (e.key.toLowerCase()) {
+            case 'w': setGizmoMode('translate'); break;
+            case 'e': setGizmoMode('rotate'); break;
+            case 'r': setGizmoMode('scale'); break;
+        }
+    });
+
+    /* ── Scene lighting presets ───────────────────── */
+
+    const PH = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/';
+
+    const SCENE_PRESETS = {
+        golden:    { useSky: true, sunEl: 6,  sunAz: 200, turb: 4,  ray: 2.5, mie: 0.015, mieG: 0.85, dirCol: 0xffaa44, dirI: 4.0, ambCol: 0xffd5a0, ambI: 0.02, envI: 0.12, exp: 0.4, fogCol: 0xffd5a0, fogD: 0.02 },
+        sunset:    { useSky: true, sunEl: 1.5, sunAz: 180, turb: 10, ray: 3,  mie: 0.05,  mieG: 0.95, dirCol: 0xff4400, dirI: 3.5, ambCol: 0xff8866, ambI: 0.02, envI: 0.1,  exp: 0.3, fogCol: 0xff6633, fogD: 0.025 },
+        loft:      { useHDRI: true, url: `${PH}studio_small_09_1k.hdr`,                               dirCol: 0xffeedd, dirI: 2.0, dirPos: [2, 4, 3],  ambCol: 0xffe8d0, ambI: 0.25, envI: 1.2, exp: 0.6 },
+        shanghai:  { useHDRI: true, url: `${PH}shanghai_bund_1k.hdr`,                                 dirCol: 0xffcc77, dirI: 2.0, dirPos: [4, 3, 5],  ambCol: 0xddaa66, ambI: 0.12, envI: 0.9, exp: 0.5 },
+        fiery:     { useHDRI: true, url: `${PH}industrial_sunset_puresky_1k.hdr`,                     dirCol: 0xff6622, dirI: 4.5, dirPos: [5, 2, 1],  ambCol: 0xff9955, ambI: 0.08, envI: 0.9, exp: 0.3, fogCol: 0xff7733, fogD: 0.015 },
+        rooftop:   { useHDRI: true, url: `${PH}rooftop_night_1k.hdr`,                                 dirCol: 0xffaa44, dirI: 1.5, dirPos: [3, 4, 2],  ambCol: 0x886633, ambI: 0.1,  envI: 0.7, exp: 0.8 },
+        club:      { useSky: false, bg: 0x020204, dirCol: 0x00ff55, dirI: 5.0, dirPos: [0.5, 8, 0],  ambCol: 0xcc2200, ambI: 0.06, envI: 0, exp: 0.9, fogCol: 0x010302, fogD: 0.03 },
+
+        night:     { useSky: false, bg: 0x080812, dirCol: 0x4466aa, dirI: 0.4, dirPos: [2, 8, 3], ambCol: 0x223355, ambI: 0.1, envI: 0, exp: 1.2, fogCol: 0x080812, fogD: 0.03 },
+    };
+    const SKY_PRESETS = ['golden', 'sunset'];
+    const HDRI_PRESETS = ['loft', 'shanghai', 'fiery', 'rooftop'];
+    const OTHER_PRESETS = ['club', 'night'];
+    const SCENE_NAMES = [...SKY_PRESETS, ...HDRI_PRESETS, ...OTHER_PRESETS];
+    let curScene = 'golden';
+
+    const cap = n => n[0].toUpperCase() + n.slice(1);
+
+    async function applyScenePreset(name) {
+        const p = SCENE_PRESETS[name]; if (!p) return;
+        curScene = name;
+        amb.color.set(p.ambCol); amb.intensity = p.ambI;
+        dir.color.set(p.dirCol); dir.intensity = p.dirI;
+        renderer.toneMappingExposure = p.exp;
+        scene.environmentIntensity = p.envI ?? 1;
+
+        if (p.fogCol != null) {
+            scene.fog = new THREE.FogExp2(p.fogCol, p.fogD);
+        } else {
+            scene.fog = null;
+        }
+
+        if (p.useSky) {
+            const phi = THREE.MathUtils.degToRad(90 - p.sunEl);
+            const theta = THREE.MathUtils.degToRad(p.sunAz);
+            const sunPos = new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
+            sky.material.uniforms.sunPosition.value.copy(sunPos);
+            sky.material.uniforms.turbidity.value = p.turb;
+            sky.material.uniforms.rayleigh.value = p.ray;
+            sky.material.uniforms.mieCoefficient.value = p.mie;
+            sky.material.uniforms.mieDirectionalG.value = p.mieG;
+            dir.position.copy(sunPos).multiplyScalar(10);
+            updateSkyEnv();
+            for (const m of refMaterials) m.envMap = null;
+        } else if (p.useHDRI) {
+            const hdri = await loadHDRI(p.url);
+            scene.background = hdri.bg;
+            scene.environment = hdri.env;
+            for (const m of refMaterials) { m.envMap = null; m.needsUpdate = true; }
+            dir.position.set(...(p.dirPos ?? [3, 8, 4]));
+        } else {
+            scene.background = new THREE.Color(p.bg);
+            scene.environment = null;
+            for (const m of refMaterials) { m.envMap = null; m.needsUpdate = true; }
+            dir.position.set(...(p.dirPos ?? [3, 5, 4]));
+        }
+
+        await updateProbe();
+        $('sceneToggle').textContent = cap(name);
+        for (const i of $('sceneMenu').querySelectorAll('.dd-item')) i.classList.toggle('active', i.dataset.val === name);
+        if (probeOn) applyProbe();
+    }
+
+    async function updateProbe() {
+        if (splats) splats.visible = false;
+        cubeCamera.position.set(0, 1, 0);
+        cubeCamera.update(renderer, scene);
+        if (splats) splats.visible = true;
+        const generated = await LightProbeGenerator.fromCubeRenderTarget(renderer, cubeRT);
+        probe.sh.copy(generated.sh);
+    }
+
+    (function initSceneDD() {
+        const dd = $('sceneDD'), tog = $('sceneToggle'), menu = $('sceneMenu');
+        const addGroup = names => {
+            for (const name of names) {
+                const b = Object.assign(mk('button', `dd-item${name === curScene ? ' active' : ''}`, menu), { textContent: cap(name) });
+                b.dataset.val = name;
+            }
+        };
+        addGroup(SKY_PRESETS);
+        mk('div', 'dd-sep', menu);
+        addGroup(HDRI_PRESETS);
+        mk('div', 'dd-sep', menu);
+        addGroup(OTHER_PRESETS);
+        tog.onclick = () => dd.classList.toggle('open');
+        menu.onclick = e => { const b = e.target.closest('.dd-item'); if (b) { dd.classList.remove('open'); applyScenePreset(b.dataset.val); } };
+        document.addEventListener('click', e => { if (!dd.contains(e.target)) dd.classList.remove('open'); });
+    })();
+
+    /* ── Env lighting ────────────────────────────── */
+
+    let probeOn = true;
+
+    function applyProbe() {
+        if (!splats) return;
+        if (!probeOn) { splats.player.clearEnvLighting(); return; }
+        const lightDir = dir.position.clone().normalize();
+        const env = new EnvLighting(probe.sh.toArray()).prepare(lightDir);
+        splats.player.setEnvLighting(env, 1.0);
+    }
+    $('toggleProbe').onclick = () => { probeOn = !probeOn; $('toggleProbe').classList.toggle('on', probeOn); applyProbe(); };
+
+    /* ── Render loop ─────────────────────────────── */
+
+    const timer = new THREE.Timer();
+    let tickBar;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        stats.begin();
+        timer.update();
+        const dt = timer.getDelta();
+        orbit.update();
+        torusKnot.rotation.x += dt * 0.5; torusKnot.rotation.y += dt * 0.3;
+        renderer.render(scene, camera);
+        tickBar?.();
+
+        stats.end();
+    }
+
+    /* ── Bootstrap ───────────────────────────────── */
+
+    (async () => {
+        try {
+            await loadSources(); initDropdown();
+            tickBar = mountBar($('barWrap'));
+            await Promise.all(HDRI_PRESETS.map(n => loadHDRI(SCENE_PRESETS[n].url)));
+            await initVega();
+            await applyScenePreset('golden');
+            applyProbe();
+            animate();
+        } catch (e) { console.error(e); }
+    })();
+    </script>
+</body>
+</html>

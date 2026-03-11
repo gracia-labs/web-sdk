@@ -1,0 +1,71 @@
+{
+  "name": "gracia-web-sdk",
+  "version": "0.0.38",
+  "description": "Gracia Vega — volumetric video SDK (player, app, Three.js, XR R3F, React hooks)",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/VegaSDK.d.ts",
+      "default": "./dist/VegaSDK.js"
+    },
+    "./wasm": {
+      "types": "./dist/Vega.d.ts",
+      "default": "./dist/Vega.js"
+    }
+  },
+  "main": "./dist/VegaSDK.js",
+  "types": "./dist/VegaSDK.d.ts",
+  "scripts": {
+    "serve": "bun scripts/serve.mjs"
+  },
+  "peerDependencies": {
+    "@pmndrs/pointer-events": ">=6.0.0",
+    "@preact/signals-core": "^1.13.0",
+    "@react-three/fiber": ">=9.0.0",
+    "@react-three/uikit": ">=1.0.0",
+    "gl-matrix": "^3.4.0",
+    "react": ">=18.0.0",
+    "three": ">=0.150.0"
+  },
+  "peerDependenciesMeta": {
+    "@pmndrs/pointer-events": {
+      "optional": true
+    },
+    "@preact/signals-core": {
+      "optional": true
+    },
+    "@react-three/fiber": {
+      "optional": true
+    },
+    "@react-three/uikit": {
+      "optional": true
+    },
+    "gl-matrix": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "three": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "selfsigned": "^5.5.0"
+  },
+  "keywords": [
+    "webgpu",
+    "vega",
+    "volumetric",
+    "video",
+    "gaussian-splatting",
+    "webxr",
+    "react"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "Gracia Labs",
+  "license": "SEE LICENSE IN LICENSE"
+}

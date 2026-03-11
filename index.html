@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vega Player</title>
+    <script type="importmap">
+    { "imports": {
+        "@gracia/VegaDemo": "./dist/VegaDemo.js?v=__BUILD_HASH__",
+        "@gracia/vega/wasm": "./dist/Vega.js?v=__BUILD_HASH__"
+    } }
+    </script>
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: #000; color: #fff;
+        --dim: rgba(255,255,255,.35); --mid: rgba(255,255,255,.6);
+        --hi: #fff; --sh: 0 1px 4px rgba(0,0,0,.8);
+        --glass: rgba(255,255,255,.06); --border: rgba(255,255,255,.15);
+        --hover: rgba(255,255,255,.08);
+    }
+    canvas { display: block; }
+    #canvasWrap { position: fixed; inset: 0; }
+    #canvasWrap canvas { background: #000; cursor: grab; }
+    #canvasWrap canvas:active { cursor: grabbing; }
+    .ov { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 16px; }
+    .ov > * { pointer-events: auto; }
+    .top { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .bot { display: flex; flex-direction: column; gap: 8px; }
+    .spacer { flex: 1; pointer-events: none; }
+    .row { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+    .sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+    .btn { padding: 5px 10px; border: 0; border-radius: 4px; background: 0; color: var(--dim); cursor: pointer; font: 600 11px/1 inherit; white-space: nowrap; text-shadow: var(--sh); transition: color .12s; }
+    .btn:hover:not(:disabled) { color: var(--hi); }
+    .btn:disabled { opacity: .2; cursor: not-allowed; }
+    .btn.on, .btn.active { color: var(--hi); }
+    .dropdown { position: relative; display: inline-block; }
+    .dd-toggle { padding: 5px 22px 5px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--glass); color: var(--mid); cursor: pointer; font: 600 11px/1 inherit; white-space: nowrap; text-shadow: var(--sh); transition: border-color .15s, color .15s; appearance: none; }
+    .dd-toggle::after { content: ''; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 4px solid transparent; border-top: 4px solid var(--dim); transition: transform .15s; }
+    .dd-toggle:hover { border-color: rgba(255,255,255,.3); color: var(--hi); }
+    .dropdown.open .dd-toggle::after { transform: translateY(-50%) rotate(180deg); }
+    .dd-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 100%; border: 1px solid rgba(255,255,255,.12); border-radius: 6px; background: rgba(20,20,20,.95); backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0,0,0,.6); padding: 4px 0; }
+    .dropdown.open .dd-menu { display: block; }
+    .dd-item { display: block; width: 100%; padding: 6px 12px; border: 0; background: 0; color: var(--mid); cursor: pointer; font: 500 11px/1.4 inherit; text-align: left; white-space: nowrap; text-shadow: var(--sh); transition: background .1s, color .1s; }
+    .dd-item:hover { background: var(--hover); color: var(--hi); }
+    .dd-item.active { color: var(--hi); }
+    .vb { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .vb-btn { width: 30px; min-width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,.15); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .15s; color: #fff; font-size: 14px; }
+    .vb-btn:hover { background: rgba(255,255,255,.25); }
+    .vb-track { flex: 1; height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; position: relative; cursor: pointer; }
+    .vb-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: rgba(255,255,255,.5); width: 0; pointer-events: none; }
+    .vb-thumb { position: absolute; top: 50%; width: 12px; height: 12px; background: #fff; border-radius: 50%; transform: translate(-50%,-50%); left: 0; box-shadow: 0 1px 6px #0008; }
+    .vb-time { color: var(--dim); font: 500 11px/1 inherit; min-width: 80px; text-align: right; text-shadow: var(--sh); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="canvasWrap"></div>
+    <div class="ov">
+        <div class="top">
+            <div class="row">
+                <button type="button" class="btn on" data-mode="pw">2D</button>
+                <button type="button" class="btn" data-mode="vr" disabled>VR</button>
+                <button type="button" class="btn" data-mode="ar" disabled style="display:none">AR</button>
+            </div>
+            <div class="sep"></div>
+            <div class="dropdown" id="srcDD">
+                <button type="button" class="dd-toggle" id="srcToggle">Select source&hellip;</button>
+                <div class="dd-menu" id="srcMenu"></div>
+            </div>
+            <div class="spacer"></div>
+        </div>
+        <div class="bot">
+            <div id="barWrap"></div>
+        </div>
+    </div>
+
+    <script type="module">
+    import { buildApiSources, THREE, VegaApp, XROverlay } from '@gracia/VegaDemo';
+    import ModuleFactory from '@gracia/vega/wasm';
+
+    const $ = id => document.getElementById(id);
+    const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
+    const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
+    const fmt = t => (!Number.isFinite(t) || t < 0) ? '0:00' : `${~~(t / 60)}:${String(~~t % 60).padStart(2, '0')}`;
+
+    function mountBar(player, container) {
+        const bar = mk('div', 'vb', container), btn = mk('button', 'vb-btn', bar);
+        const track = mk('div', 'vb-track', bar), fill = mk('div', 'vb-fill', track);
+        const thumb = mk('div', 'vb-thumb', track), time = mk('span', 'vb-time', bar);
+        const ICO = { play: '\u25B6', pause: '\u23F8', spin: '\u27F3' };
+        let cur = '', drag = false, seeking = false, seen = false, rafId;
+
+        const pos = n => fill.style.width = thumb.style.left = `${n * 100}%`;
+        const dur = () => player.duration ?? 0;
+        const pct = e => clamp((e.clientX - track.getBoundingClientRect().left) / track.offsetWidth);
+        const toggle = () => player.isPlaying ? player.pause() : player.play();
+
+        function icon(s) {
+            if (s === cur) return; cur = s;
+            const sz = s === 'play' ? 14 : 12, ml = s === 'play' ? ';margin-left:2px' : '';
+            const anim = s === 'spin' ? ';animation:spin .7s linear infinite;display:inline-block' : '';
+            btn.innerHTML = `<span style="color:#fff;font-size:${sz}px${ml}${anim}">${ICO[s]}</span>`;
+        }
+
+        icon('play');
+        btn.onclick = toggle;
+
+        track.onpointerdown = e => { e.preventDefault(); drag = true; pos(pct(e)); player.seek?.(pct(e) * dur()); track.setPointerCapture(e.pointerId); };
+        track.onpointermove = e => { if (!drag) return; pos(pct(e)); player.seek?.(pct(e) * dur()); };
+        track.onpointerup = e => { if (drag) { drag = false; track.releasePointerCapture(e.pointerId); } };
+        track.onpointercancel = () => { drag = false; };
+
+        const onKey = e => {
+            if (e.code === 'Space') { e.preventDefault(); toggle(); }
+            else if (e.code === 'ArrowLeft')  { seeking = true; seen = false; player.seek?.(clamp(player.currentTime - 5, 0, dur())); }
+            else if (e.code === 'ArrowRight') { seeking = true; seen = false; player.seek?.(clamp(player.currentTime + 5, 0, dur())); }
+        };
+        document.addEventListener('keydown', onKey);
+
+        (function loop() {
+            rafId = requestAnimationFrame(loop);
+            const rew = player.isSeeking ?? false;
+            if (rew) seen = true;
+            if (seeking && (player.supportsImmediateSeek || (seen && !rew))) seeking = false;
+            icon(((player.isBuffering ?? false) || rew || seeking) ? 'spin' : player.isPlaying ? 'pause' : 'play');
+            const c = player.currentTime ?? 0, d = dur();
+            if (!drag && d > 0) pos(clamp(c / d));
+            time.textContent = `${fmt(c)} / ${fmt(d)}`;
+        })();
+
+        return () => { cancelAnimationFrame(rafId); document.removeEventListener('keydown', onKey); bar.remove(); };
+    }
+
+    const MARKET = 'https://market.gracia.ai';
+    const DEMO_URL = '/api/market/api/v1/demo';
+    const STREAMING_BASE = `${MARKET}/api/v1/streaming/content`;
+    const DEMO_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
+
+    const sources = [];
+
+    async function loadSources() {
+        const results = await Promise.allSettled([
+            (async () => {
+                const demos = await (await fetch(DEMO_URL)).json();
+                return Promise.all(demos.map(async (d) => {
+                    const res = await fetch(`${STREAMING_BASE}/${d.streamingId}`, {
+                        headers: { 'X-VIEW-TOKEN': DEMO_TOKEN },
+                    });
+                    const { metadata, audioFileLink } = res.ok ? await res.json() : {};
+                    return {
+                        id: d.streamingId,
+                        label: d.label ?? metadata?.name ?? d.streamingId,
+                        url: `${STREAMING_BASE}/${d.streamingId}/`,
+                        token: DEMO_TOKEN,
+                        displayName: metadata?.name ?? undefined,
+                        audio: (audioFileLink && metadata?.withAudio !== false) ? audioFileLink : undefined,
+                        initialTransform: metadata?.initialSpawn ?? null,
+                        locked: false,
+                        resetPositionOnStart: true,
+                        autoSwitchToNext: false,
+                    };
+                }));
+            })(),
+            (async () => {
+                const raw = (await (await fetch('/api/sources')).json()).sources ?? [];
+                const resolved = [];
+                for (const src of raw)
+                    if (src.items?.length) resolved.push(...await buildApiSources(src.items, src.baseUrl));
+                    else resolved.push(src);
+                return resolved;
+            })(),
+        ]);
+        for (const r of results) if (r.status === 'fulfilled') sources.push(...r.value);
+        for (const s of sources) Object.assign(mk('button', 'dd-item', $('srcMenu')), { textContent: s.label }).dataset.src = s.id;
+    }
+
+    function initDropdown(app) {
+        const dd = $('srcDD'), tog = $('srcToggle'), menu = $('srcMenu');
+        tog.onclick = () => dd.classList.toggle('open');
+        document.addEventListener('click', e => { if (!dd.contains(e.target)) dd.classList.remove('open'); });
+        menu.onclick = e => {
+            const item = e.target.closest('.dd-item'); if (!item) return;
+            dd.classList.remove('open');
+            const idx = sources.findIndex(s => s.id === item.dataset.src);
+            if (idx >= 0) app.loadScene(idx);
+        };
+        app.onSceneChange = src => {
+            tog.textContent = src.label;
+            for (const i of menu.querySelectorAll('.dd-item')) i.classList.toggle('active', i.dataset.src === src.id);
+        };
+    }
+
+    function syncUI(app) {
+        const m = app?.mode ?? 'pw';
+        for (const b of document.querySelectorAll('[data-mode]')) b.classList.toggle('on', b.dataset.mode === m);
+        const vr = document.querySelector('[data-mode="vr"]'), ar = document.querySelector('[data-mode="ar"]');
+        if (vr) { vr.disabled = !app?.supports('vr'); vr.textContent = m === 'vr' ? 'Exit VR' : 'VR'; }
+        if (ar) { ar.disabled = !app?.supports('ar'); ar.style.display = app?.supports('ar') ? '' : 'none'; ar.textContent = m === 'ar' ? 'Exit AR' : 'AR'; }
+    }
+
+    (async () => {
+        let app, disposeBar, overlay;
+        const resetBar = () => { disposeBar?.(); disposeBar = app?.mode === 'pw' ? mountBar(app.player, $('barWrap')) : null; };
+
+        try {
+            try { overlay = new XROverlay(THREE); } catch {}
+            await loadSources();
+
+            app = await VegaApp.create(
+                opts => ModuleFactory({ ...opts, print: console.log, printErr: console.error }),
+                { container: $('canvasWrap'), overlay, mode: new URLSearchParams(location.search).get('mode') || 'pw' }
+            );
+            app.onProgress = () => {};
+            app.onReady = () => {};
+            app.onModeChange = () => { resetBar(); syncUI(app); };
+
+            initDropdown(app);
+            app.sources = sources;
+            if (overlay) overlay.bannerText = 'EARLY BETA, 80+ MBPS INTERNET SPEED REQUIRED';
+
+            document.addEventListener('click', async e => {
+                const b = e.target.closest('[data-mode]');
+                if (!b || b.disabled || !app) return;
+                try { await app.setMode(b.dataset.mode === app.mode ? app.fallbackMode : b.dataset.mode); }
+                catch (err) { console.error('Mode switch:', err); }
+            });
+
+            app.start(); resetBar(); syncUI(app);
+        } catch (e) { console.error('Fatal:', e); }
+    })();
+    </script>
+</body>
+</html>

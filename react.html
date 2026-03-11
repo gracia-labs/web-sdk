@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vega React Testbed</title>
+    <script type="importmap">
+    { "imports": {
+        "@gracia/VegaDemo": "./dist/VegaDemo.js?v=__BUILD_HASH__"
+    } }
+    </script>
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: #000; color: #fff;
+        --dim: rgba(255,255,255,.35); --mid: rgba(255,255,255,.6);
+        --hi: #fff; --sh: 0 1px 4px rgba(0,0,0,.8);
+        --glass: rgba(255,255,255,.06); --border: rgba(255,255,255,.15);
+        --hover: rgba(255,255,255,.08);
+    }
+    canvas { display: block; }
+    #root { height: 100%; }
+    .app { position: relative; height: 100%; }
+    .canvas-wrap { position: absolute; inset: 0; }
+    .canvas-wrap canvas { background: #000; cursor: grab; }
+    .canvas-wrap canvas:active { cursor: grabbing; }
+    .ov { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 16px; }
+    .ov.abs { position: absolute; }
+    .ov > * { pointer-events: auto; }
+    .top { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .bot { display: flex; flex-direction: column; gap: 8px; }
+    .spacer { flex: 1; pointer-events: none; }
+    .row { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+    .sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+    .btn { padding: 5px 10px; border: 0; border-radius: 4px; background: 0; color: var(--dim); cursor: pointer; font: 600 11px/1 inherit; white-space: nowrap; text-shadow: var(--sh); transition: color .12s; }
+    .btn:hover:not(:disabled) { color: var(--hi); }
+    .btn:disabled { opacity: .2; cursor: not-allowed; }
+    .btn.on, .btn.active { color: var(--hi); }
+    .dropdown { position: relative; display: inline-block; }
+    .dd-toggle { padding: 5px 22px 5px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--glass); color: var(--mid); cursor: pointer; font: 600 11px/1 inherit; white-space: nowrap; text-shadow: var(--sh); transition: border-color .15s, color .15s; appearance: none; }
+    .dd-toggle::after { content: ''; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 4px solid transparent; border-top: 4px solid var(--dim); transition: transform .15s; }
+    .dd-toggle:hover { border-color: rgba(255,255,255,.3); color: var(--hi); }
+    .dropdown.open .dd-toggle::after { transform: translateY(-50%) rotate(180deg); }
+    .dd-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 100%; border: 1px solid rgba(255,255,255,.12); border-radius: 6px; background: rgba(20,20,20,.95); backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0,0,0,.6); padding: 4px 0; }
+    .dropdown.open .dd-menu { display: block; }
+    .dd-item { display: block; width: 100%; padding: 6px 12px; border: 0; background: 0; color: var(--mid); cursor: pointer; font: 500 11px/1.4 inherit; text-align: left; white-space: nowrap; text-shadow: var(--sh); transition: background .1s, color .1s; }
+    .dd-item:hover { background: var(--hover); color: var(--hi); }
+    .dd-item.active { color: var(--hi); }
+    .vb { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .vb-btn { width: 30px; min-width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,.15); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .15s; color: #fff; font-size: 14px; }
+    .vb-btn:hover { background: rgba(255,255,255,.25); }
+    .vb-track { flex: 1; height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; position: relative; cursor: pointer; }
+    .vb-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: rgba(255,255,255,.5); width: 0; pointer-events: none; }
+    .vb-thumb { position: absolute; top: 50%; width: 12px; height: 12px; background: #fff; border-radius: 50%; transform: translate(-50%,-50%); left: 0; box-shadow: 0 1px 6px #0008; }
+    .vb-time { color: var(--dim); font: 500 11px/1 inherit; min-width: 80px; text-align: right; text-shadow: var(--sh); }
+    .scene-nav { display: flex; gap: 6px; align-items: center; }
+    .nav-btn { width: 24px; height: 24px; border: 1px solid rgba(255,255,255,.2); border-radius: 4px; background: var(--glass); color: var(--mid); cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .nav-btn:hover:not(:disabled) { border-color: rgba(255,255,255,.4); color: var(--hi); }
+    .nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+    .scene-nav .label { font: 600 11px/1 inherit; color: rgba(255,255,255,.5); }
+    .status-bar { display: flex; gap: 12px; align-items: center; padding: 4px 0; font: 500 10px/1 inherit; color: rgba(255,255,255,.3); }
+    .tag { padding: 2px 6px; border-radius: 3px; background: var(--hover); }
+    .tag.on { background: rgba(100,200,140,.2); color: rgba(100,200,140,.9); }
+    .tag.warn { background: rgba(255,180,60,.2); color: rgba(255,180,60,.9); }
+    .tag.err { background: rgba(255,80,80,.2); color: rgba(255,80,80,.9); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { display: inline-block; animation: spin .7s linear infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module">
+    import { buildApiSources, htm, React, ReactDOM, useVegaPlayer, useVegaPlaylist } from '@gracia/VegaDemo';
+
+    const { useState, useEffect, useRef, useCallback } = React;
+    const html = htm.bind(React.createElement);
+    const fmt = t => (!Number.isFinite(t) || t < 0) ? '0:00' : `${~~(t / 60)}:${String(~~t % 60).padStart(2, '0')}`;
+    const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
+
+    const MARKET = 'https://market.gracia.ai';
+    const DEMO_URL = '/api/market/api/v1/demo';
+    const STREAMING_BASE = `${MARKET}/api/v1/streaming/content`;
+    const DEMO_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
+
+    function SourceDropdown({ sources, currentIndex, onSelect }) {
+        const [open, setOpen] = useState(false);
+        const ref = useRef(null);
+
+        useEffect(() => {
+            const close = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+            document.addEventListener('click', close);
+            return () => document.removeEventListener('click', close);
+        }, []);
+
+        const label = currentIndex >= 0 && sources[currentIndex] ? sources[currentIndex].label : 'Select source\u2026';
+
+        return html`
+            <div class="dropdown ${open ? 'open' : ''}" ref=${ref}>
+                <button class="dd-toggle" onClick=${() => setOpen(!open)}>${label}</button>
+                <div class="dd-menu">
+                    ${sources.map((s, i) => html`
+                        <button key=${s.id} class="dd-item ${i === currentIndex ? 'active' : ''}"
+                            onClick=${() => { onSelect(i); setOpen(false); }}>${s.label}</button>
+                    `)}
+                </div>
+            </div>`;
+    }
+
+    function SeekBar({ progress, duration, onSeek }) {
+        const ref = useRef(null), dragging = useRef(false);
+        const pct = `${progress}%`;
+
+        const getT = useCallback(e => {
+            const rect = ref.current.getBoundingClientRect();
+            return clamp((e.clientX - rect.left) / rect.width) * duration;
+        }, [duration]);
+
+        const onDown = useCallback(e => {
+            e.preventDefault(); dragging.current = true;
+            ref.current.setPointerCapture(e.pointerId); onSeek(getT(e));
+        }, [getT, onSeek]);
+
+        return html`
+            <div class="vb-track" ref=${ref}
+                onPointerDown=${onDown}
+                onPointerMove=${e => { if (dragging.current) onSeek(getT(e)); }}
+                onPointerUp=${e => { dragging.current = false; ref.current.releasePointerCapture(e.pointerId); }}
+                onPointerCancel=${() => { dragging.current = false; }}>
+                <div class="vb-fill" style=${{ width: pct }} />
+                <div class="vb-thumb" style=${{ left: pct }} />
+            </div>`;
+    }
+
+    function TestApp() {
+        const containerRef = useRef(null);
+        const vega = useVegaPlayer({ containerRef, moduleUrl: '/dist/Vega.js' });
+        const playlist = useVegaPlaylist(vega);
+
+        useEffect(() => {
+            if (!vega.isInitialized) return;
+            (async () => {
+                try {
+                    const results = await Promise.allSettled([
+                        (async () => {
+                            const demos = await (await fetch(DEMO_URL)).json();
+                            return Promise.all(demos.map(async (d) => {
+                                const res = await fetch(`${STREAMING_BASE}/${d.streamingId}`, {
+                                    headers: { 'X-VIEW-TOKEN': DEMO_TOKEN },
+                                });
+                                const { metadata, audioFileLink } = res.ok ? await res.json() : {};
+                                return {
+                                    id: d.streamingId,
+                                    label: d.label ?? metadata?.name ?? d.streamingId,
+                                    url: `${STREAMING_BASE}/${d.streamingId}/`,
+                                    token: DEMO_TOKEN,
+                                    displayName: metadata?.name ?? undefined,
+                                    audio: (audioFileLink && metadata?.withAudio !== false) ? audioFileLink : undefined,
+                                    initialTransform: metadata?.initialSpawn ?? null,
+                                    locked: false,
+                                    resetPositionOnStart: true,
+                                    autoSwitchToNext: false,
+                                };
+                            }));
+                        })(),
+                        (async () => {
+                            const raw = (await (await fetch('/api/sources')).json()).sources ?? [];
+                            const resolved = [];
+                            for (const src of raw)
+                                if (src.items?.length) resolved.push(...await buildApiSources(src.items, src.baseUrl));
+                                else resolved.push(src);
+                            return resolved;
+                        })(),
+                    ]);
+                    const sources = [];
+                    for (const r of results) if (r.status === 'fulfilled') sources.push(...r.value);
+                    if (sources.length) playlist.setSources(sources);
+                } catch (err) { console.warn('Failed to load sources:', err); }
+            })();
+        }, [vega.isInitialized]);
+
+        const { playback, xr } = vega;
+        const isXR = vega.mode === 'vr' || vega.mode === 'ar';
+        const playIcon = playback.isBuffering || playback.isSeeking
+            ? html`<span class="spinner">\u27F3</span>`
+            : playback.isPlaying ? '\u23F8' : '\u25B6';
+        const muteIcon = playback.isMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
+
+        return html`
+            <div class="app">
+                <div class="canvas-wrap" ref=${containerRef} />
+                <div class="ov abs">
+                    <div class="top">
+                        <div class="row">
+                            <button class="btn ${vega.mode === 'pw' ? 'active' : ''}" onClick=${() => xr.setMode('pw')}>2D</button>
+                            <button class="btn ${vega.mode === 'vr' ? 'active' : ''}" disabled=${!xr.vrSupported}
+                                onClick=${() => xr.vrSupported && (vega.mode === 'vr' ? xr.setMode('pw') : xr.setMode('vr'))}>
+                                ${vega.mode === 'vr' ? 'Exit VR' : 'VR'}</button>
+                            ${xr.arSupported && html`
+                                <button class="btn ${vega.mode === 'ar' ? 'active' : ''}"
+                                    onClick=${() => vega.mode === 'ar' ? xr.setMode('pw') : xr.setMode('ar')}>
+                                    ${vega.mode === 'ar' ? 'Exit AR' : 'AR'}</button>`}
+                        </div>
+                        <div class="sep" />
+                        <${SourceDropdown} sources=${playlist.sources} currentIndex=${playlist.index} onSelect=${i => playlist.goTo(i)} />
+                        <div class="sep" />
+                        <div class="scene-nav">
+                            <button class="nav-btn" disabled=${!playlist.hasPrev} onClick=${() => playlist.prev()}>\u25C0</button>
+                            <span class="label">
+                                ${playlist.total > 0 ? `${playlist.index + 1}/${playlist.total}` : '\u2014'}${' '}${playlist.currentSource?.label ?? ''}
+                            </span>
+                            <button class="nav-btn" disabled=${!playlist.hasNext} onClick=${() => playlist.next()}>\u25B6</button>
+                        </div>
+                        <div class="spacer" />
+                    </div>
+                    <div class="bot">
+                        ${!isXR && html`
+                            <div class="vb">
+                                <button class="vb-btn" onClick=${() => playback.togglePlay()}>${playIcon}</button>
+                                <${SeekBar} progress=${playback.duration > 0 ? (playback.currentTime / playback.duration) * 100 : 0} duration=${playback.duration} onSeek=${t => playback.seek(t)} />
+                                <span class="vb-time">${fmt(playback.currentTime)} / ${fmt(playback.duration)}</span>
+                                <button class="vb-btn" onClick=${() => playback.toggleMute()}>${muteIcon}</button>
+                            </div>`}
+                        ${vega.error && html`<div class="status-bar"><span class="tag err">${vega.error.message}</span></div>`}
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(html`<${TestApp} />`);
+    </script>
+</body>
+</html>
