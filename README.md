@@ -60,14 +60,14 @@ Full-featured player with built-in camera, XR support and playback controls:
 
 <script type="importmap">
 { "imports": {
-    "@gracia/vega/wasm": "./dist/Vega.js",
-    "@gracia/VegaDemo": "./dist/VegaDemo.js"
+    "gracia-web-sdk/wasm": "./dist/Vega.js",
+    "gracia-web-sdk": "./dist/VegaDemo.js"
 } }
 </script>
 
 <script type="module">
-import { buildApiSources, VegaApp, XROverlay, THREE } from '@gracia/VegaDemo';
-import ModuleFactory from '@gracia/vega/wasm';
+import { buildApiSources, VegaApp, XROverlay, THREE } from 'gracia-web-sdk';
+import ModuleFactory from 'gracia-web-sdk/wasm';
 
 let overlay;
 try { overlay = new XROverlay(THREE); } catch {}
@@ -96,7 +96,7 @@ Declarative integration with `useVegaPlayer` and `useVegaPlaylist`:
 
 ```jsx
 import { useRef, useEffect } from 'react';
-import { useVegaPlayer, useVegaPlaylist, buildApiSources } from '@gracia/VegaDemo';
+import { useVegaPlayer, useVegaPlaylist, buildApiSources } from 'gracia-web-sdk';
 
 function Player() {
     const containerRef = useRef(null);
@@ -140,8 +140,8 @@ function Player() {
 Volumetric playback as a standard Three.js mesh:
 
 ```js
-import { SplatsMesh, EnvLighting, THREE } from '@gracia/VegaDemo';
-import ModuleFactory from '@gracia/vega/wasm';
+import { SplatsMesh, EnvLighting, THREE } from 'gracia-web-sdk';
+import ModuleFactory from 'gracia-web-sdk/wasm';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 const scene = new THREE.Scene();

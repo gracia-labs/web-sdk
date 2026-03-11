@@ -6,8 +6,8 @@
     <title>Vega Player</title>
     <script type="importmap">
     { "imports": {
-        "@gracia/VegaDemo": "./dist/VegaDemo.js?v=__BUILD_HASH__",
-        "@gracia/vega/wasm": "./dist/Vega.js?v=__BUILD_HASH__"
+        "gracia-web-sdk": "./dist/VegaDemo.js?v=__BUILD_HASH__",
+        "gracia-web-sdk/wasm": "./dist/Vega.js?v=__BUILD_HASH__"
     } }
     </script>
     <style>
@@ -78,8 +78,8 @@
     </div>
 
     <script type="module">
-    import { buildApiSources, THREE, VegaApp, XROverlay } from '@gracia/VegaDemo';
-    import ModuleFactory from '@gracia/vega/wasm';
+    import { buildApiSources, THREE, VegaApp, XROverlay } from 'gracia-web-sdk';
+    import ModuleFactory from 'gracia-web-sdk/wasm';
 
     const $ = id => document.getElementById(id);
     const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };

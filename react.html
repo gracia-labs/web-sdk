@@ -6,7 +6,7 @@
     <title>Vega React Testbed</title>
     <script type="importmap">
     { "imports": {
-        "@gracia/VegaDemo": "./dist/VegaDemo.js?v=__BUILD_HASH__"
+        "gracia-web-sdk": "./dist/VegaDemo.js?v=__BUILD_HASH__"
     } }
     </script>
     <style>
@@ -72,7 +72,7 @@
 <body>
     <div id="root"></div>
     <script type="module">
-    import { buildApiSources, htm, React, ReactDOM, useVegaPlayer, useVegaPlaylist } from '@gracia/VegaDemo';
+    import { buildApiSources, htm, React, ReactDOM, useVegaPlayer, useVegaPlaylist } from 'gracia-web-sdk';
 
     const { useState, useEffect, useRef, useCallback } = React;
     const html = htm.bind(React.createElement);
