@@ -314,7 +314,9 @@ If `false`, check both headers are present (`DevTools → Network → Headers`) 
 
 The player needs a **streamingId** (identifies the scene) and a **view token** (authorizes playback). Both can be created in your Gracia account under **Settings → Api Settings**.
 
-Base URL: `https://market.gracia.ai`
+> **Important.** **Settings → Api Settings** is available only for partner Gracia accounts. If you want to become a partner, write to support at `support@gracia.ai`.
+
+Base URL: `https://streaming.gracia.ai`
 
 ### Option 1: Long-lived View Token (not recommended)
 
@@ -331,87 +333,49 @@ Implement an endpoint on your backend that your frontend calls when a user wants
 Best for: pay-per-view, purchases, subscriptions.
 
 1. Create an **API token** in **Settings → Api Settings**. Store it securely on your server.
-2. Implement an endpoint (e.g. `GET /api/streaming-access/{contentId}`) that authenticates the user, checks access, calls Gracia API to issue a view token, and returns `streamingId` + `viewToken`.
+2. Implement an endpoint (e.g. `POST /api/streaming-access/{contentId}`) that authenticates the user, checks access, calls Gracia API to issue a view token, and returns `streamingId` + `viewToken`.
 3. Your frontend calls this endpoint and passes the received tokens to the player.
 
 ```
-┌──────────┐         ┌──────────────┐         ┌──────────────────┐
-│  Player  │         │ Your Backend │         │ Gracia Streaming │
-│ (client) │         │              │         │       API        │
-└────┬─────┘         └──────┬───────┘         └────────┬─────────┘
-     │                      │                          │
-     │  1. User wants to    │                          │
-     │     watch content    │                          │
-     │─────────────────────>│                          │
-     │                      │                          │
-     │               2. Your backend                   │
-     │                  validates access               │
-     │                      │                          │
-     │                      │  3. Issue view token     │
-     │                      │     POST /view-token/issue
-     │                      │     X-API-KEY: <api_token>
-     │                      │─────────────────────────>│
-     │                      │                          │
-     │                      │  4. View token (JWT)     │
-     │                      │<─────────────────────────│
-     │                      │                          │
-     │  5. Return streaming │                          │
-     │     ID + view token  │                          │
-     │<─────────────────────│                          │
-     │                      │                          │
-     │  6. Pass streamingId + viewToken to player      │
-     │     → player handles playback                   │
-```
-
-**Issue view token:**
-
-```
-POST https://market.gracia.ai/api/v1/streaming/view-token/issue
-X-API-KEY: <your_api_token>
-Content-Type: application/json
-
-{
-  "streamingIds": ["<streaming_id_from_gracia.ai>"],
-  "expireAt": "2026-03-12T14:30:00Z",
-  "domains": ["yoursite.com"]
-}
-```
-
-| Field | Required | Description |
-|---|---|---|
-| `streamingIds` | Yes | Content IDs this token can access |
-| `expireAt` | No | Token expiry (10–20 min recommended). Omit for long-lived |
-| `domains` | No | Restrict playback to these domains |
-
-**Revoke view token:**
+┌──────────┐         ┌──────────────┐         ┌───────────────┐         ┌──────────────────┐
+│  Player  │         │ Your Backend │         │ Your Database │         │ Gracia Streaming │
+│ (client) │         │              │         │               │         │       API        │
+└────┬─────┘         └──────┬───────┘         └──────┬────────┘         └────────┬─────────┘
+     │                      │                        │                           │
+     │  1. User wants to    │                        │                           │
+     │     watch content    │                        │                           │
+     │─────────────────────>│                        │                           │
+     │                      │                        │                           │
+     │               2. Your backend                 │                           │
+     │                  validates access             │                           │
+     │                      │                        │                           │
+     │                      │  3. Issue view token   │                           │
+     │                      │     POST /view-token/issue                         │
+     │                      │───────────────────────────────────────────────────>│
+     │                      │                        │                           │
+     │                      │  4. View token + tokenId                           │
+     │                      │<───────────────────────────────────────────────────│
+     │                      │                        │                           │
+     │                      │  5. Save token state   │                           │
+     │                      │     {userId, tokenId}  │                           |
+     │                      │───────────────────────>│                           │
+     │                      │                        │                           │
+     │  6. Return streaming │                        │                           │
+     │     ID + view token  │                        │                           │
+     │<─────────────────────│                        │                           │
+     │                      │                        │                           │
+     │  7. Pass streamingId + viewToken to player    │
+     │     → player handles playback                 │
 
 ```
-POST https://market.gracia.ai/api/v1/streaming/view-token/revoke
-X-API-KEY: <your_api_token>
-Content-Type: application/json
 
-{
-  "tokenId": "token-id-here"
-}
-```
+When persisting issued tokens, store at least `userId` and `tokenId`, so your backend can safely update or revoke token access later.
 
-### Token Reference
+## OpenAPI Specification
 
-| | API Token | View Token |
-|---|---|---|
-| **Purpose** | Identifies your app | Authorizes playback |
-| **Used by** | Your backend | Player / client |
-| **Header** | `X-API-KEY` | `X-View-Token` |
-| **Lifetime** | Long-lived | Minutes or indefinite |
-| **Created in** | Settings → Api Settings | Settings → Api Settings, or via API |
-
-### Streaming API Endpoints
-
-| Endpoint | Method | Auth | Description |
-|---|---|---|---|
-| `/api/v1/streaming/view-token/issue` | POST | API Token | Create a view token |
-| `/api/v1/streaming/view-token/revoke` | POST | API Token | Revoke a view token |
-| `/api/v1/streaming/view-token/update` | POST | API Token | Update a view token |
+- Specification file: [`api-streaming-view-token.openapi.yaml`](./api-streaming-view-token.openapi.yaml)
+- To view it in Swagger Editor, open [Swagger Editor](https://editor.swagger.io/) and load this YAML file (or paste the API content directly).
+- You can also use any other Swagger/OpenAPI-compatible editors or viewers supporting the current version of the Specification.
 
 ## License
 

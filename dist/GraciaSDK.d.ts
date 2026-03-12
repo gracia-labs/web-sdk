@@ -16,6 +16,17 @@ declare class EnvLighting {
     normalize(contrast?: number): this;
 }
 
+declare class SyncedAudio {
+    el: HTMLAudioElement | null;
+    rate: number;
+    load(url: string): Promise<void>;
+    get ready(): boolean;
+    sync(vt: number): void;
+    pause(): void;
+    dispose(): void;
+    #private;
+}
+
 declare class GraciaPlayer {
     static create(Module: any, { canvas, gl }?: {
         canvas?: HTMLCanvasElement;
@@ -44,9 +55,9 @@ declare class GraciaPlayer {
     setSpeed(s: number): void;
     close(): void;
     open(src: object): Promise<number> | undefined;
-    setAudio(url: string, audioCtx: AudioContext, destination?: AudioNode): void;
-    setVolume(v: number): void;
-    syncAudio(pos?: number[] | null): void;
+    get audio(): SyncedAudio | null;
+    loadAudio(url: string): Promise<void>;
+    syncAudio(): void;
     pauseAudio(): void;
     getBBoxCenter(): number[] | null;
     setCamera(viewL: ArrayLike<number>, projL: ArrayLike<number>, viewR?: ArrayLike<number>, projR?: ArrayLike<number>): void;
@@ -466,6 +477,8 @@ declare class SplatsMesh extends Mesh<BufferGeometry<three.NormalBufferAttribute
     onBeforeRender: (renderer: any, _scene: any, camera: any) => void;
     onBeforeShadow: (renderer: any, _object: any, _camera: any, shadowCamera: any) => void;
     get player(): GraciaPlayer;
+    setAudio(url: string, listener: three.AudioListener): Promise<void>;
+    disposeAudio(): void;
     dispose(): void;
     #private;
 }

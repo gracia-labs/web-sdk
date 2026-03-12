@@ -1,6 +1,6 @@
 {
   "name": "@gracia/web-sdk",
-  "version": "0.0.41",
+  "version": "0.0.42",
   "description": "Gracia — volumetric video SDK (player, app, Three.js, XR R3F, React hooks)",
   "type": "module",
   "exports": {

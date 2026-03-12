@@ -180,6 +180,9 @@
     const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 200);
     camera.position.set(0, 1.2, 2.8);
 
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
+
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true; orbit.dampingFactor = 0.08;
     orbit.target.set(0, 0.3, 0); orbit.update();
@@ -396,6 +399,7 @@
 
         p.open(src);
         p.play();
+        if (src.audio) splats.setAudio(src.audio, listener);
         if (probeOn) applyProbe();
     }
 
