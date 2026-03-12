@@ -1,0 +1,525 @@
+openapi: 3.0.3
+info:
+  title: Gracia Streaming View Token API
+  version: 1.0.0
+  description: |
+    API for issuing, revoking, and updating streaming view tokens.
+  contact:
+    email: support@gracia.ai
+
+servers:
+  - url: https://streaming.gracia.ai/
+
+tags:
+  - name: Streaming View Token Controller
+    description: |
+      Issue, revoke and update streaming view tokens
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+
+  /api/v1/streaming/view-token/issue:
+    post:
+      tags:
+        - Streaming View Token Controller
+      operationId: issueStreamingViewToken
+      summary: Issue a new streaming view token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueStreamingViewTokenRequestDto"
+            example:
+              expireAt: "2026-12-31T23:59:59Z"
+              name: Summer Campaign
+              description: |
+                Token for summer promo streams
+              streamingIds:
+                - stream_1001
+                - stream_1002
+              domains:
+                - partner1.example1.com
+                - partner2.example2.com
+      responses:
+        "200":
+          description: |
+            Streaming view token issued successfully; store the token securely and use it for authorized playback requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueStreamingViewTokenResponseDto"
+              example:
+                id: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+                token: view_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        "400":
+          description: |
+            Validation error in request body; verify required fields and formats, then
+            correct the payload and retry, and if it does not help, contact your administrator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Validation error in request body
+                errorType: validation_error
+        "401":
+          description: |
+            Missing or invalid API key; provide a valid X-API-KEY header and retry the request.
+        "403":
+          description: |
+            Forbidden; ensure the API key has required permissions or contact your administrator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueStreamingViewTokenForbiddenErrorResponse"
+              example:
+                message: You do not have enough credits to issue a streaming view token
+                errorType: insufficient_credits
+        "429":
+          description: |
+            Too Many Requests; wait the duration from Retry-After, then retry the request,
+            and if it happens often, contact your administrator to increase limits.
+          headers:
+            Retry-After:
+              description: |
+                Seconds to wait before retrying the request
+              schema:
+                type: integer
+                format: int32
+              example: 60
+        "500":
+          description: |
+            Internal server error; retry later, and if the problem continues, notify support with request details.
+
+  /api/v1/streaming/view-token/revoke:
+    post:
+      tags:
+        - Streaming View Token Controller
+      operationId: revokeStreamingViewToken
+      summary: Revoke streaming view token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeStreamingViewTokenRequestDto"
+            example:
+              tokenId: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+      responses:
+        "200":
+          description: |
+            Streaming view token revoked successfully; update client state and stop using the revoked token immediately.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamingViewTokenDto"
+              example:
+                id: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+                token: view_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                name: Summer Campaign
+                description: |
+                  Token for summer promo streams
+                status: REVOKED
+                expiresAt: "2026-12-31T23:59:59Z"
+                streamingIds:
+                  - stream_1001
+                  - stream_1002
+                domains:
+                  - partner1.example1.com
+                  - partner2.example2.com
+                createdAt: "2026-03-01T10:11:12"
+                updatedAt: "2026-03-03T08:09:10"
+        "400":
+          description: |
+            Validation error in request body; verify required fields and formats, then
+            correct the payload and retry, and if it does not help, contact your administrator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Validation error in request body
+                errorType: validation_error
+        "401":
+          description: |
+            Missing or invalid API key; provide a valid X-API-KEY header and retry the request.
+        "403":
+          description: |
+            Forbidden; ensure the API key has required permissions or contact your administrator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Forbidden
+                errorType: forbidden
+        "404":
+          description: |
+            Token not found; confirm tokenId is correct and belongs to your account, then retry.
+        "429":
+          description: |
+            Too Many Requests; wait the duration from Retry-After, then retry the request,
+            and if it happens often, contact your administrator to increase limits.
+          headers:
+            Retry-After:
+              description: |
+                Seconds to wait before retrying the request
+              schema:
+                type: integer
+                format: int32
+              example: 60
+        "500":
+          description: |
+            Internal server error; retry later, and if the problem continues, notify support with request details.
+
+  /api/v1/streaming/view-token/update:
+    put:
+      tags:
+        - Streaming View Token Controller
+      operationId: updateStreamingViewToken
+      summary: Update streaming view token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStreamingViewTokenRequestDto"
+            example:
+              tokenId: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+              expireAt: "2026-12-31T23:59:59Z"
+              name: Summer Campaign Updated
+              description: |
+                Updated token metadata
+              streamingIds:
+                - stream_1001
+                - stream_1003
+              domains:
+                - partner1.example1.com
+                - partner2.example2.com
+      responses:
+        "200":
+          description: |
+            Streaming view token updated successfully; use the returned token configuration in subsequent playback flows.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamingViewTokenDto"
+              example:
+                id: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+                token: view_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                name: Summer Campaign Updated
+                description: |
+                  Updated token metadata
+                status: ACTIVE
+                expiresAt: "2026-12-31T23:59:59Z"
+                streamingIds:
+                  - stream_1001
+                  - stream_1003
+                domains:
+                  - partner1.example1.com
+                  - partner2.example2.com
+                createdAt: "2026-03-01T10:11:12"
+                updatedAt: "2026-03-03T08:09:10"
+        "400":
+          description: |
+            Validation error in request body; verify required fields and formats, then
+            correct the payload and retry, and if it does not help, contact your administrator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Validation error in request body
+                errorType: validation_error
+        "401":
+          description: |
+            Missing or invalid API key; provide a valid X-API-KEY header and retry the request.
+        "403":
+          description: |
+            Forbidden; ensure the API key has required permissions or contact your administrator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Forbidden
+                errorType: forbidden
+        "404":
+          description: |
+            Token not found; confirm tokenId is correct and belongs to your account, then retry.
+        "429":
+          description: |
+            Too Many Requests; wait the duration from Retry-After, then retry the request,
+            and if it happens often, contact your administrator to increase limits.
+          headers:
+            Retry-After:
+              description: |
+                Seconds to wait before retrying the request
+              schema:
+                type: integer
+                format: int32
+              example: 60
+        "500":
+          description: |
+            Internal server error; retry later, and if the problem continues, notify support with request details.
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+      description: |
+        Get your API key in Gracia account settings: Settings -> Api Settings.
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        errorType:
+          type: string
+      required:
+        - message
+        - errorType
+      example:
+        message: Validation error in request body
+        errorType: validation_error
+
+    IssueStreamingViewTokenForbiddenErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        errorType:
+          type: string
+          description: |
+            Returns `insufficient_credits` when there are not enough credits to issue a view token.
+            Other error types may also be returned, so this list is not final.
+            If you receive another value, contact support for clarification and the top-up procedure.
+          enum:
+            - insufficient_credits
+      required:
+        - message
+        - errorType
+      example:
+        message: You do not have enough credits to issue a streaming view token
+        errorType: insufficient_credits
+
+    ListResponseWithTotalStreamingViewTokenDto:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/StreamingViewTokenDto"
+        total:
+          type: integer
+          format: int64
+      required:
+        - list
+        - total
+      example:
+        list:
+          - id: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+            token: view_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            name: Summer Campaign
+            description: |
+              Token for summer promo streams
+            status: ACTIVE
+            expiresAt: "2026-12-31T23:59:59Z"
+            streamingIds:
+              - stream_1001
+            domains:
+              - partner1.example1.com
+            createdAt: "2026-03-01T10:11:12"
+            updatedAt: "2026-03-02T12:13:14"
+        total: 1
+
+    IssueStreamingViewTokenRequestDto:
+      type: object
+      properties:
+        expireAt:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        streamingIds:
+          type: array
+          description: |
+            Whitelist of streaming IDs allowed for this view token.
+            If empty, any streaming content is available for this view token.
+            Strongly recommended to set this field explicitly and leave it empty only for testing purposes.
+          items:
+            type: string
+          nullable: true
+        domains:
+          type: array
+          description: |
+            Whitelist of iframe domains where this view token can be used.
+            If empty, the view token can be used on any domain.
+            Strongly recommended to set this field explicitly and leave it empty only for testing purposes.
+          items:
+            type: string
+          nullable: true
+      required:
+        - name
+      example:
+        expireAt: "2026-12-31T23:59:59Z"
+        name: Summer Campaign
+        description: |
+          Token for summer promo streams
+        streamingIds:
+          - stream_1001
+          - stream_1002
+        domains:
+          - partner1.example1.com
+          - partner2.example2.com
+
+    IssueStreamingViewTokenResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+      required:
+        - id
+        - token
+      example:
+        id: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+        token: view_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    RevokeStreamingViewTokenRequestDto:
+      type: object
+      properties:
+        tokenId:
+          type: string
+      required:
+        - tokenId
+      example:
+        tokenId: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+
+    UpdateStreamingViewTokenRequestDto:
+      type: object
+      properties:
+        tokenId:
+          type: string
+        expireAt:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        streamingIds:
+          type: array
+          description: |
+            Whitelist of streaming IDs allowed for this view token.
+            If empty, any streaming content is available for this view token.
+            Strongly recommended to set this field explicitly and leave it empty only for testing purposes.
+          items:
+            type: string
+          nullable: true
+        domains:
+          type: array
+          description: |
+            Whitelist of iframe domains where this view token can be used.
+            If empty, the view token can be used on any domain.
+            Strongly recommended to set this field explicitly and leave it empty only for testing purposes.
+          items:
+            type: string
+          nullable: true
+      required:
+        - tokenId
+        - name
+      example:
+        tokenId: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+        expireAt: "2026-12-31T23:59:59Z"
+        name: Summer Campaign Updated
+        description: |
+          Updated token metadata
+        streamingIds:
+          - stream_1001
+          - stream_1003
+        domains:
+          - partner1.example1.com
+          - partner2.example2.com
+
+    StreamingViewTokenDto:
+      type: object
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/StreamingApiTokenStatus"
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        streamingIds:
+          type: array
+          description: |
+            Whitelist of streaming IDs allowed for this view token.
+            If empty, any streaming content is available for this view token.
+            Strongly recommended to set this field explicitly and leave it empty only for testing purposes.
+          items:
+            type: string
+          nullable: true
+        domains:
+          type: array
+          description: |
+            Whitelist of iframe domains where this view token can be used.
+            If empty, the view token can be used on any domain.
+            Strongly recommended to set this field explicitly and leave it empty only for testing purposes.
+          items:
+            type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      example:
+        id: svt_01J9P7R0M6D2A8T1V2Y3Z4K5L6
+        token: view_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        name: Summer Campaign
+        description: |
+          Token for summer promo streams
+        status: ACTIVE
+        expiresAt: "2026-12-31T23:59:59Z"
+        streamingIds:
+          - stream_1001
+          - stream_1002
+        domains:
+          - partner1.example1.com
+          - partner2.example2.com
+        createdAt: "2026-03-01T10:11:12"
+        updatedAt: "2026-03-02T12:13:14"
+
+    StreamingApiTokenStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - REVOKED
+      example: ACTIVE
