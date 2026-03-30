@@ -8,6 +8,7 @@
     { "imports": {
         "playcanvas": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/build/playcanvas.mjs",
         "shadow-catcher": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/scripts/esm/shadow-catcher.mjs",
+        "camera-controls": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/scripts/esm/camera-controls.mjs",
         "@gracia/web-sdk": "./dist/GraciaAIO.js?v=__BUILD_HASH__",
         "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.js?v=__BUILD_HASH__"
     } }
@@ -146,6 +147,7 @@
     <script type="module">
     import * as pc from 'playcanvas';
     import { ShadowCatcher } from 'shadow-catcher';
+    import { CameraControls } from 'camera-controls';
     import { buildApiSources, EnvLighting, GraciaSplats } from '@gracia/web-sdk';
     import ModuleFactory from '@gracia/web-sdk/wasm';
 
@@ -178,7 +180,7 @@
 
     window.addEventListener('resize', () => app.resizeCanvas());
 
-    /* ── Camera + orbit controls ─────────────────── */
+    /* ── Camera + controls ────────────────────────── */
 
     const camera = new pc.Entity('camera');
     camera.addComponent('camera', {
@@ -189,53 +191,26 @@
     });
     app.root.addChild(camera);
 
-    const CAM_DEFAULTS = { azimuth: Math.PI * 0.8, elevation: 0.35, distance: 39, target: [0, 6, 0] };
-    const SMOOTH = 12;
-    let tAzimuth = CAM_DEFAULTS.azimuth,   azimuth = tAzimuth;
-    let tElevation = CAM_DEFAULTS.elevation, elevation = tElevation;
-    let tOrbitDist = CAM_DEFAULTS.distance,  orbitDist = tOrbitDist;
-    const orbitTarget = new pc.Vec3(...CAM_DEFAULTS.target);
-    let orbiting = false;
+    const CAM_FOCUS = new pc.Vec3(0, 6, 0);
+    const CAM_DIST = 39;
+    const CAM_AZ = Math.PI * 0.8;
+    const CAM_EL = 0.35;
+    const CAM_START_POS = new pc.Vec3(
+        CAM_FOCUS.x + CAM_DIST * Math.cos(CAM_EL) * Math.sin(CAM_AZ),
+        CAM_FOCUS.y + CAM_DIST * Math.sin(CAM_EL),
+        CAM_FOCUS.z + CAM_DIST * Math.cos(CAM_EL) * Math.cos(CAM_AZ)
+    );
+    camera.setLocalPosition(CAM_START_POS);
+    camera.lookAt(CAM_FOCUS);
 
-    function updateOrbitCamera() {
-        const ce = Math.cos(azimuth), se = Math.sin(azimuth);
-        const cEl = Math.cos(elevation), sEl = Math.sin(elevation);
-        camera.setPosition(
-            orbitTarget.x + orbitDist * cEl * se,
-            orbitTarget.y + orbitDist * sEl,
-            orbitTarget.z + orbitDist * cEl * ce,
-        );
-        camera.lookAt(orbitTarget);
-    }
-    updateOrbitCamera();
-
-    function smoothCamera(dt) {
-        const t = 1 - Math.exp(-SMOOTH * dt);
-        azimuth   += (tAzimuth - azimuth) * t;
-        elevation += (tElevation - elevation) * t;
-        orbitDist += (tOrbitDist - orbitDist) * t;
-        updateOrbitCamera();
-    }
-
-    canvas.addEventListener('pointerdown', e => {
-        if (e.button === 0) { orbiting = true; canvas.setPointerCapture(e.pointerId); }
-    });
-    canvas.addEventListener('pointermove', e => {
-        if (!orbiting) return;
-        tAzimuth -= e.movementX * 0.005;
-        tElevation = clamp(tElevation + e.movementY * 0.005, -Math.PI * 0.45, Math.PI * 0.45);
-    });
-    canvas.addEventListener('pointerup', () => { orbiting = false; });
-    canvas.addEventListener('pointercancel', () => { orbiting = false; });
-    canvas.addEventListener('wheel', e => {
-        tOrbitDist = clamp(tOrbitDist + e.deltaY * 0.06, 10, 400);
-    }, { passive: true });
+    camera.addComponent('script');
+    const cameraControls = camera.script.create(CameraControls);
+    cameraControls.focusPoint = CAM_FOCUS;
+    cameraControls.zoomRange = new pc.Vec2(10, 400);
+    cameraControls.pitchRange = new pc.Vec2(-89, 89);
 
     $('resetCam').onclick = () => {
-        tAzimuth = CAM_DEFAULTS.azimuth;
-        tElevation = CAM_DEFAULTS.elevation;
-        tOrbitDist = CAM_DEFAULTS.distance;
-        orbitTarget.set(...CAM_DEFAULTS.target);
+        cameraControls.reset(CAM_FOCUS, CAM_START_POS);
     };
 
     /* ── Lights ── */
@@ -313,12 +288,6 @@
     shadowCatcherEntity.setLocalPosition(0, 0, 0);
     shadowCatcherEntity.enabled = false;
     app.root.addChild(shadowCatcherEntity);
-
-    /* ── Frame Update ── */
-
-    app.on('update', dt => {
-        smoothCamera(dt);
-    });
 
     /* ── Sky presets ────────────────────────────────── */
 
