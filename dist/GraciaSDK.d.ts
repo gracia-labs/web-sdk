@@ -311,12 +311,12 @@ declare class SceneManipulator {
     invalidateBBox(): void;
     setInitialTransform(t: any): void;
     get scene(): any;
-    get debug(): boolean;
     get scale(): number;
     get leftHand(): XRHandState;
     get rightHand(): XRHandState;
     set locked(v: boolean);
     get locked(): boolean;
+    set scaleLocked(v: boolean);
     resetToInitial(): void;
     update(frame: XRFrame, ref: XRReferenceSpace, sources: XRInputSource[], uiActive: boolean, uiDragging?: boolean): void;
     #private;
@@ -365,8 +365,9 @@ interface GraciaSource {
         };
     } | null;
     locked?: boolean;
-    resetPositionOnStart?: boolean;
+    scaleLocked?: boolean;
     autoSwitchToNext?: boolean;
+    resetPositionOnStart?: boolean;
     [key: string]: unknown;
 }
 interface GraciaEventLogger {
@@ -431,10 +432,14 @@ interface GraciaPlayerState {
     xr: GraciaXR;
 }
 
+interface StreamingItemSettings {
+    resetPositionOnStart?: boolean;
+}
 interface StreamingItem {
     streamingId: string;
     token: string;
     label?: string;
+    settings?: StreamingItemSettings;
 }
 interface Vec3 {
     x: number;
@@ -607,10 +612,11 @@ declare class ClassicControls extends ControlsBase {
     #private;
 }
 
-declare class DebugOverlay {
-    constructor(THREE: any, debug?: boolean);
+declare class SceneOverlay {
+    constructor(THREE: any);
     get scene(): any;
-    get debug(): boolean;
+    get anchor(): any;
+    get bboxMesh(): any;
     get hasBBox(): boolean;
     rebuildBBox(bb: {
         minX: number;
@@ -638,16 +644,23 @@ declare class DebugOverlay {
             w: number;
         };
     }): boolean;
-    drawHands(left: any, right: any): void;
+    #private;
+}
+
+declare class DebugRenderer {
+    constructor(THREE: any, sceneOverlay: SceneOverlay);
+    update(left: any, right: any): void;
+    dispose(): void;
     #private;
 }
 
 declare class ModernControls extends ControlsBase {
     constructor(THREE: any);
     onMuteToggle: null;
+    onScaleLockToggle: null;
     onLockToggle: null;
     onReset: null;
-    update({ loading, playing, spinning, buffering, progress, timeText, presetName, muted, locked, sceneText, sceneLabel, bannerText, }: {
+    update({ loading, playing, spinning, buffering, progress, timeText, presetName, muted, locked, scaleLocked, sceneText, sceneLabel, bannerText, }: {
         loading?: boolean | undefined;
         playing?: boolean | undefined;
         spinning?: boolean | undefined;
@@ -657,6 +670,7 @@ declare class ModernControls extends ControlsBase {
         presetName?: null | undefined;
         muted?: boolean | undefined;
         locked?: boolean | undefined;
+        scaleLocked?: boolean | undefined;
         sceneText?: null | undefined;
         sceneLabel?: null | undefined;
         bannerText?: null | undefined;
@@ -665,9 +679,10 @@ declare class ModernControls extends ControlsBase {
 }
 
 declare class XROverlay {
-    constructor(THREE: any, { debug, uiStyle }?: {
+    constructor(THREE: any, { debug, uiStyle, rays }?: {
         debug?: boolean | undefined;
         uiStyle?: string | undefined;
+        rays?: boolean | undefined;
     });
     set uiStyle(v: string);
     get uiStyle(): string;
@@ -683,6 +698,8 @@ declare class XROverlay {
     get onPresetChange(): null;
     set onLock(fn: null);
     get onLock(): null;
+    set onScaleLock(fn: null);
+    get onScaleLock(): null;
     set bannerText(t: string | null);
     get bannerText(): string | null;
     set eventLogger(cb: null);
@@ -700,4 +717,19 @@ declare class XROverlay {
     #private;
 }
 
-export { ClassicControls, DebugOverlay, ENV_PRESETS, EnvLighting, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SplatsMesh, type StreamingItem, type UseGraciaPlayerOptions, XROverlay, buildApiSources, fetchStreamingMetadata, presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };
+declare class XRRayRenderer {
+    static "__#private@#RAY_LENGTH": number;
+    static "__#private@#START_OFFSET": number;
+    static "__#private@#FADE_IN_FRAC": number;
+    static "__#private@#RADIAL_SEGS": number;
+    static "__#private@#HEIGHT_SEGS": number;
+    static "__#private@#BASE_RADIUS": number;
+    static "__#private@#TIP_RADIUS": number;
+    static "__#private@#BASE_ALPHA": number;
+    constructor(THREE: any, scene: any);
+    update(left: any, right: any, hitSpheres?: any[], visible?: boolean): void;
+    dispose(): void;
+    #private;
+}
+
+export { ClassicControls, DebugRenderer, ENV_PRESETS, EnvLighting, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SceneOverlay, SplatsMesh, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, XROverlay, XRRayRenderer, buildApiSources, fetchStreamingMetadata, presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };

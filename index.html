@@ -70,6 +70,8 @@
                 <button type="button" class="dd-toggle" id="srcToggle">Select source&hellip;</button>
                 <div class="dd-menu" id="srcMenu"></div>
             </div>
+            <button type="button" class="btn" id="fileBtn">Open file&hellip;</button>
+            <input type="file" id="fileInput" accept=".sog,.mint" style="display:none">
             <div class="spacer"></div>
         </div>
         <div class="bot">
@@ -91,7 +93,7 @@
         const track = mk('div', 'vb-track', bar), fill = mk('div', 'vb-fill', track);
         const thumb = mk('div', 'vb-thumb', track), time = mk('span', 'vb-time', bar);
         const ICO = { play: '\u25B6', pause: '\u23F8', spin: '\u27F3' };
-        let cur = '', drag = false, seeking = false, seen = false, rafId;
+        let cur = '', drag = false, rafId;
 
         const pos = n => fill.style.width = thumb.style.left = `${n * 100}%`;
         const dur = () => player.duration ?? 0;
@@ -115,17 +117,15 @@
 
         const onKey = e => {
             if (e.code === 'Space') { e.preventDefault(); toggle(); }
-            else if (e.code === 'ArrowLeft')  { seeking = true; seen = false; player.seek?.(clamp(player.currentTime - 5, 0, dur())); }
-            else if (e.code === 'ArrowRight') { seeking = true; seen = false; player.seek?.(clamp(player.currentTime + 5, 0, dur())); }
+            else if (e.code === 'ArrowLeft')  { player.seek?.(clamp(player.currentTime - 5, 0, dur())); }
+            else if (e.code === 'ArrowRight') { player.seek?.(clamp(player.currentTime + 5, 0, dur())); }
         };
         document.addEventListener('keydown', onKey);
 
         (function loop() {
             rafId = requestAnimationFrame(loop);
-            const rew = player.isSeeking ?? false;
-            if (rew) seen = true;
-            if (seeking && (player.supportsImmediateSeek || (seen && !rew))) seeking = false;
-            icon(((player.isBuffering ?? false) || rew || seeking) ? 'spin' : player.isPlaying ? 'pause' : 'play');
+            const busy = (player.isSeeking ?? false) || (player.isBuffering ?? false);
+            icon(busy ? 'spin' : player.isPlaying ? 'pause' : 'play');
             const c = player.currentTime ?? 0, d = dur();
             if (!drag && d > 0) pos(clamp(c / d));
             time.textContent = `${fmt(c)} / ${fmt(d)}`;
@@ -218,6 +218,14 @@
             app.onModeChange = () => { resetBar(); syncUI(app); };
 
             initDropdown(app);
+            $('fileBtn').onclick = () => $('fileInput').click();
+            $('fileInput').onchange = e => {
+                const f = e.target.files[0]; if (!f) return;
+                e.target.value = '';
+                $('srcToggle').textContent = f.name;
+                const isSog = f.name.endsWith('.sog');
+                app.open(isSog ? { file: f, type: 'static' } : { file: f });
+            };
             app.sources = sources;
             if (overlay) overlay.bannerText = 'EARLY BETA, 80+ MBPS INTERNET SPEED REQUIRED';
 
