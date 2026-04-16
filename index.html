@@ -218,7 +218,27 @@
             app.onModeChange = () => { resetBar(); syncUI(app); };
 
             initDropdown(app);
-            $('fileBtn').onclick = () => $('fileInput').click();
+            $('fileBtn').onclick = async () => {
+                if (window.showOpenFilePicker) {
+                    let handles;
+                    try {
+                        handles = await showOpenFilePicker({
+                            types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint', '.sog'] } }],
+                        });
+                    } catch { return; }
+                    const handle = handles[0];
+                    const name = handle.name;
+                    $('srcToggle').textContent = name;
+                    if (name.endsWith('.sog')) {
+                        const f = await handle.getFile();
+                        app.open({ file: f, type: 'static' });
+                    } else {
+                        app.open({ localFile: handle });
+                    }
+                } else {
+                    $('fileInput').click();
+                }
+            };
             $('fileInput').onchange = e => {
                 const f = e.target.files[0]; if (!f) return;
                 e.target.value = '';

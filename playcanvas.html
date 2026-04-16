@@ -124,6 +124,9 @@
                     <button type="button" class="dd-toggle" id="srcToggle">Source&hellip;</button>
                     <div class="dd-menu" id="srcMenu"></div>
                 </div>
+                <div class="divider"></div>
+                <button type="button" class="btn" id="fileBtn">Open file&hellip;</button>
+                <input type="file" id="fileInput" accept=".mint" style="display:none">
             </div>
             <div class="panel">
                 <span class="lbl">Environment</span>
@@ -571,6 +574,30 @@
             dd.classList.remove('open');
             const src = sources.find(s => s.id === item.dataset.src);
             if (src) { tog.textContent = src.label; for (const i of menu.querySelectorAll('.dd-item')) i.classList.toggle('active', i.dataset.src === src.id); openSource(src); }
+        };
+
+        $('fileBtn').onclick = async () => {
+            if (window.showOpenFilePicker) {
+                let handles;
+                try {
+                    handles = await showOpenFilePicker({
+                        types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint'] } }],
+                    });
+                } catch { return; }
+                const handle = handles[0];
+                tog.textContent = handle.name;
+                for (const i of menu.querySelectorAll('.dd-item')) i.classList.remove('active');
+                openSource({ localFile: handle });
+            } else {
+                $('fileInput').click();
+            }
+        };
+        $('fileInput').onchange = e => {
+            const f = e.target.files[0]; if (!f) return;
+            e.target.value = '';
+            tog.textContent = f.name;
+            for (const i of menu.querySelectorAll('.dd-item')) i.classList.remove('active');
+            openSource({ file: f });
         };
     }
 

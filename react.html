@@ -133,6 +133,34 @@
             </div>`;
     }
 
+    function OpenFileButton({ player }) {
+        const inputRef = useRef(null);
+        const onClick = useCallback(async () => {
+            if (window.showOpenFilePicker) {
+                let handles;
+                try {
+                    handles = await showOpenFilePicker({
+                        types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint'] } }],
+                    });
+                } catch { return; }
+                const handle = handles[0];
+                if (!player) return;
+                player.open({ localFile: handle });
+                player.play();
+            } else {
+                inputRef.current?.click();
+            }
+        }, [player]);
+        const onFile = useCallback(e => {
+            const f = e.target.files[0]; if (!f || !player) return;
+            e.target.value = '';
+            player.open({ file: f });
+            player.play();
+        }, [player]);
+        return html`<button class="btn" onClick=${onClick}>Open file\u2026</button>
+            <input ref=${inputRef} type="file" accept=".mint" style="display:none" onChange=${onFile} />`;
+    }
+
     function TestApp() {
         const containerRef = useRef(null);
         const gracia = useGraciaPlayer({ containerRef, moduleUrl: '/dist/GraciaWebCore.js' });
@@ -204,6 +232,8 @@
                         </div>
                         <div class="sep" />
                         <${SourceDropdown} sources=${playlist.sources} currentIndex=${playlist.index} onSelect=${i => playlist.goTo(i)} />
+                        <div class="sep" />
+                        <${OpenFileButton} player=${gracia.player} />
                         <div class="sep" />
                         <div class="scene-nav">
                             <button class="nav-btn" disabled=${!playlist.hasPrev} onClick=${() => playlist.prev()}>\u25C0</button>
