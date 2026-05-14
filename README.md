@@ -62,6 +62,12 @@ Each demo below is a self-contained HTML file — view the source for a complete
 | **Three.js** — `SplatsMesh` | [Three.js](https://demo.gracia.ai/three.html) | [`three.html`](three.html) | Splats as a standard Three.js mesh with environment relighting |
 | **PlayCanvas** — `GraciaSplats` | [PlayCanvas](https://demo.gracia.ai/playcanvas.html) | [`playcanvas.html`](playcanvas.html) | Splats with depth testing and automatic shadow casting |
 
+### Full project examples
+
+| Stack | Source | Description |
+|-------|--------|-------------|
+| **React + Vite + TypeScript** | [`examples/react-vite`](examples/react-vite) | Production-ready Vite setup covering COOP/COEP, WASM serving, Strict Mode, cleanup, and other integration pitfalls |
+
 ## Cross-Origin Isolation
 
 Gracia spawns Web Workers that depend on `SharedArrayBuffer`, which requires a **cross-origin isolated** context. Your server must send these headers on every HTML/JS response:

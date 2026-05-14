@@ -2,7 +2,7 @@ import * as gl_matrix from 'gl-matrix';
 import { mat4 } from 'gl-matrix';
 import { RefObject } from 'react';
 import * as three from 'three';
-import { Mesh, BufferGeometry } from 'three';
+import { Mesh, BufferGeometry, Object3D } from 'three';
 import * as _preact_signals_core from '@preact/signals-core';
 
 declare class GraciaAudio {
@@ -40,6 +40,9 @@ declare class GraciaPlayer {
     static create(Module: any, { canvas, gl }?: {
         canvas?: HTMLCanvasElement;
         gl?: WebGLRenderingContext | WebGL2RenderingContext;
+    }): Promise<GraciaPlayer>;
+    static createWithDevice(Module: any, { device }: {
+        device: GPUDevice;
     }): Promise<GraciaPlayer>;
     constructor(app: any);
     get app(): any;
@@ -89,6 +92,8 @@ declare class GraciaPlayer {
     render(mode: number, x: number, y: number, w: number, h: number, eye: number): void;
     renderMesh(mvpElements: ArrayLike<number>, x: number, y: number, w: number, h: number): void;
     renderMotionMV(x: number, y: number, w: number, h: number): void;
+    initExternal(device: any): void;
+    renderTo(dt: number, colorTexHandle: number, depthTexHandle: number, w: number, h: number): boolean;
     canMotion(): boolean;
     hasMultiview(): boolean;
     resetXR(): void;
@@ -514,6 +519,15 @@ declare class SplatsMesh extends Mesh<BufferGeometry<three.NormalBufferAttribute
     #private;
 }
 
+declare class SplatsWGPU extends Object3D<three.Object3DEventMap> {
+    static create(Module: any, threeRenderer: any): Promise<SplatsWGPU>;
+    constructor(player: any, renderer: any);
+    get player(): any;
+    renderSplats(renderer: any, scene: any, camera: any): void;
+    dispose(): void;
+    #private;
+}
+
 declare class QuadLayer {
     constructor(THREE: any, opts: any);
     alpha: number;
@@ -732,4 +746,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { ClassicControls, DebugRenderer, ENV_PRESETS, EnvLighting, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SceneOverlay, SplatsMesh, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, XROverlay, XRRayRenderer, buildApiSources, fetchStreamingMetadata, presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };
+export { ClassicControls, DebugRenderer, ENV_PRESETS, EnvLighting, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SceneOverlay, SplatsMesh, SplatsWGPU, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, XROverlay, XRRayRenderer, buildApiSources, fetchStreamingMetadata, presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };

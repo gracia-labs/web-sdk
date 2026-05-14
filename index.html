@@ -135,7 +135,8 @@
     }
 
     const MARKET = 'https://market.gracia.ai';
-    const DEMO_URL = '/api/market/api/v1/demo';
+    const DEMO_DOMAIN = '__DEMO_DOMAIN__';
+    const DEMO_URL = `/api/market/api/v1/demo?${DEMO_DOMAIN ? `domain=${DEMO_DOMAIN}` : ''}`
     const STREAMING_BASE = `${MARKET}/api/v1/streaming/content`;
     const DEMO_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
 
@@ -257,6 +258,7 @@
             });
 
             app.start(); resetBar(); syncUI(app);
+            if (sources.length > 0) app.loadScene(0);
         } catch (e) { console.error('Fatal:', e); }
     })();
     </script>
