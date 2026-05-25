@@ -6,7 +6,8 @@
     <title>Gracia React</title>
     <script type="importmap">
     { "imports": {
-        "@gracia/web-sdk": "./dist/GraciaAIO.js?v=__BUILD_HASH__"
+        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
+        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
     } }
     </script>
     <style>
@@ -158,12 +159,12 @@
             player.play();
         }, [player]);
         return html`<button class="btn" onClick=${onClick}>Open file\u2026</button>
-            <input ref=${inputRef} type="file" accept=".mint" style="display:none" onChange=${onFile} />`;
+            <input ref=${inputRef} type="file" accept=".mint" style=${{ display: 'none' }} onChange=${onFile} />`;
     }
 
     function TestApp() {
         const containerRef = useRef(null);
-        const gracia = useGraciaPlayer({ containerRef, moduleUrl: '/dist/GraciaWebCore.js' });
+        const gracia = useGraciaPlayer({ containerRef, moduleUrl: '@gracia/web-sdk/wasm' });
         const playlist = useGraciaPlaylist(gracia);
 
         useEffect(() => {
@@ -210,7 +211,7 @@
 
         const { playback, xr } = gracia;
         const isXR = gracia.mode === 'vr' || gracia.mode === 'ar';
-        const playIcon = playback.isBuffering || playback.isSeeking
+        const playIcon = playback.isBuffering
             ? html`<span class="spinner">\u27F3</span>`
             : playback.isPlaying ? '\u23F8' : '\u25B6';
         const muteIcon = playback.isMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A';

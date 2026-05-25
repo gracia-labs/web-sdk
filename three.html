@@ -6,8 +6,8 @@
     <title>Gracia Three.js</title>
     <script type="importmap">
     { "imports": {
-        "@gracia/web-sdk": "./dist/GraciaAIO.js?v=__BUILD_HASH__",
-        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.js?v=__BUILD_HASH__"
+        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
+        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
     } }
     </script>
     <style>
@@ -154,9 +154,10 @@
     <a class="ph-credit" href="https://polyhaven.com" target="_blank" rel="noopener">HDRI assets by Poly Haven</a>
 
     <script type="module">
-    import { buildApiSources, EnvLighting, HDRLoader, LightProbeGenerator, OrbitControls, Sky, 
+    import { buildApiSources, EnvLighting, GraciaPlayer, HDRLoader, LightProbeGenerator, loadGraciaModule, OrbitControls, Sky, 
              SplatsMesh, Stats, THREE, TransformControls } from '@gracia/web-sdk';
-    import ModuleFactory from '@gracia/web-sdk/wasm';
+
+    const GraciaModule = await loadGraciaModule();
 
     const $ = id => document.getElementById(id);
     const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
@@ -180,11 +181,8 @@
 
     const scene = new THREE.Scene();
 
-    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 200);
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 10000);
     camera.position.set(0, 1.2, 2.8);
-
-    const listener = new THREE.AudioListener();
-    camera.add(listener);
 
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true; orbit.dampingFactor = 0.08;
@@ -327,10 +325,12 @@
     let splats = null;
 
     async function initGracia() {
-        splats = await SplatsMesh.create(
-            opts => ModuleFactory({ ...opts, print: console.log, printErr: console.error }),
-            renderer
+        if (!navigator.gpu) throw new Error('WebGPU not available');
+        const player = await GraciaPlayer.create(
+            opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
+            { gl: renderer.getContext(), backend: 'hybrid' },
         );
+        splats = new SplatsMesh(player);
         splats.enableMesh = true;
         scene.add(splats);
         gizmo.attach(splats);
@@ -402,7 +402,7 @@
 
         p.open(src);
         p.play();
-        if (src.audio) splats.setAudio(src.audio, listener);
+        if (src.audio) splats.setAudio(src.audio);
         if (probeOn) applyProbe();
     }
 
@@ -473,7 +473,7 @@
         return () => {
             if (!splats) return;
             const p = splats.player;
-            icon(p.isBuffering || p.isSeeking ? 'spin' : p.isPlaying ? 'pause' : 'play');
+            icon(p.isBuffering ? 'spin' : p.isPlaying ? 'pause' : 'play');
             const c = p.currentTime, d = dur();
             if (!drag && d > 0) pos(clamp(c / d));
             time.textContent = `${fmt(c)} / ${fmt(d)}`;

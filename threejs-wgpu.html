@@ -6,8 +6,8 @@
     <title>Gracia Three.js WebGPU</title>
     <script type="importmap">
     { "imports": {
-        "@gracia/web-sdk": "./dist/GraciaAIO.js?v=__BUILD_HASH__",
-        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.js?v=__BUILD_HASH__"
+        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
+        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
     } }
     </script>
     <style>
@@ -99,33 +99,23 @@
     </div>
 
     <script type="module">
-    import { OrbitControls, SplatsWGPU, Stats, THREE, TransformControls, WebGPURenderer } from '@gracia/web-sdk';
-    import ModuleFactory from '@gracia/web-sdk/wasm';
+    import { GraciaPlayer, loadGraciaModule, OrbitControls, SplatsRendererW3, Stats, THREE, TransformControls, WebGPURenderer } from '@gracia/web-sdk';
+
+    const GraciaModule = await loadGraciaModule();
 
     const $ = id => document.getElementById(id);
     const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
     const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
     const fmt = t => (!Number.isFinite(t) || t < 0) ? '0:00' : `${~~(t / 60)}:${String(~~t % 60).padStart(2, '0')}`;
 
-    /* ── WebGPU device with WASM-compatible limits ── */
-
     if (!navigator.gpu) { document.body.textContent = 'WebGPU not supported'; throw new Error('No WebGPU'); }
 
-    const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
-    if (!adapter) throw new Error('No GPU adapter');
-
-    const device = await adapter.requestDevice({
-        requiredLimits: {
-            maxStorageBuffersPerShaderStage: 10,
-            maxComputeWorkgroupSizeX: 256,
-            maxBufferSize: adapter.limits.maxBufferSize,
-            maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
-        },
-    });
+    const moduleOpts = opts => GraciaModule({ ...opts, print: console.log, printErr: console.error });
+    const player = await GraciaPlayer.create(moduleOpts, { canvas: document.createElement('canvas') });
 
     /* ── Three.js WebGPU scene ──────────────────────── */
 
-    const renderer = new WebGPURenderer({ device, antialias: false, alpha: true });
+    const renderer = new WebGPURenderer({ device: player.device, antialias: false, alpha: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(innerWidth, innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -140,7 +130,7 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a2e);
 
-    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 200);
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 10000);
     camera.position.set(0, 1.2, 2.8);
 
     const orbit = new OrbitControls(camera, renderer.domElement);
@@ -216,12 +206,9 @@
     let splats = null;
 
     async function initGracia() {
-        splats = await SplatsWGPU.create(
-            opts => ModuleFactory({ ...opts, print: console.log, printErr: console.error }),
-            renderer
-        );
-        scene.add(splats);
-        gizmo.attach(splats);
+        splats = SplatsRendererW3.attach(player, renderer);
+        scene.add(splats.root);
+        gizmo.attach(splats.root);
     }
 
     /* ── File open ─────────────────────────────────── */
@@ -229,9 +216,9 @@
     function openFile(src) {
         if (!splats) return;
         const p = splats.player; p.close();
-        splats.position.set(0, 0, 0);
-        splats.quaternion.identity();
-        splats.scale.set(1, 1, 1);
+        splats.root.position.set(0, 0, 0);
+        splats.root.quaternion.identity();
+        splats.root.scale.set(1, 1, 1);
         p.open(src);
         p.play();
     }
@@ -293,7 +280,7 @@
         return () => {
             if (!splats) return;
             const p = splats.player;
-            icon(p.isBuffering || p.isSeeking ? 'spin' : p.isPlaying ? 'pause' : 'play');
+            icon(p.isBuffering ? 'spin' : p.isPlaying ? 'pause' : 'play');
             const c = p.currentTime, d = dur();
             if (!drag && d > 0) pos(clamp(c / d));
             time.textContent = `${fmt(c)} / ${fmt(d)}`;
@@ -336,11 +323,7 @@
         orbit.update();
         torusKnot.rotation.x += dt * 0.5; torusKnot.rotation.y += dt * 0.3;
 
-        if (splats) {
-            splats.renderSplats(renderer, scene, camera);
-        } else {
-            renderer.render(scene, camera);
-        }
+        splats.render(renderer, scene, camera);
 
         tickBar?.();
         stats.end();

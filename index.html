@@ -6,8 +6,8 @@
     <title>Gracia Player</title>
     <script type="importmap">
     { "imports": {
-        "@gracia/web-sdk": "./dist/GraciaAIO.js?v=__BUILD_HASH__",
-        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.js?v=__BUILD_HASH__"
+        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
+        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
     } }
     </script>
     <style>
@@ -70,7 +70,7 @@
                 <button type="button" class="dd-toggle" id="srcToggle">Select source&hellip;</button>
                 <div class="dd-menu" id="srcMenu"></div>
             </div>
-            <button type="button" class="btn" id="fileBtn">Open file&hellip;</button>
+            <button type="button" class="btn" id="fileBtn" hidden>Open file&hellip;</button>
             <input type="file" id="fileInput" accept=".sog,.mint" style="display:none">
             <div class="spacer"></div>
         </div>
@@ -80,8 +80,9 @@
     </div>
 
     <script type="module">
-    import { buildApiSources, GraciaApp, THREE, XROverlay } from '@gracia/web-sdk';
-    import ModuleFactory from '@gracia/web-sdk/wasm';
+    import { buildApiSources, GraciaApp, loadGraciaModule, THREE, XROverlay } from '@gracia/web-sdk';
+
+    const GraciaModule = await loadGraciaModule();
 
     const $ = id => document.getElementById(id);
     const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
@@ -124,7 +125,7 @@
 
         (function loop() {
             rafId = requestAnimationFrame(loop);
-            const busy = (player.isSeeking ?? false) || (player.isBuffering ?? false);
+            const busy = player.isBuffering ?? false;
             icon(busy ? 'spin' : player.isPlaying ? 'pause' : 'play');
             const c = player.currentTime ?? 0, d = dur();
             if (!drag && d > 0) pos(clamp(c / d));
@@ -136,6 +137,7 @@
 
     const MARKET = 'https://market.gracia.ai';
     const DEMO_DOMAIN = '__DEMO_DOMAIN__';
+    if (!DEMO_DOMAIN) $('fileBtn').hidden = false;
     const DEMO_URL = `/api/market/api/v1/demo?${DEMO_DOMAIN ? `domain=${DEMO_DOMAIN}` : ''}`
     const STREAMING_BASE = `${MARKET}/api/v1/streaming/content`;
     const DEMO_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
@@ -147,6 +149,9 @@
             (async () => {
                 const demos = await (await fetch(DEMO_URL)).json();
                 return Promise.all(demos.map(async (d) => {
+                    if (d.rawMetadata && Object.keys(d.rawMetadata).length > 0) {
+                        return d.rawMetadata;
+                    }
                     const res = await fetch(`${STREAMING_BASE}/${d.streamingId}`, {
                         headers: { 'X-VIEW-TOKEN': DEMO_TOKEN },
                     });
@@ -211,7 +216,7 @@
             await loadSources();
 
             app = await GraciaApp.create(
-                opts => ModuleFactory({ ...opts, print: console.log, printErr: console.error }),
+                opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
                 { container: $('canvasWrap'), overlay, mode: new URLSearchParams(location.search).get('mode') || 'pw' }
             );
             app.onProgress = () => {};

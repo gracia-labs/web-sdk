@@ -9,8 +9,8 @@
         "playcanvas": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/build/playcanvas.mjs",
         "shadow-catcher": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/scripts/esm/shadow-catcher.mjs",
         "camera-controls": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/scripts/esm/camera-controls.mjs",
-        "@gracia/web-sdk": "./dist/GraciaAIO.js?v=__BUILD_HASH__",
-        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.js?v=__BUILD_HASH__"
+        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
+        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
     } }
     </script>
     <style>
@@ -151,8 +151,9 @@
     import * as pc from 'playcanvas';
     import { ShadowCatcher } from 'shadow-catcher';
     import { CameraControls } from 'camera-controls';
-    import { buildApiSources, EnvLighting, GraciaSplats } from '@gracia/web-sdk';
-    import ModuleFactory from '@gracia/web-sdk/wasm';
+    import { buildApiSources, EnvLighting, GraciaPlayer, GraciaSplats, loadGraciaModule } from '@gracia/web-sdk';
+
+    const GraciaModule = await loadGraciaModule();
 
     const $ = id => document.getElementById(id);
     const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
@@ -190,7 +191,7 @@
         clearColor: new pc.Color(0.32, 0.30, 0.28),
         fov: 50,
         nearClip: 1,
-        farClip: 500,
+        farClip: 10000,
     });
     app.root.addChild(camera);
 
@@ -465,11 +466,12 @@
     let splats = null;
 
     async function initGracia() {
-        splats = await GraciaSplats.create(
-            opts => ModuleFactory({ ...opts, print: console.log, printErr: console.error }),
-            app,
-            camera,
+        if (!navigator.gpu) throw new Error('WebGPU not available');
+        const player = await GraciaPlayer.create(
+            opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
+            { gl: app.graphicsDevice.gl, backend: 'hybrid' },
         );
+        splats = GraciaSplats.attach(player, app, camera);
         const splatEntity = new pc.Entity('splats');
         app.root.addChild(splatEntity);
         splats.entity = splatEntity;
@@ -631,7 +633,7 @@
         return () => {
             if (!splats) return;
             const p = splats.player;
-            icon(p.isBuffering || p.isSeeking ? 'spin' : p.isPlaying ? 'pause' : 'play');
+            icon(p.isBuffering ? 'spin' : p.isPlaying ? 'pause' : 'play');
             const c = p.currentTime, d = dur();
             if (!drag && d > 0) pos(clamp(c / d));
             time.textContent = `${fmt(c)} / ${fmt(d)}`;
