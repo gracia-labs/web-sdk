@@ -1,20 +1,9 @@
 import * as playcanvas from 'playcanvas';
+import * as three from 'three';
+import { PerspectiveCamera, Mesh, BufferGeometry, Object3D } from 'three';
 import { vec3 } from 'gl-matrix';
 import { RefObject } from 'react';
-import * as three from 'three';
-import { Mesh, BufferGeometry, Object3D } from 'three';
 import * as _preact_signals_core from '@preact/signals-core';
-
-declare class EnvLighting {
-    constructor(coefs?: ArrayLike<number>);
-    coefficients: Float32Array;
-    prepare(lightDir: {
-        x: number;
-        y: number;
-        z: number;
-    }, contrast?: number, band2Scale?: number): this;
-    normalize(contrast?: number): this;
-}
 
 declare class ScratchHeap {
     constructor(app: any, size?: number);
@@ -178,7 +167,7 @@ declare class GraciaPlayer {
     getModelMatrix(): Float32Array<ArrayBufferLike> | null;
     setModelMatrix(elements: any): void;
     setStaticModelMatrix(elements: any): void;
-    setEnvLighting(env: any, scale?: number): void;
+    setEnvLighting(coefs: ArrayLike<number>, scale?: number): void;
     clearEnvLighting(): void;
     frame(w: any, h: any, drawMode: any): void;
     preprocess(w: any, h: any): any;
@@ -192,10 +181,12 @@ declare class GraciaPlayer {
     #private;
 }
 
+declare function envCoefsFromSH27(sh: any, lightDir?: null, contrast?: number): Float32Array<ArrayBuffer>;
+declare function envCoefsFromPreset(p: any): Float32Array<ArrayBuffer>;
+
 declare function loadGraciaModule(wasmSpecifier?: string): Promise<(opts?: {}) => any>;
 declare const DEFAULT_WASM_SPECIFIER: "@gracia/web-sdk/wasm";
 
-declare function presetToLightProbe(p: EnvPreset): EnvLighting;
 declare const ENV_PRESETS: Record<EnvPresetName$1, EnvPreset | null>;
 type EnvPreset = {
     ambient: number[];
@@ -242,9 +233,24 @@ declare class GraciaXR$1 {
     #private;
 }
 
+type CameraControls = {
+    type: "orbit" | "fly" | "trackball";
+    target: three.Vector3 | null;
+    update: (dt: number) => void;
+    frame: (center: three.Vector3Like, eyePos: three.Vector3Like) => void;
+    zoom: (factor: number) => void;
+    reset: (target: ArrayLike<number>, eyePos: three.Vector3Like) => void;
+    applyConstraints: (hasTransform: boolean) => void;
+    dispose: () => void;
+};
+
 declare class Camera2D {
-    constructor(canvas: HTMLCanvasElement);
+    constructor(canvas: HTMLCanvasElement, controlsType?: "orbit" | "fly" | "trackball");
     get canPresent(): boolean;
+    get threeCamera(): PerspectiveCamera;
+    get controls(): CameraControls;
+    get controlsType(): "fly" | "orbit" | "trackball";
+    setControls(type: "orbit" | "fly" | "trackball"): void;
     setSceneTransform(t: SceneTransform$1 | null): void;
     setViewZSign(sign: 1 | -1): void;
     setBBox(bbox: {
@@ -255,7 +261,26 @@ declare class Camera2D {
         maxY: number;
         maxZ: number;
     }): void;
-    update(): void;
+    setCameraBounds(bounds: {
+        type: "box" | "sphere";
+        position: {
+            x: number;
+            y: number;
+            z: number;
+        };
+        rotation: {
+            x: number;
+            y: number;
+            z: number;
+            w: number;
+        };
+        scale: {
+            x: number;
+            y: number;
+            z: number;
+        };
+    } | null): void;
+    update(dt: number): void;
     apply(player: GraciaPlayer, w: number, h: number): {
         source: vec3;
         listener: vec3;
@@ -330,6 +355,27 @@ declare class GraciaApp {
     setVolume(v: number): void;
     setBackground(color: string | null | undefined): void;
     setInitialTransform(tf: SceneTransform$1 | null, staticTransform?: SceneTransform$1 | null): void;
+    reset(): void;
+    setControls(type: "orbit" | "fly" | "trackball"): void;
+    setCameraBounds(bounds: {
+        type: "box" | "sphere";
+        position: {
+            x: number;
+            y: number;
+            z: number;
+        };
+        rotation: {
+            x: number;
+            y: number;
+            z: number;
+            w: number;
+        };
+        scale: {
+            x: number;
+            y: number;
+            z: number;
+        };
+    } | null): void;
     setAudioPosition(pos: {
         x: number;
         y: number;
@@ -469,6 +515,7 @@ interface GraciaSource {
     staticTransform?: SceneTransform | null;
     staticUrl?: string;
     background?: string;
+    controls?: "orbit" | "fly" | "trackball";
     locked?: boolean;
     scaleLocked?: boolean;
     autoSwitchToNext?: boolean;
@@ -822,7 +869,8 @@ declare class XROverlay {
     set directGrab(v: boolean);
     get directGrab(): boolean;
     setInitialTransform(t: any, zSign?: number): void;
-    setPreset(name: any): void;
+    setPreset(name: any, scale?: number): void;
+    syncPreset(name: any): void;
     init(player: any, sess: any, bind: any, ref: any, gl: any, _ar?: boolean): Promise<any[]>;
     frame(dt: any, frame: any, ref: any, pose: any, sources: any, player: any): void;
     renderEye(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
@@ -847,4 +895,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { ClassicControls, DEFAULT_WASM_SPECIFIER, DebugRenderer, ENV_PRESETS, EnvLighting, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, GraciaRenderer, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SceneOverlay, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, XROverlay, XRRayRenderer, buildApiSources, createCanvas, fetchStreamingMetadata, loadGraciaModule, presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };
+export { ClassicControls, DEFAULT_WASM_SPECIFIER, DebugRenderer, ENV_PRESETS, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, GraciaRenderer, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SceneOverlay, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, XROverlay, XRRayRenderer, buildApiSources, createCanvas, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, loadGraciaModule, envCoefsFromPreset as presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };

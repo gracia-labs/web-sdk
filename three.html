@@ -154,7 +154,7 @@
     <a class="ph-credit" href="https://polyhaven.com" target="_blank" rel="noopener">HDRI assets by Poly Haven</a>
 
     <script type="module">
-    import { buildApiSources, EnvLighting, GraciaPlayer, HDRLoader, LightProbeGenerator, loadGraciaModule, OrbitControls, Sky, 
+    import { buildApiSources, envCoefsFromSH27, GraciaPlayer, HDRLoader, LightProbeGenerator, loadGraciaModule, OrbitControls, Sky, 
              SplatsMesh, Stats, THREE, TransformControls } from '@gracia/web-sdk';
 
     const GraciaModule = await loadGraciaModule();
@@ -611,12 +611,16 @@
 
     let probeOn = true;
 
+    const _lightDir = new THREE.Vector3();
+
     function applyProbe() {
         if (!splats) return;
         if (!probeOn) { splats.player.clearEnvLighting(); return; }
-        const lightDir = dir.position.clone().normalize();
-        const env = new EnvLighting(probe.sh.toArray()).prepare(lightDir);
-        splats.player.setEnvLighting(env, 1.0);
+        const p = SCENE_PRESETS[curScene];
+        const lightDir = (!p.useSky && !p.useHDRI)
+            ? dir.getWorldDirection(_lightDir)
+            : null;
+        splats.player.setEnvLighting(envCoefsFromSH27(probe.sh.toArray(), lightDir), 1.0);
     }
     $('toggleProbe').onclick = () => { probeOn = !probeOn; $('toggleProbe').classList.toggle('on', probeOn); applyProbe(); };
 

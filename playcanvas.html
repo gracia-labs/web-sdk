@@ -94,6 +94,13 @@
     .vb-time { color: var(--dim); font: 500 11px/1 inherit; min-width: 70px; text-align: right; text-shadow: var(--sh); }
     .bar-panel { width: min(520px, calc(100% - 32px)); }
 
+    /* env rotation slider */
+    .rot-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .rot-wrap input[type=range] {
+        width: 120px; height: 4px; margin: 0; cursor: pointer; accent-color: rgba(255,255,255,.7);
+    }
+    .rot-val { font: 600 10px/1 inherit; color: var(--mid); min-width: 36px; text-shadow: var(--sh); }
+
     /* bottom-right reset */
     .bot-right { position: fixed; bottom: 16px; right: 16px; z-index: 11; pointer-events: auto; }
 
@@ -151,7 +158,7 @@
     import * as pc from 'playcanvas';
     import { ShadowCatcher } from 'shadow-catcher';
     import { CameraControls } from 'camera-controls';
-    import { buildApiSources, EnvLighting, GraciaPlayer, GraciaSplats, loadGraciaModule } from '@gracia/web-sdk';
+    import { buildApiSources, GraciaPlayer, GraciaSplats, loadGraciaModule } from '@gracia/web-sdk';
 
     const GraciaModule = await loadGraciaModule();
 
@@ -295,19 +302,19 @@
 
     /* ── Sky presets ────────────────────────────────── */
 
+    const ENV_RELIGHT_POWER = 0.85;
+
     const SKY_PRESETS = {
-        'None':         { url: null, sh: null, lightDir: null },
+        'None': { url: null },
         'Street Dome': {
             url: 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/wide_street_02_2k.hdr',
             type: pc.SKYTYPE_DOME,
             scale: [200, 200, 200],
             tripodY: 0.05,
             exposure: 0.7,
-            rotation: 0,
             projected: true,
-            keyLightAngles: [-50, 140, 0],
-            sh: [1.87031,1.918464,2.000223,0.962367,1.050086,1.184771,1.543599,1.419717,1.262293,2.100156,1.935595,1.729669,1.584412,1.473231,1.336372,1.148921,1.068716,0.966966,-0.07552,-0.038685,-0.013138,2.609779,2.423938,2.198205,1.474358,1.355914,1.198138],
-            lightDir: { x: 0.3, y: 1, z: 0.2 },
+            keyLightAngles: [130, 34, 180],
+            sh12: [3.314669, 3.40001, 3.544908, 0.852781, 0.930511, 1.049859, 1.861007, 1.715185, 1.532708, -1.367827, -1.258051, -1.118553],
         },
         'Sunset': {
             url: 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/industrial_sunset_puresky_2k.hdr',
@@ -315,17 +322,15 @@
             scale: [200, 200, 200],
             tripodY: 0.05,
             exposure: 0.3,
-            rotation: 90,
-            sh: [2.198001,2.532174,3.182135,0.65039,0.790722,1.05029,0.5967,0.263902,-0.023595,0.780168,0.406654,0.068925,0.184931,0.112526,0.031816,0.153647,0.082786,0.016223,-0.012991,0.051354,0.091854,0.57614,0.450866,0.394832,0.667496,0.585546,0.532165],
-            lightDir: { x: 1, y: 0.2, z: 0 },
+            keyLightAngles: [50, -39, 0],
+            sh12: [2.448579, 2.820849, 3.544908, 0.362268, 0.440433, 0.585013, 0.434555, 0.226507, 0.038391, -0.332363, -0.146994, 0.013142],
         },
         'Rosendal Sunset': {
             url: 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/rosendal_park_sunset_puresky_2k.hdr',
             type: pc.SKYTYPE_INFINITE,
             exposure: 0.3,
-            rotation: 0,
-            sh: [5.571507,4.571519,6.150409,0.383537,0.586309,1.092522,3.727947,2.327521,2.435435,5.006741,3.159468,3.324151,0.182788,0.23739,0.400604,0.158049,0.195062,0.321512,1.015175,0.722526,0.78891,4.37705,2.286575,1.999851,4.63148,2.827274,2.790029],
-            lightDir: { x: 0.5, y: 0.3, z: 0 },
+            keyLightAngles: [50, -58, 0],
+            sh12: [3.211246, 2.634884, 3.544908, 0.110529, 0.168965, 0.314848, 1.442866, 0.91051, 0.957969, -1.074337, -0.670756, -0.701855],
         },
         'Night': {
             url: 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/solitude_night_2k.hdr',
@@ -333,10 +338,9 @@
             scale: [200, 200, 200],
             tripodY: 0.05,
             exposure: 0.5,
-            rotation: 0,
             projected: true,
-            sh: [1.166094,0.622424,0.450999,0.352207,0.252218,0.308721,-0.058531,-0.046016,-0.127867,0.988865,0.407128,0.100454,0.281666,0.084706,-0.046188,-0.107987,-0.11409,-0.218669,0.110075,0.108467,0.133476,0.46739,0.387593,0.355134,0.922706,0.373184,0.100967],
-            lightDir: { x: 0.2, y: 0.8, z: 0.1 },
+            keyLightAngles: [50, -1, 0],
+            sh12: [3.544908, 1.892159, 1.37103, 0.535352, 0.383369, 0.469254, 1.503067, 0.618831, 0.152689, 0.088967, 0.069944, 0.194357],
         },
         'Sunrise': {
             url: 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/stierberg_sunrise_2k.hdr',
@@ -344,10 +348,9 @@
             scale: [200, 200, 200],
             tripodY: 0.05,
             exposure: 0.5,
-            rotation: -80,
             projected: true,
-            sh: [3.16565,3.163558,2.879746,-0.135058,0.047817,0.193577,1.849482,1.56818,0.683283,2.599934,2.261639,1.066521,0.32349,0.336824,0.240732,0.226919,0.219155,0.128605,0.115556,0.097011,0.054528,3.451919,3.049305,1.537143,2.690141,2.407626,1.361757],
-            lightDir: { x: 0.2, y: 0.8, z: 0.1 },
+            keyLightAngles: [50, -36, 0],
+            sh12: [3.544908, 3.542565, 3.224751, -0.075619, 0.026773, 0.108384, 1.455708, 1.266296, 0.597147, -1.035529, -0.878027, -0.382572],
         },
     };
 
@@ -370,21 +373,10 @@
         app.scene.envAtlas = envAtlas;
     }
 
-    let currentSH = null, currentLightDir = null;
-    let relightScale = 1.0, relightAmbBoost = 1.0;
-
-    function applyRelight(sh, lightDir) {
-        currentSH = sh;
-        currentLightDir = lightDir;
+    function applyRelight(preset) {
         if (!splats) return;
-        if (!sh) { splats.player.clearEnvLighting(); return; }
-        const env = new EnvLighting(sh).prepare(lightDir);
-        if (relightAmbBoost > 0) {
-            env.coefficients[0] += relightAmbBoost;
-            env.coefficients[1] += relightAmbBoost;
-            env.coefficients[2] += relightAmbBoost;
-        }
-        splats.player.setEnvLighting(env, relightScale);
+        if (!preset?.sh12) { splats.player.clearEnvLighting(); return; }
+        splats.player.setEnvLighting(new Float32Array(preset.sh12), ENV_RELIGHT_POWER);
     }
 
     function applySkySettings(preset) {
@@ -396,12 +388,12 @@
 
         keyLight.setEulerAngles(...(preset.keyLightAngles ?? KEY_LIGHT_DEFAULT_ANGLES));
 
-        app.scene.skyboxRotation = new pc.Quat().setFromEulerAngles(0, preset.rotation ?? 0, 0);
+        app.scene.skyboxRotation = pc.Quat.IDENTITY;
         app.scene.exposure = preset.exposure ?? 1;
         app.scene.sky.center = new pc.Vec3(0, preset.tripodY ?? 0, 0);
         app.scene.sky.node.setLocalScale(new pc.Vec3(preset.scale ?? [1, 1, 1]));
 
-        applyRelight(preset.sh, preset.lightDir);
+        applyRelight(preset);
     }
 
     function applySkyPreset(preset) {
