@@ -1,77 +1,122 @@
-Gracia Web SDK — Proprietary License
+================================================================================
+  GRACIA WEB SDK — REPOSITORY LICENSE
+  Copyright (c) 2026 Gracia Labs. All rights reserved.
+================================================================================
 
-Copyright (c) 2026 Gracia Labs. All rights reserved.
+Two licenses apply, by area (where an item falls under Part B, that controls):
 
-1. DEFINITIONS
-   "Software" means the Gracia Web SDK, including all source code, compiled
-   binaries, WebAssembly modules, documentation, and associated files
-   distributed under this License.
+  • PART A — Gracia Web SDK software ............ Proprietary (see Part A)
+  • PART B — Examples, samples & documentation .. MIT License (see Part B)
 
-2. GRANT OF LICENSE
-   Gracia Labs ("Licensor") grants you ("Licensee") a limited, non-exclusive,
-   non-transferable, revocable license to use the Software solely in
-   accordance with the terms of a separate commercial agreement between
-   Licensee and Licensor.
+All other files are © Gracia Labs. Third-party dependencies (e.g., Three.js, React,
+gl-matrix) keep their own licenses. Confidentiality/NDA, arbitration, indemnities, audit, support/SLAs,
+source access, OEM, and any other special or non-standard terms are handled only
+under a separate agreement — contact support@gracia.ai.
 
-3. RESTRICTIONS
-   Unless expressly permitted by a written agreement with Licensor, Licensee
-   shall NOT:
 
-   a) Copy, modify, adapt, translate, or create derivative works of the
-      Software or any portion thereof;
-   b) Reverse engineer, decompile, disassemble, or otherwise attempt to
-      derive the source code of the Software;
-   c) Distribute, sublicense, lease, rent, loan, or otherwise transfer the
-      Software or any rights therein to any third party;
-   d) Remove, alter, or obscure any proprietary notices, labels, or marks
-      on the Software;
-   e) Use the Software to develop a competing product or service;
-   f) Publish benchmarks or performance data of the Software without prior
-      written consent from Licensor.
+================================================================================
+  PART A — GRACIA WEB SDK PROPRIETARY LICENSE
+--------------------------------------------------------------------------------
+  Applies to the Gracia Web SDK software and all artifacts Licensor distributes in
+  compiled form (JavaScript bundles, WebAssembly modules, type definitions, and related
+  files). Within those artifacts, Part A covers only Licensor's own code; embedded
+  third-party components are not owned by Licensor and are licensed separately (see
+  Section 5). Does NOT apply to Part B (examples).
+================================================================================
 
-4. INTELLECTUAL PROPERTY
-   The Software and all copies thereof are proprietary to Licensor and title
-   thereto remains in Licensor. All applicable rights to patents, copyrights,
-   trademarks, and trade secrets in the Software are and shall remain in
-   Licensor. Licensee does not acquire any rights, express or implied, in the
-   Software other than those specified in this License.
+The Gracia Web SDK ("Software") is proprietary to Gracia Labs ("Licensor") and is
+not open source. By downloading, installing, or using it, you ("Licensee") accept
+these terms; if you act for an entity, you bind that entity.
 
-5. THIRD-PARTY DEPENDENCIES
-   The Software may optionally integrate with third-party open-source
-   libraries (e.g., Three.js, React, gl-matrix). Such libraries are governed
-   by their own respective licenses and are NOT covered by this License.
-   Licensee is responsible for complying with the terms of any third-party
-   licenses when using those libraries in conjunction with the Software.
+1. GRANT. Licensor grants you a limited, worldwide, non-exclusive, non-transferable,
+   revocable license to use and integrate the unmodified Software into your
+   applications — including in production and commercially — and to redistribute it
+   only as an embedded component of those applications, not on a standalone basis.
+   You own your applications; you gain no rights except those stated here, and all
+   rights not granted are reserved.
 
-6. CONFIDENTIALITY
-   The Software, its source code, architecture, documentation, and any
-   technical information disclosed by Licensor constitute confidential
-   information. Licensee agrees to maintain the confidentiality of such
-   information and not disclose it to any third party without prior written
-   consent from Licensor.
+2. RESTRICTIONS. Except where applicable law forbids restricting it, you may not:
+   (a) reverse engineer, decompile, disassemble, or attempt to derive the Software's
+   source, algorithms, or internals; (b) modify or create derivative works of the
+   Software; (c) redistribute, sublicense, sell, rent, or host it standalone;
+   (d) circumvent its access-control, licensing, or integrity mechanisms, or remove
+   its notices; or (e) use the Software, its non-public parts, or anything derived
+   from prohibited reverse engineering to build a product that competes with the
+   Software (a substitute for its functionality or value — on any platform, through
+   any interface, in any language, even if free). This does not restrict independent
+   development that does not use the foregoing, and exists only to protect Licensor's
+   copyrights and trade secrets.
 
-7. NO WARRANTY
-   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. LICENSOR DOES NOT
-   WARRANT THAT THE SOFTWARE WILL BE ERROR-FREE OR UNINTERRUPTED.
+3. INTELLECTUAL PROPERTY. The Software is licensed, not sold. Licensor retains all
+   right, title, and interest, including copyrights, patents, trademarks, and trade
+   secrets; its non-public internals are trade secrets that Section 2 protects. No
+   patent license is granted beyond what is strictly necessary to use the Software as
+   permitted.
 
-8. LIMITATION OF LIABILITY
-   IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
-   CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUE,
-   WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE,
-   GOODWILL, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF OR IN CONNECTION WITH
-   THE USE OF OR INABILITY TO USE THE SOFTWARE.
+4. CONTRIBUTIONS. The SDK is distributed only in compiled form, so its proprietary
+   code cannot be contributed to; contributions are to examples, samples, and
+   documentation (such as a new-engine integration or demo). By submitting a
+   contribution, you license it under Part B (MIT) automatically — it becomes part of a
+   collective, openly shared work that anyone, including Licensor, may use, modify, and
+   redistribute under MIT. No contributor or Licensor claims exclusive ownership of the
+   contributed material, and Licensor claims nothing in any third-party engine or
+   platform an example targets. You confirm you have the right to submit it, that it
+   contains no third-party material you are not licensed to contribute, and that it does
+   not reverse engineer the Software or otherwise breach Section 2.
 
-9. TERMINATION
-   This License is effective until terminated. Licensor may terminate this
-   License at any time if Licensee breaches any of its terms. Upon
-   termination, Licensee must immediately cease all use of the Software and
-   destroy all copies in Licensee's possession or control.
+5. THIRD-PARTY COMPONENTS. The SDK relies on third-party libraries (e.g., Three.js,
+   React, gl-matrix) that Licensor does not own and that remain under their own
+   licenses. The SDK normally loads these as peer dependencies; any all-in-one
+   convenience bundle Licensor distributes simply packages them together with the SDK.
+   Licensor claims rights only in its own code, and complying with the third-party
+   licenses is your responsibility.
 
-10. GOVERNING LAW
-    This License shall be governed by and construed in accordance with the laws
-    of the State of Delaware, United States, without regard to its conflict of
-    law provisions.
+6. NO WARRANTY; NO LIABILITY. THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF
+   ANY KIND TO THE MAXIMUM EXTENT PERMITTED BY LAW. TO THAT SAME EXTENT, LICENSOR HAS
+   NO LIABILITY WHATSOEVER ARISING FROM OR RELATING TO THE SOFTWARE — INCLUDING FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, LOST PROFITS, OR LOST DATA —
+   AND OWES YOU NOTHING. Nothing here limits liability that cannot be excluded by law.
 
-For licensing inquiries, contact: support@gracia.ai
+7. TERM. This License applies until terminated; it ends automatically if you breach it
+   (immediately for a Section 2 breach or a challenge to Licensor's patents). On
+   termination, stop using and delete the Software. Sections 2–6 and 8 survive.
+
+8. GOVERNING LAW. This License is governed by the laws of Licensor's principal place of
+   business, excluding its conflict-of-law rules, and disputes are subject to the courts
+   located there; either party may still seek injunctive relief anywhere to protect its
+   intellectual property. Mandatory local-law and consumer protections apply where
+   required. If any term is unenforceable, it is limited or severed and the rest stays
+   in effect.
+
+For anything not covered above — special, enterprise, or non-standard use: support@gracia.ai
+
+
+================================================================================
+  PART B — EXAMPLES, SAMPLES & DOCUMENTATION (MIT LICENSE)
+--------------------------------------------------------------------------------
+  Applies to example code, sample integrations, and documentation provided to
+  demonstrate use of the Software, wherever located in this repository. Does NOT
+  apply to the Gracia Web SDK itself (Part A).
+================================================================================
+
+MIT License
+
+Copyright (c) 2026 Gracia Labs and contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

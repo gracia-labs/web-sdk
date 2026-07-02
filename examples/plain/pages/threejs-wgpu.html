@@ -4,12 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gracia Three.js WebGPU</title>
-    <script type="importmap">
-    { "imports": {
-        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
-        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
-    } }
-    </script>
+    <script type="importmap">{ "imports": {
+        "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+    } }</script>
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
@@ -99,7 +97,7 @@
     </div>
 
     <script type="module">
-    import { GraciaPlayer, loadGraciaModule, OrbitControls, SplatsRendererW3, Stats, THREE, TransformControls, WebGPURenderer } from '@gracia/web-sdk';
+    import { GraciaPlayer, loadGraciaModule, OrbitControls, SplatsRendererW3, Stats, THREE, TransformControls, WebGPURenderer } from '@gracia/web-sdk/aio';
 
     const GraciaModule = await loadGraciaModule();
 

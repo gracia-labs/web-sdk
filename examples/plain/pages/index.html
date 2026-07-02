@@ -7,14 +7,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script type="importmap">
-    { "imports": {
-        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
-        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
-    } }
-    </script>
+    <script type="importmap">{ "imports": {
+        "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+    } }</script>
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
     html, body { height: 100%; overflow: hidden; }
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -40,11 +39,11 @@
     .ov.visible { opacity: 1; }
     .ov.visible > * { pointer-events: auto; }
 
-    .top { display: flex; align-items: center; justify-content: space-between; }
+    .top { display: flex; align-items: baseline; justify-content: space-between; }
     .top-left, .top-center, .top-right { display: flex; gap: 8px; align-items: center; }
     .top-left { min-width: 0; flex: 0 1 auto; }
     .top-center { flex-shrink: 0; }
-    .top-right { flex-shrink: 0; justify-content: flex-end; }
+    .top-right { flex-shrink: 0; justify-content: flex-end; flex-direction: column; align-items: flex-end; gap: 4px; }
 
     .bot { display: flex; flex-direction: column; gap: 8px; }
 
@@ -87,7 +86,7 @@
     .ctrl-keys b { font-weight: 600; color: rgba(255,255,255,.5); }
     .ctrl-btn.on .ctrl-keys { color: rgba(255,255,255,.45); }
     .ctrl-btn.on .ctrl-keys b { color: rgba(255,255,255,.7); }
-    #debugPanel { position: fixed; left: 16px; top: 52px; z-index: 10; min-width: 180px; padding: 10px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(0,0,0,.5); backdrop-filter: blur(10px); font: 400 11px/1.6 inherit; color: rgba(255,255,255,.65); display: none; pointer-events: auto; }
+    #debugPanel { position: fixed; left: 16px; top: 52px; z-index: 10; width: 200px; max-width: min(200px, calc(100vw - 32px)); padding: 10px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(0,0,0,.5); backdrop-filter: blur(10px); font: 400 11px/1.6 inherit; color: rgba(255,255,255,.65); display: none; pointer-events: auto; }
     #debugPanel.visible { display: block; }
     #debugPanel .dbg-title { font: 600 10px/1 inherit; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
     #debugPanel .dbg-row { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; gap: 12px; }
@@ -98,6 +97,13 @@
     #debugPanel .dbg-toggle::after { content: ''; position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,.5); transition: transform .2s, background .2s; }
     #debugPanel .dbg-toggle.on::after { transform: translateX(14px); background: var(--accent); }
     #debugPanel .dbg-sep { height: 1px; background: rgba(255,255,255,.08); margin: 6px 0; }
+    #debugPanel .dbg-log-toggle { display: block; width: 100%; padding: 0; border: 0; background: 0; color: rgba(255,255,255,.35); font: 600 10px/1 inherit; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; text-align: left; margin-top: 8px; transition: color .12s; }
+    #debugPanel .dbg-log-toggle:hover { color: rgba(255,255,255,.55); }
+    #debugPanel .dbg-log { max-height: 140px; overflow-y: auto; padding-top: 6px; }
+    #debugPanel .dbg-log-line { padding: 1px 0; font: 400 10px/1.45 inherit; color: rgba(255,255,255,.55); word-break: break-word; }
+    #debugPanel .dbg-log-line .dbg-log-ts { color: rgba(255,255,255,.3); font-variant-numeric: tabular-nums; margin-right: 5px; }
+    #debugPanel .dbg-log-line.warn { color: rgba(255,255,255,.75); }
+    #debugPanel .dbg-log-line.error { color: #fca5a5; }
 
     #errorToast { position: fixed; bottom: 20px; left: 50%; z-index: 100; max-width: 380px; width: calc(100% - 32px); padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(248,113,113,.25); background: rgba(127,29,29,.55); backdrop-filter: blur(10px); color: rgba(255,255,255,.9); font: 400 11px/1.5 inherit; pointer-events: none; opacity: 0; transition: opacity .3s ease, transform .3s ease; transform: translateX(-50%) translateY(8px); }
     #errorToast.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
@@ -141,6 +147,7 @@
             </div>
             <div class="top-right">
                 <button type="button" class="pill-btn icon-only" id="resetBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3 6.75"/><polyline points="3 22 3 16 9 16"/></svg><span class="btn-label">Reset</span></button>
+                <span id="versionPill" style="font:500 9px/1 monospace;color:rgba(255,255,255,.35);padding:2px 6px;border-radius:3px;background:rgba(0,0,0,.4);white-space:nowrap;cursor:default;position:relative;"><span id="vpTip" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:rgba(10,10,10,.95);border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:6px 8px;white-space:pre;font:9px/1.5 monospace;color:rgba(255,255,255,.55);z-index:100;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,.7);pointer-events:none;"></span></span>
             </div>
         </div>
         <div class="bot">
@@ -170,6 +177,10 @@
             <span class="dbg-label">FPS</span>
             <span class="dbg-val" id="dbgFps">--</span>
         </div>
+        <div class="dbg-row">
+            <span class="dbg-label">WASM</span>
+            <span class="dbg-val" id="dbgWasm">--</span>
+        </div>
         <div id="dbgBoundsRow" style="display:none">
             <div class="dbg-sep"></div>
             <div class="dbg-row">
@@ -177,10 +188,43 @@
                 <button type="button" class="dbg-toggle" id="dbgBoundsToggle"></button>
             </div>
         </div>
+        <div class="dbg-sep"></div>
+        <button type="button" class="dbg-log-toggle" id="dbgLogToggle" hidden>Console</button>
+        <div id="dbgLog" class="dbg-log" hidden></div>
     </div>
 
     <script type="module">
-    import { buildApiSources, GraciaApp, loadGraciaModule, THREE, XROverlay } from '@gracia/web-sdk';
+    import { buildApiSources, GraciaApp, loadGraciaModule, THREE, XROverlay } from '@gracia/web-sdk/aio';
+
+    // Debug panel (?debug=1) — must be before loadGraciaModule to capture its logs
+    const _dbg = new URLSearchParams(location.search).get('debug') === '1';
+    if (_dbg) {
+        const hdr = document.getElementById('dbgLogToggle');
+        const log = document.getElementById('dbgLog');
+        hdr.hidden = false;
+        log.hidden = false;
+        hdr.onclick = () => { log.hidden = !log.hidden; };
+
+        const wrap = (level, orig) => (...a) => {
+            orig.apply(console, a);
+            const t = new Date(), ts = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
+            const msg = a.map(x => { try { return typeof x === 'object' ? JSON.stringify(x) : String(x); } catch { return String(x); } }).join(' ');
+            const ln = document.createElement('div');
+            ln.className = 'dbg-log-line' + (level !== 'log' ? ` ${level}` : '');
+            const tsEl = document.createElement('span');
+            tsEl.className = 'dbg-log-ts';
+            tsEl.textContent = ts;
+            ln.appendChild(tsEl);
+            ln.appendChild(document.createTextNode(msg.slice(0, 180)));
+            log.appendChild(ln);
+            if (log.children.length > 60) log.firstChild.remove();
+            log.scrollTop = log.scrollHeight;
+        };
+        console.log = wrap('log', console.log);
+        console.warn = wrap('warn', console.warn);
+        console.error = wrap('error', console.error);
+        window._dbgHdr = hdr;
+    }
 
     const AMPLITUDE_KEY = '__AMPLITUDE_KEY__';
     let amp = null;
@@ -195,6 +239,16 @@
     }
 
     const GraciaModule = await loadGraciaModule();
+
+    // Debug tooltip (COI / GPU info; WASM build time appended after load)
+    {
+        const pill = document.getElementById('versionPill');
+        const tip = document.getElementById('vpTip');
+        tip.textContent = `COI   ${crossOriginIsolated ? 'yes' : 'NO'}\nSAB   ${typeof SharedArrayBuffer !== 'undefined' ? 'yes' : 'NO'}\nGPU   ${navigator.gpu ? 'yes' : 'NO'}`;
+        pill.onmouseenter = () => { tip.style.display = 'block'; };
+        pill.onmouseleave = () => { tip.style.display = 'none'; };
+        if (window._dbgHdr) window._dbgHdr.textContent = 'Console';
+    }
 
     const $ = id => document.getElementById(id);
     const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
@@ -325,7 +379,7 @@
     const MARKET = 'https://market.gracia.ai';
     const DEMO_DOMAIN = '__DEMO_DOMAIN__';
     if (!DEMO_DOMAIN) $('fileBtn').hidden = false;
-    const DEMO_URL = `/api/market/api/v1/demo?${DEMO_DOMAIN ? `domain=${DEMO_DOMAIN}` : ''}`
+    const DEMO_URL = `/api/market/api/v1/demo${DEMO_DOMAIN ? `?domain=${DEMO_DOMAIN}` : ''}`;
     const STREAMING_BASE = `${MARKET}/api/v1/streaming/content`;
     const DEMO_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
 
@@ -360,8 +414,8 @@
                 }));
             })(),
             (async () => {
-                const res = await fetch('/api/sources');
-                if (!res.ok) throw new Error(`Sources API returned ${res.status}`);
+                const res = await fetch('/sources.json');
+                if (!res.ok) throw new Error(`sources.json returned ${res.status}`);
                 const raw = (await res.json()).sources ?? [];
                 const resolved = [];
                 for (const src of raw)
@@ -628,6 +682,11 @@
                 opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
                 { container: $('canvasWrap'), overlay, mode: params.get('mode') || 'pw' }
             );
+            if (app.player.buildUnixTime) {
+                const w = new Date(app.player.buildUnixTime * 1000).toISOString().replace('T', ' ').slice(0, 19);
+                $('vpTip').textContent += `\nWASM  ${w}`;
+                $('dbgWasm').textContent = w;
+            }
             app.onProgress = () => {};
             app.onReady = () => {
                 hideLoader();

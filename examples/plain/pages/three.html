@@ -4,12 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gracia Three.js</title>
-    <script type="importmap">
-    { "imports": {
-        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
-        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
-    } }
-    </script>
+    <script type="importmap">{ "imports": {
+        "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+    } }</script>
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
@@ -155,7 +153,7 @@
 
     <script type="module">
     import { buildApiSources, envCoefsFromSH27, GraciaPlayer, HDRLoader, LightProbeGenerator, loadGraciaModule, OrbitControls, Sky, 
-             SplatsMesh, Stats, THREE, TransformControls } from '@gracia/web-sdk';
+             SplatsMesh, Stats, THREE, TransformControls } from '@gracia/web-sdk/aio';
 
     const GraciaModule = await loadGraciaModule();
 
@@ -369,7 +367,7 @@
                 }));
             })(),
             (async () => {
-                const raw = (await (await fetch('/api/sources')).json()).sources ?? [];
+                const raw = (await (await fetch('/sources.json')).json()).sources ?? [];
                 const resolved = [];
                 for (const src of raw)
                     if (src.items?.length) resolved.push(...await buildApiSources(src.items, src.baseUrl));

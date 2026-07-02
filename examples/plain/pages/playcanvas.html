@@ -4,15 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gracia PlayCanvas</title>
-    <script type="importmap">
-    { "imports": {
+    <script type="importmap">{ "imports": {
         "playcanvas": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/build/playcanvas.mjs",
         "shadow-catcher": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/scripts/esm/shadow-catcher.mjs",
         "camera-controls": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/scripts/esm/camera-controls.mjs",
-        "@gracia/web-sdk": "./dist/GraciaAIO.__BUILD_HASH__.js",
-        "@gracia/web-sdk/wasm": "./dist/GraciaWebCore.__BUILD_HASH__.js"
-    } }
-    </script>
+        "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+    } }</script>
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
@@ -158,7 +156,7 @@
     import * as pc from 'playcanvas';
     import { ShadowCatcher } from 'shadow-catcher';
     import { CameraControls } from 'camera-controls';
-    import { buildApiSources, GraciaPlayer, GraciaSplats, loadGraciaModule } from '@gracia/web-sdk';
+    import { buildApiSources, GraciaPlayer, GraciaSplats, loadGraciaModule } from '@gracia/web-sdk/aio';
 
     const GraciaModule = await loadGraciaModule();
 
@@ -508,7 +506,7 @@
                 }));
             })(),
             (async () => {
-                const raw = (await (await fetch('/api/sources')).json()).sources ?? [];
+                const raw = (await (await fetch('/sources.json')).json()).sources ?? [];
                 const resolved = [];
                 for (const src of raw)
                     if (src.items?.length) resolved.push(...await buildApiSources(src.items, src.baseUrl));

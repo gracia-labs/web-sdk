@@ -1,0 +1,18 @@
+{
+  "buildDate": "2026-07-02T17:43:25.319Z",
+  "core": {
+    "filename": "GraciaSDK.94935cfe81cdb364.js",
+    "hash": "94935cfe81cdb3648e47d5da35030e33b803cafb8c505e8dd1025c68783987ba",
+    "size": 144360
+  },
+  "aio": {
+    "filename": "GraciaAIO.fb9e60dc5d1a624a.js",
+    "hash": "fb9e60dc5d1a624a20bc228781484b41c052ee0e416c147d207e9f695ae364cd",
+    "size": 2687503
+  },
+  "wasm": {
+    "filename": "GraciaWebCore.2c17ba6f3e5c4ed2.js",
+    "hash": "2c17ba6f3e5c4ed2a938b1d376347ad2a403662d75d69c57d3369018d2c92af3",
+    "size": 2142713
+  }
+}

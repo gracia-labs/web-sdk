@@ -1,71 +1,86 @@
 {
-  "name": "@gracia/web-sdk",
-  "version": "0.0.63",
-  "description": "Gracia — volumetric video SDK (player, app, Three.js, XR R3F, React hooks)",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/GraciaSDK.d.ts",
-      "default": "./dist/GraciaSDK.js"
+    "name": "@gracia/web-sdk",
+    "version": "0.0.65",
+    "description": "Gracia — volumetric video SDK (player, app, Three.js, XR R3F, React hooks)",
+    "type": "module",
+    "exports": {
+        "./core": {
+            "types": "./dist/GraciaSDK.d.ts",
+            "default": "./dist/GraciaSDK.94935cfe81cdb364.js"
+        },
+        "./aio": {
+            "default": "./dist/GraciaAIO.fb9e60dc5d1a624a.js"
+        },
+        "./wasm": {
+            "types": "./dist/GraciaWebCore.d.ts",
+            "default": "./dist/GraciaWebCore.2c17ba6f3e5c4ed2.js"
+        },
+        "./manifest": "./dist/gracia-manifest.json",
+        "./vite-plugin": {
+            "types": "./dist/vite-plugin/index.d.ts",
+            "default": "./dist/vite-plugin/index.mjs"
+        }
     },
-    "./wasm": {
-      "types": "./dist/GraciaWebCore.d.ts",
-      "default": "./dist/GraciaWebCore.js"
+    "scripts": {
+        "serve": "bun examples/plain/serve.mjs",
+        "serve:vite": "bun run --cwd examples/react-vite dev"
+    },
+    "files": [
+        "dist",
+        "LICENSE",
+        "README.md"
+    ],
+    "peerDependencies": {
+        "@pmndrs/pointer-events": ">=6.0.0",
+        "@preact/signals-core": "^1.14.3",
+        "@react-three/fiber": ">=9.0.0",
+        "@react-three/uikit": ">=1.0.0",
+        "gl-matrix": "^3.4.4",
+        "react": ">=18.0.0",
+        "three": ">=0.150.0"
+    },
+    "peerDependenciesMeta": {
+        "@pmndrs/pointer-events": {
+            "optional": true
+        },
+        "@preact/signals-core": {
+            "optional": true
+        },
+        "@react-three/fiber": {
+            "optional": true
+        },
+        "@react-three/uikit": {
+            "optional": true
+        },
+        "gl-matrix": {
+            "optional": true
+        },
+        "react": {
+            "optional": true
+        },
+        "three": {
+            "optional": true
+        }
+    },
+    "dependencies": {
+        "howler": "^2.2.4"
+    },
+    "devDependencies": {
+        "selfsigned": "^5.5.0"
+    },
+    "keywords": [
+        "webgpu",
+        "gracia",
+        "volumetric",
+        "video",
+        "gaussian-splatting",
+        "webxr",
+        "react"
+    ],
+    "sideEffects": false,
+    "author": "Gracia Labs",
+    "license": "SEE LICENSE IN LICENSE",
+    "engines": {
+        "node": ">=20"
     }
-  },
-  "main": "./dist/GraciaSDK.js",
-  "types": "./dist/GraciaSDK.d.ts",
-  "scripts": {
-    "serve": "bun scripts/serve.mjs"
-  },
-  "peerDependencies": {
-    "@pmndrs/pointer-events": ">=6.0.0",
-    "@preact/signals-core": "^1.13.0",
-    "@react-three/fiber": ">=9.0.0",
-    "@react-three/uikit": ">=1.0.0",
-    "gl-matrix": "^3.4.0",
-    "react": ">=18.0.0",
-    "three": ">=0.150.0"
-  },
-  "peerDependenciesMeta": {
-    "@pmndrs/pointer-events": {
-      "optional": true
-    },
-    "@preact/signals-core": {
-      "optional": true
-    },
-    "@react-three/fiber": {
-      "optional": true
-    },
-    "@react-three/uikit": {
-      "optional": true
-    },
-    "gl-matrix": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "three": {
-      "optional": true
-    }
-  },
-  "devDependencies": {
-    "selfsigned": "^5.5.0"
-  },
-  "keywords": [
-    "webgpu",
-    "gracia",
-    "volumetric",
-    "video",
-    "gaussian-splatting",
-    "webxr",
-    "react"
-  ],
-  "sideEffects": false,
-  "engines": {
-    "node": ">=20"
-  },
-  "author": "Gracia Labs",
-  "license": "SEE LICENSE IN LICENSE"
 }

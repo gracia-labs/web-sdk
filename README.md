@@ -57,10 +57,10 @@ Each demo below is a self-contained HTML file — view the source for a complete
 
 | Integration | Demo | Source | Description |
 |-------------|------|--------|-------------|
-| **Vanilla JS** — `GraciaApp` | [Player](https://demo.gracia.ai/) | [`index.html`](index.html) | Full-featured player with camera, XR, playback controls |
-| **React** — Hooks | [React](https://demo.gracia.ai/react.html) | [`react.html`](react.html) | Declarative integration with `useGraciaPlayer` and `useGraciaPlaylist` |
-| **Three.js** — `SplatsMesh` | [Three.js](https://demo.gracia.ai/three.html) | [`three.html`](three.html) | Splats as a standard Three.js mesh with environment relighting |
-| **PlayCanvas** — `GraciaSplats` | [PlayCanvas](https://demo.gracia.ai/playcanvas.html) | [`playcanvas.html`](playcanvas.html) | Splats with depth testing and automatic shadow casting |
+| **Vanilla JS** — `GraciaApp` | [Player](https://demo.gracia.ai/) | [`examples/plain/pages/index.html`](examples/plain/pages/index.html) | Full-featured player with camera, XR, playback controls |
+| **React** — Hooks | [React](https://demo.gracia.ai/react.html) | [`examples/plain/pages/react.html`](examples/plain/pages/react.html) | Declarative integration with `useGraciaPlayer` and `useGraciaPlaylist` |
+| **Three.js** — `SplatsMesh` | [Three.js](https://demo.gracia.ai/three.html) | [`examples/plain/pages/three.html`](examples/plain/pages/three.html) | Splats as a standard Three.js mesh with environment relighting |
+| **PlayCanvas** — `GraciaSplats` | [PlayCanvas](https://demo.gracia.ai/playcanvas.html) | [`examples/plain/pages/playcanvas.html`](examples/plain/pages/playcanvas.html) | Splats with depth testing and automatic shadow casting |
 
 ### Full project examples
 
@@ -135,27 +135,75 @@ See [`nginx.conf`](nginx.conf) for a complete example.
 
 </details>
 
-### Serving `GraciaWebCore.js`
+### Vite Plugin (Recommended)
+
+The SDK ships a unified Vite plugin that handles WASM serving, content-hash cache busting, dynamic import warning suppression, and build-time defines — all in one call:
+
+```ts
+import { graciaPlugin } from "@gracia/web-sdk/vite-plugin";
+
+export default defineConfig({
+  plugins: [react(), ...graciaPlugin({ bundle: "core" })],
+});
+```
+
+The plugin provides:
+
+- **Manifest + aliases:** reads `gracia-manifest.json`, resolves `@gracia/web-sdk/core|aio|wasm`
+- **Dev:** serves hashed WASM with COOP/COEP headers
+- **Build:** copies WASM to `assets/` with its content-hashed filename
+- **COI:** sets COOP/COEP on dev/preview (required for Gracia)
+- **Optional dedupe:** pass `dedupe: true` for React/Three apps
+- **Defines:** injects `__GRACIA_MODULE_URL__` for `useGraciaPlayer({ moduleUrl })`
+
+### Serving `GraciaWebCore.js` (non-Vite)
 
 `GraciaWebCore.js` is precompiled Emscripten glue — serve it as a **static file**, not processed by your bundler.
 
-**Vite** — [`vite-plugin-static-copy`](https://github.com/sapphi-red/vite-plugin-static-copy):
-
-```ts
-viteStaticCopy({ targets: [{ src: 'node_modules/@gracia/web-sdk/dist/GraciaWebCore.js', dest: 'assets' }] })
-```
-
-**Webpack** — [`copy-webpack-plugin`](https://github.com/webpack-contrib/copy-webpack-plugin):
+**Webpack** — read the manifest and copy the **hashed** WASM file:
 
 ```js
-new CopyPlugin({ patterns: [{ from: 'node_modules/@gracia/web-sdk/dist/GraciaWebCore.js', to: 'assets/GraciaWebCore.js' }] })
+import manifest from "@gracia/web-sdk/manifest";
+
+const wasmHash = manifest.files["GraciaWebCore.js"].hash;
+const hashedName = `GraciaWebCore.${wasmHash}.js`;
+
+new CopyPlugin({
+  patterns: [{
+    from: `node_modules/@gracia/web-sdk/${hashedName}`,
+    to: `assets/${hashedName}`,
+  }],
+});
 ```
 
 Then reference it:
 
 ```js
-useGraciaPlayer({ containerRef, moduleUrl: '/assets/GraciaWebCore.js' });
+useGraciaPlayer({ containerRef, moduleUrl: `/assets/GraciaWebCore.${wasmHash}.js` });
 ```
+
+### Caching
+
+The SDK uses **content-hash filenames** for cache busting. After `npm install`, the package includes a manifest at `@gracia/web-sdk/manifest` (`dist/gracia-manifest.json`) with hashed filenames for each artifact:
+
+```ts
+import manifest from "@gracia/web-sdk/manifest";
+
+const wasmHash = manifest.files["GraciaWebCore.js"].hash; // e.g. "a1b2c3d4e5f67890"
+const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your public assets
+```
+
+**Vite users:** `graciaPlugin` handles this automatically — no manual steps needed.
+
+**Non-Vite users:** read the manifest to get the hashed filename, copy the corresponding hashed file from `dist/` to your public assets, and pass the URL as `moduleUrl`. This ensures browsers fetch the correct version after SDK upgrades.
+
+**Server cache headers** (recommended):
+
+| Pattern | Cache-Control |
+|---------|--------------|
+| `*.<hash>.js` | `public, max-age=31536000, immutable` |
+| `*.js` (non-hashed) | `no-cache, must-revalidate` |
+| `*.html` | `no-cache, no-store, must-revalidate` |
 
 ### Verification
 
@@ -287,5 +335,15 @@ When persisting issued tokens, store at least `userId` and `tokenId`, so your ba
 Thanks to [Martin Valigursky](https://github.com/mvaligursky) for help with the PlayCanvas integration.
 
 ## License
+
+This repository is covered by two licenses, both in the single [`LICENSE`](./LICENSE) file:
+
+| What | License | Where |
+|------|---------|-------|
+| **Gracia Web SDK** — `GraciaWebCore.js`, `GraciaSDK.js`, `GraciaAIO.js`, WASM modules, type definitions, and other distributed SDK artifacts | Proprietary | [`LICENSE`](./LICENSE) — Part A |
+| **Examples, samples & documentation** — wherever located | MIT | [`LICENSE`](./LICENSE) — Part B |
+
+All other files are © Gracia Labs. Third-party dependencies keep their own licenses.
+For special or enterprise licensing, contact support@gracia.ai.
 
 Proprietary — Gracia Labs. All rights reserved.

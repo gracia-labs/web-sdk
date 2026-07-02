@@ -25,6 +25,7 @@ declare class GraciaModule {
     constructor(app: any);
     get heap(): ScratchHeap;
     get backend(): "pure" | "hybrid" | null;
+    get buildUnixTime(): number;
     shutdownApp(): void;
     setCamera(viewL: ArrayLike<number>, projL: ArrayLike<number>, viewR?: ArrayLike<number>, projR?: ArrayLike<number>): void;
     getModelMatrix(): Float32Array | null;
@@ -88,10 +89,11 @@ declare class GraciaPlayer {
         maxSplatsCount?: number;
     }): Promise<GraciaPlayer>;
     static preferredFormat(): GPUTextureFormat;
-    static "__#private@#gl2"(canvas: any): any;
+    static #gl2(canvas: any): any;
     constructor(mod: GraciaModule, device: GPUDevice);
     get device(): GPUDevice;
     get backend(): "pure" | "hybrid" | null;
+    get buildUnixTime(): number;
     get gl(): WebGL2RenderingContext | null;
     get isBGRA(): boolean;
     assertDevice(other: GPUDevice | null | undefined): void;
@@ -654,7 +656,7 @@ interface GraciaPlaylist {
 }
 declare function useGraciaPlaylist(gracia: GraciaPlayerState): GraciaPlaylist;
 
-declare class SplatsMesh extends Mesh<BufferGeometry<three.NormalBufferAttributes, three.BufferGeometryEventMap>, three.Material | three.Material[], three.Object3DEventMap> {
+declare class SplatsMesh extends Mesh<BufferGeometry<three.NormalBufferAttributes, three.BufferGeometryEventMap>, three.Material<three.MaterialEventMap> | three.Material<three.MaterialEventMap>[], three.Object3DEventMap> {
     constructor(player: GraciaPlayer);
     enableMesh: boolean;
     onBeforeRender: (renderer: any, _scene: any, camera: any) => void;
@@ -881,14 +883,14 @@ declare class XROverlay {
 }
 
 declare class XRRayRenderer {
-    static "__#private@#RAY_LENGTH": number;
-    static "__#private@#START_OFFSET": number;
-    static "__#private@#FADE_IN_FRAC": number;
-    static "__#private@#RADIAL_SEGS": number;
-    static "__#private@#HEIGHT_SEGS": number;
-    static "__#private@#BASE_RADIUS": number;
-    static "__#private@#TIP_RADIUS": number;
-    static "__#private@#BASE_ALPHA": number;
+    static #RAY_LENGTH: number;
+    static #START_OFFSET: number;
+    static #FADE_IN_FRAC: number;
+    static #RADIAL_SEGS: number;
+    static #HEIGHT_SEGS: number;
+    static #BASE_RADIUS: number;
+    static #TIP_RADIUS: number;
+    static #BASE_ALPHA: number;
     constructor(THREE: any, scene: any);
     update(left: any, right: any, hitSpheres?: any[], visible?: boolean): void;
     dispose(): void;
