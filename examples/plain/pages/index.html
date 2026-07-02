@@ -414,8 +414,8 @@
                 }));
             })(),
             (async () => {
-                const res = await fetch('/sources.json');
-                if (!res.ok) throw new Error(`sources.json returned ${res.status}`);
+                const res = await fetch('/api/sources');
+                if (!res.ok) throw new Error(`Sources API returned ${res.status}`);
                 const raw = (await res.json()).sources ?? [];
                 const resolved = [];
                 for (const src of raw)

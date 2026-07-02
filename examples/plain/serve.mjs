@@ -94,6 +94,13 @@ Bun.serve({
             });
         }
 
+        if (pathname === "/api/sources") {
+            const file = Bun.file(sources);
+            return respond(await file.text(), {
+                headers: { "Content-Type": "application/json", "Cache-Control": "no-cache, must-revalidate" },
+            });
+        }
+
         const path = resolve(pathname);
         if (path.endsWith(".html")) {
             const file = Bun.file(path);
