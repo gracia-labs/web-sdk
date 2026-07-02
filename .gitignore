@@ -32,3 +32,6 @@ ehthumbs.db
 # npm
 .npm
 *.tgz
+*.pid
+__*.html
+bun.lock
