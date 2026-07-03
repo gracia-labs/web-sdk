@@ -5,7 +5,7 @@ import { vec3 } from 'gl-matrix';
 import { RefObject } from 'react';
 import * as _preact_signals_core from '@preact/signals-core';
 
-declare function loadGraciaModule(wasmSpecifier?: string): Promise<(o?: {}) => any>;
+declare function loadGraciaModule(wasmSpecifier?: string): Promise<any>;
 
 declare class ScratchHeap {
     constructor(app: any, size?: number);

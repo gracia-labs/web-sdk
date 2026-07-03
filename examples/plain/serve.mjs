@@ -31,28 +31,8 @@ const coi = (headers = new Headers()) => {
 
 const respond = (body, init = {}) => new Response(body, { ...init, headers: coi(new Headers(init.headers)) });
 
-const resolveDist = (pathname) => {
-    const leaf = pathname.slice("/dist/".length);
-    const direct = join(DIST, leaf);
-    if (existsSync(direct)) return direct;
-    try {
-        const m = JSON.parse(readFileSync(join(DIST, "gracia-manifest.json"), "utf-8"));
-        const aliases = {
-            "GraciaWebCore.js": m.wasm?.filename,
-            "GraciaAIO.js": m.aio?.filename,
-            "GraciaSDK.js": m.core?.filename,
-        };
-        const mapped = aliases[leaf];
-        if (mapped) {
-            const path = join(DIST, mapped);
-            if (existsSync(path)) return path;
-        }
-    } catch {}
-    return direct;
-};
-
 const resolve = (pathname) => {
-    if (pathname.startsWith("/dist/")) return resolveDist(pathname);
+    if (pathname.startsWith("/dist/")) return join(PUBLIC, pathname.slice(1));
     const leaf = pathname === "/" ? "index.html" : pathname.slice(1);
     if (!leaf.endsWith(".html")) return join(PUBLIC, leaf);
     const direct = join(PAGES, leaf);

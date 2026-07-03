@@ -6,14 +6,14 @@
     "exports": {
         "./core": {
             "types": "./dist/GraciaSDK.d.ts",
-            "default": "./dist/GraciaSDK.60feffd333fd7e80.js"
+            "default": "./dist/GraciaSDK.3f775ef8976a8494.js"
         },
         "./aio": {
-            "default": "./dist/GraciaAIO.72002d9e22ddd8ba.js"
+            "default": "./dist/GraciaAIO.e92bd59f78973fa2.js"
         },
         "./wasm": {
             "types": "./dist/GraciaWebCore.d.ts",
-            "default": "./dist/GraciaWebCore.1fef62f4832aa020.js"
+            "default": "./dist/GraciaWebCore.fd4ad465d6a1a593.js"
         },
         "./manifest": "./dist/gracia-manifest.json",
         "./vite-plugin": {
