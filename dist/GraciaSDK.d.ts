@@ -5,6 +5,8 @@ import { vec3 } from 'gl-matrix';
 import { RefObject } from 'react';
 import * as _preact_signals_core from '@preact/signals-core';
 
+declare function loadGraciaModule(wasmSpecifier?: string): Promise<(o?: {}) => any>;
+
 declare class ScratchHeap {
     constructor(app: any, size?: number);
     ptr(offset?: number): number;
@@ -185,9 +187,6 @@ declare class GraciaPlayer {
 
 declare function envCoefsFromSH27(sh: any, lightDir?: null, contrast?: number): Float32Array<ArrayBuffer>;
 declare function envCoefsFromPreset(p: any): Float32Array<ArrayBuffer>;
-
-declare function loadGraciaModule(wasmSpecifier?: string): Promise<(opts?: {}) => any>;
-declare const DEFAULT_WASM_SPECIFIER: "@gracia/web-sdk/wasm";
 
 declare const ENV_PRESETS: Record<EnvPresetName$1, EnvPreset | null>;
 type EnvPreset = {
@@ -897,4 +896,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { ClassicControls, DEFAULT_WASM_SPECIFIER, DebugRenderer, ENV_PRESETS, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, GraciaRenderer, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SceneOverlay, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, XROverlay, XRRayRenderer, buildApiSources, createCanvas, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, loadGraciaModule, envCoefsFromPreset as presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };
+export { ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, GraciaRenderer, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SceneOverlay, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, XROverlay, XRRayRenderer, buildApiSources, createCanvas, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, loadGraciaModule, envCoefsFromPreset as presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };
