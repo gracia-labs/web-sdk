@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import selfsigned from "selfsigned";
 
 const PUBLIC = join(import.meta.dirname, "../..");
@@ -7,8 +7,21 @@ const sources = join(PUBLIC, "sources.json");
 if (!existsSync(sources)) writeFileSync(sources, `${JSON.stringify({ sources: [] })}\n`);
 const PAGES = join(import.meta.dirname, "pages");
 const DIST = join(PUBLIC, "dist");
+const MANIFEST = join(DIST, "gracia-manifest.json");
 const PORT = 6931;
 const PID = join(PUBLIC, ".server.pid");
+
+const manifest = (() => {
+    try {
+        const m = JSON.parse(readFileSync(MANIFEST, "utf-8"));
+        if (!m.aio?.hash || !m.wasm?.hash) throw new Error("manifest is missing aio.hash or wasm.hash");
+        return m;
+    } catch (err) {
+        console.error(`[gracia] cannot read ${MANIFEST}: ${err.message}`);
+        console.error("[gracia] run `bun build` before `bun serve`.");
+        process.exit(1);
+    }
+})();
 
 if (existsSync(PID)) {
     try {
@@ -32,7 +45,7 @@ const coi = (headers = new Headers()) => {
 const respond = (body, init = {}) => new Response(body, { ...init, headers: coi(new Headers(init.headers)) });
 
 const resolve = (pathname) => {
-    if (pathname.startsWith("/dist/")) return join(PUBLIC, pathname.slice(1));
+    if (pathname.startsWith("/dist/")) return join(DIST, pathname.slice("/dist/".length));
     const leaf = pathname === "/" ? "index.html" : pathname.slice(1);
     if (!leaf.endsWith(".html")) return join(PUBLIC, leaf);
     const direct = join(PAGES, leaf);
@@ -42,15 +55,18 @@ const resolve = (pathname) => {
 };
 
 const patchHtml = (html) => {
-    try {
-        const m = JSON.parse(readFileSync(join(DIST, "gracia-manifest.json"), "utf-8"));
-        return html
-            .replaceAll("__SDK_HASH__", m.aio.hash.slice(0, 16))
-            .replaceAll("__WASM_HASH__", m.wasm.hash.slice(0, 16))
-            .replaceAll("__DEMO_DOMAIN__", "");
-    } catch {
-        return html.replaceAll("__DEMO_DOMAIN__", "");
-    }
+    return html
+        .replaceAll("__SDK_HASH__", manifest.aio.hash.slice(0, 16))
+        .replaceAll("__WASM_HASH__", manifest.wasm.hash.slice(0, 16))
+        .replaceAll("__DEMO_DOMAIN__", "");
+};
+
+const contentType = (path, fallback) => {
+    if (path.endsWith(".js") || path.endsWith(".mjs")) return "text/javascript; charset=utf-8";
+    if (path.endsWith(".json")) return "application/json; charset=utf-8";
+    if (path.endsWith(".wasm")) return "application/wasm";
+    if (path.endsWith(".html")) return "text/html; charset=utf-8";
+    return fallback;
 };
 
 async function serveFile(req, path) {
@@ -58,7 +74,8 @@ async function serveFile(req, path) {
     if (!(await file.exists())) return null;
 
     const headers = { "Cache-Control": "no-cache, must-revalidate", "Accept-Ranges": "bytes" };
-    if (file.type) headers["Content-Type"] = file.type;
+    const type = contentType(path, file.type);
+    if (type) headers["Content-Type"] = type;
 
     const range = req.headers.get("Range");
     if (range) {
@@ -112,7 +129,17 @@ Bun.serve({
             }
         }
 
-        return (await serveFile(req, path)) ?? respond(patchHtml(await Bun.file(resolve("/")).text()), {
+        const file = await serveFile(req, path);
+        if (file) return file;
+
+        if (pathname.startsWith("/dist/") || extname(pathname)) {
+            return respond("Not found\n", {
+                status: 404,
+                headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache, no-store, must-revalidate" },
+            });
+        }
+
+        return respond(patchHtml(await Bun.file(resolve("/")).text()), {
             headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, no-store, must-revalidate" },
         });
     },
