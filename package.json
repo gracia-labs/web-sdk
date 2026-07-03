@@ -13,7 +13,7 @@
         },
         "./wasm": {
             "types": "./dist/GraciaWebCore.d.ts",
-            "default": "./dist/GraciaWebCore.fd4ad465d6a1a593.js"
+            "default": "./dist/GraciaWebCore.583a6c10965d56ee.js"
         },
         "./manifest": "./dist/gracia-manifest.json",
         "./vite-plugin": {

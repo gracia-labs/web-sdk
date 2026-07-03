@@ -46,9 +46,10 @@ const patchHtml = (html) => {
         const m = JSON.parse(readFileSync(join(DIST, "gracia-manifest.json"), "utf-8"));
         return html
             .replaceAll("__SDK_HASH__", m.aio.hash.slice(0, 16))
-            .replaceAll("__WASM_HASH__", m.wasm.hash.slice(0, 16));
+            .replaceAll("__WASM_HASH__", m.wasm.hash.slice(0, 16))
+            .replaceAll("__DEMO_DOMAIN__", "");
     } catch {
-        return html;
+        return html.replaceAll("__DEMO_DOMAIN__", "");
     }
 };
 
