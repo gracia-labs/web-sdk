@@ -6,7 +6,6 @@ interface GraciaArtifact {
     size: number;
 }
 interface GraciaManifest {
-    buildDate: string;
     aio: GraciaArtifact;
     core: GraciaArtifact;
     wasm: GraciaArtifact;
