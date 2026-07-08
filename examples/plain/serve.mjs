@@ -35,14 +35,7 @@ const tls = await selfsigned.generate([{ name: "commonName", value: "localhost" 
     extensions: [{ name: "subjectAltName", altNames: [{ type: 2, value: "localhost" }, { type: 7, ip: "127.0.0.1" }] }],
 });
 
-const coi = (headers = new Headers()) => {
-    headers.set("Cross-Origin-Embedder-Policy", "require-corp");
-    headers.set("Cross-Origin-Opener-Policy", "same-origin");
-    headers.set("Cross-Origin-Resource-Policy", "same-origin");
-    return headers;
-};
-
-const respond = (body, init = {}) => new Response(body, { ...init, headers: coi(new Headers(init.headers)) });
+const respond = (body, init = {}) => new Response(body, init);
 
 const resolve = (pathname) => {
     if (pathname.startsWith("/dist/")) return join(DIST, pathname.slice("/dist/".length));
@@ -98,6 +91,7 @@ async function serveFile(req, path) {
 
 Bun.serve({
     port: PORT,
+    idleTimeout: 30,
     tls: { key: tls.private, cert: tls.cert },
     async fetch(req) {
         const { pathname, search } = new URL(req.url);

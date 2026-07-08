@@ -13,18 +13,6 @@ function WebGPUGate() {
         );
     }
 
-    if (!self.crossOriginIsolated) {
-        return (
-            <div style={errorStyle}>
-                <h1>Cross-origin isolation required</h1>
-                <p>
-                    Enable COOP/COEP — <code>graciaPlugin()</code> sets the headers in dev and
-                    preview.
-                </p>
-            </div>
-        );
-    }
-
     return <App />;
 }
 

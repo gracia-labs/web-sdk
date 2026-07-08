@@ -462,6 +462,7 @@
             { gl: app.graphicsDevice.gl, backend: 'hybrid' },
         );
         splats = GraciaSplats.attach(player, app, camera);
+        splats.setAudioPanner({ refDistance: SPLAT_SCALE, maxDistance: SPLAT_SCALE * 100 });
         const splatEntity = new pc.Entity('splats');
         app.root.addChild(splatEntity);
         splats.entity = splatEntity;

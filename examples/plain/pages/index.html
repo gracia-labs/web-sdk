@@ -240,11 +240,11 @@
 
     const GraciaModule = await loadGraciaModule();
 
-    // Debug tooltip (COI / GPU info; WASM build time appended after load)
+    // Debug tooltip (GPU info; WASM build time appended after load)
     {
         const pill = document.getElementById('versionPill');
         const tip = document.getElementById('vpTip');
-        tip.textContent = `COI   ${crossOriginIsolated ? 'yes' : 'NO'}\nSAB   ${typeof SharedArrayBuffer !== 'undefined' ? 'yes' : 'NO'}\nGPU   ${navigator.gpu ? 'yes' : 'NO'}`;
+        tip.textContent = `GPU   ${navigator.gpu ? 'yes' : 'NO'}`;
         pill.onmouseenter = () => { tip.style.display = 'block'; };
         pill.onmouseleave = () => { tip.style.display = 'none'; };
         if (window._dbgHdr) window._dbgHdr.textContent = 'Console';
@@ -268,7 +268,7 @@
     const isDebug = params.get('debug') === '1';
 
     let currentSource = null;
-    let isMuted = false;
+    let isMuted = true; // audio off until the user taps the audio button (that gesture unlocks it)
     let firstReady = false;
     let showBounds = false;
     let ctrlPanelForced = isDebug;
@@ -346,7 +346,9 @@
         btn.onclick = toggle;
         muteBtn.onclick = () => {
             isMuted = !isMuted;
-            player.setVolume?.(isMuted ? 0 : 1);
+            // Runs inside the click gesture, so enableAudio()'s context unlock is honored.
+            if (isMuted) player.disableAudio?.();
+            else { player.enableAudio?.(); player.setVolume?.(1); }
             syncMuteIcon();
             track(isMuted ? 'streaming_mute_clicked' : 'streaming_unmute_clicked');
         };
@@ -692,10 +694,11 @@
                 hideLoader();
                 if (!firstReady) sessionStartTime = Date.now();
                 firstReady = true;
-                if (isMuted) app.setVolume(0);
+                // Reapply audio choice across scene loads (context stays unlocked once on).
+                if (isMuted) app.disableAudio(); else app.enableAudio();
                 track('streaming_launch_success', { source: 'vega' });
             };
-            app.onModeChange = () => { activeMode = app.mode; resetBar(); syncUI(app); };
+            app.onModeChange = () => { activeMode = app.mode; isMuted = !app.audioEnabled; resetBar(); syncUI(app); };
 
             app.onFrame = () => {
                 const cam = app.camera?.threeCamera;

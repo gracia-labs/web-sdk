@@ -1,8 +1,7 @@
 import * as playcanvas from 'playcanvas';
-import * as three from 'three';
-import { PerspectiveCamera, Mesh, BufferGeometry, Object3D } from 'three';
-import { vec3 } from 'gl-matrix';
 import { RefObject } from 'react';
+import * as three from 'three';
+import { Mesh, BufferGeometry, Object3D } from 'three';
 import * as _preact_signals_core from '@preact/signals-core';
 
 declare function loadGraciaModule(wasmSpecifier?: string): Promise<any>;
@@ -155,10 +154,16 @@ declare class GraciaPlayer {
         audio?: string;
     }): Promise<void> | undefined;
     get audioContext(): AudioContext | null;
+    get audioEnabled(): boolean;
+    enableAudio(): void;
+    disableAudio(): void;
+    setAudioOutput(opts: any): void;
     setVolume(v: any): void;
     loadAudio(url: any): Promise<void>;
     setAudioSpatial(x: any, y: any, z: any): void;
-    setAudioListener(x: any, y: any, z: any, fx: any, fy: any, fz: any, ux: any, uy: any, uz: any): void;
+    setAudioSourceMatrix(matrixWorld: any, localPosition: any, positionScale: any): void;
+    setAudioListenerMatrix(matrixWorld: any): void;
+    setAudioPanner(attr: any): void;
     setCamera(viewL: any, projL: any, viewR: any, projR: any): void;
     getBBox(): {
         minX: number;
@@ -188,6 +193,191 @@ declare class GraciaPlayer {
 declare function envCoefsFromSH27(sh: any, lightDir?: null, contrast?: number): Float32Array<ArrayBuffer>;
 declare function envCoefsFromPreset(p: any): Float32Array<ArrayBuffer>;
 
+declare const axis: Readonly<{
+    X: readonly number[];
+    Y: readonly number[];
+    Z: readonly number[];
+    FORWARD: readonly number[];
+    FLIP_X: readonly number[];
+    FLIP_Z: readonly number[];
+}>;
+declare namespace num {
+    function clamp(v: any, min: any, max: any): number;
+    function clampInt(v: any, min: any, max: any): number;
+    function clamp01(v: any): number;
+    function unlerp01(v: any, min: any, max: any): number;
+    function finite(v: any, fallback?: number): any;
+    function wrapPi(rad: any): any;
+    function wrap(v: any, period: any): number;
+    function wrapDelta(delta: any, period: any): any;
+    function signedClamp(v: any, min: any, max: any): number;
+    function zoomStep(factor: any, min?: number, max?: number): number;
+    function absLogRatio(a: any, b: any): number;
+    function outside(v: any, threshold: any): boolean;
+    function perspectiveScale(distance: any, fovDeg: any, pixels: any): number;
+    function deadzone(v: any, threshold: any): number;
+    function deltaSeconds(now: any, last: any, fallback?: number, max?: number): number;
+}
+declare namespace bbox {
+    function center(out: any, b: any): any;
+}
+declare class Vec3$1 extends Float32Array<ArrayBuffer> {
+    constructor(v: any);
+    set(x: any, y: any, z: any): any;
+    0: any;
+    1: any;
+    2: any;
+    fromXYZ(v: any): any;
+    from(v: any): any;
+    copy(v: any): any;
+    add(v: any): this;
+    addXYZ(x?: number, y?: number, z?: number): this;
+    addTo(out: any, origin?: readonly number[]): any;
+    addScaled(v: any, s: any): this;
+    addDelta(current: any, previous: any): this;
+    sub(a: any, b: any): this;
+    subXYZ(a: any, b: any): any;
+    scale(s: any): this;
+    multiply(v: any): this;
+    multiplyXYZ(x?: number, y?: number, z?: number): this;
+    divide(v: any): this;
+    clampScalar(min: any, max: any): this;
+    normalize(fallback?: readonly number[]): any;
+    setLength(len: any, fallback?: readonly number[]): any;
+    cross(a: any, b: any): this;
+    lerp(to: any, t: any): this;
+    midXYZ(a: any, b: any): any;
+    fromMat4Column(m: any, column: any): any;
+    transformMat4(m: any): this;
+    transformMat4Direction(m: any): this;
+    transformQuat(q: any): this;
+    fromYawPitch(yaw: any, pitch: any): any;
+    yawPitch(forward: any): this;
+    basisFromForward(up: any, forward: any, worldUp?: readonly number[]): this;
+    yawPitchBasis(yaw: any, pitch: any, forward: any, back: any, up: any): this;
+    rollBasis(up: any, roll: any): this;
+    fromSphereDir(theta: any, phi: any): any;
+    polarY(point: any, center: any, minRadius?: number): this;
+    equals(v: any, eps?: number): boolean;
+    toArray(): any[];
+    toXYZ(): {
+        x: any;
+        y: any;
+        z: any;
+    };
+    distanceXYZ(v: any): number;
+    dot(v: any): number;
+    get sqrLen(): number;
+    get len(): number;
+    get xzLen(): number;
+    get minComponent(): number;
+    get maxAbs(): number;
+    set x(v: any);
+    get x(): any;
+    set y(v: any);
+    get y(): any;
+    set z(v: any);
+    get z(): any;
+}
+declare class Quat extends Float32Array<ArrayBuffer> {
+    constructor(q: any);
+    set(x: any, y: any, z: any, w: any): any;
+    0: any;
+    1: any;
+    2: any;
+    3: any;
+    fromXYZW(q: any): any;
+    from(q: any): any;
+    copy(q: any): any;
+    identity(): any;
+    normalize(): any;
+    scale(s: any): this;
+    setAxisAngle(axis: any, rad: any): any;
+    rotatePre(axis: any, rad: any): this;
+    rotate(axis: any, rad: any): this;
+    mul(a: any, b: any): this;
+    invert(q?: this): any;
+    slerp(to: any, t: any): any;
+    toXYZW(): {
+        x: any;
+        y: any;
+        z: any;
+        w: any;
+    };
+    set x(v: any);
+    get x(): any;
+    set y(v: any);
+    get y(): any;
+    set z(v: any);
+    get z(): any;
+    set w(v: any);
+    get w(): any;
+}
+declare class Mat4 extends Float32Array<ArrayBuffer> {
+    constructor(m: any);
+    copy(m: any): this;
+    identity(): this;
+    0: any;
+    5: any;
+    10: any;
+    15: any;
+    multiply(a: any, b: any): any;
+    preMultiply(m: any): any;
+    fromTranslation(v: any): this;
+    12: any;
+    13: any;
+    14: any;
+    fromScaling(v: any): this;
+    perspective(fovDeg: any, aspect: any, near: any, far: any): this;
+    11: number | undefined;
+    cameraWorld(eye: any, target: any, up?: readonly number[]): this;
+    cameraWorldAxes(eye: any, x: any, y: any, z: any): this;
+    1: any;
+    2: any;
+    3: number | undefined;
+    4: any;
+    6: any;
+    7: number | undefined;
+    8: any;
+    9: any;
+    fromQuat(q: any): this;
+    fromTransform(transform: any): this;
+    fromRotationTranslationScale(q: any, v: any, s: any): this;
+    setPosition(v: any): this;
+    translate(v: any): this;
+    scale(v: any): this;
+    fromPivot(position: any, rotation: any, scale: any, pivot: any, base: any): any;
+    pointTo(out: any, p?: readonly number[], scale?: number): any;
+    poseTo(out: any): any;
+}
+declare class Bounds {
+    constructor({ type, position, rotation, scale }: {
+        type: any;
+        position: any;
+        rotation: any;
+        scale: any;
+    });
+    clampPoint(point: Float32Array | number[]): void;
+    rayLimit(origin: any, dir: any, max: any): number;
+    #private;
+}
+declare namespace vec3 {
+    function create(): Vec3$1;
+}
+declare namespace quat {
+    export function create_1(): Quat;
+    export { create_1 as create };
+}
+declare namespace mat4 {
+    export function create_2(): Mat4;
+    export { create_2 as create };
+    export function clone(m: any): Mat4;
+    export { pointToImpl as pointTo };
+    export { poseToImpl as poseTo };
+}
+declare function pointToImpl(out: any, m: any, p?: readonly number[], scale?: number): any;
+declare function poseToImpl(out: any, m: any): any;
+
 declare const ENV_PRESETS: Record<EnvPresetName$1, EnvPreset | null>;
 type EnvPreset = {
     ambient: number[];
@@ -197,64 +387,43 @@ type EnvPreset = {
 };
 type EnvPresetName$1 = "daylight" | "cloudy" | "sunset" | "indoor" | "shade" | "night" | "off";
 
-declare class GraciaXR$1 {
-    constructor(player: GraciaPlayer, gl: WebGL2RenderingContext);
-    onBeforeRender: ((dt: number, frame: XRFrame, ref: XRReferenceSpace, pose: XRViewerPose, sources: XRInputSourceArray, player: any) => void) | null;
-    onEyeRender: ((gl: WebGL2RenderingContext, fbo: WebGLFramebuffer, view: XRView, x: number, y: number, w: number, h: number) => void) | null;
-    onASWRender: ((gl: WebGL2RenderingContext, eyes: any[]) => void) | null;
-    onRefReset: (() => void) | null;
-    onSessionEnd: (() => void) | null;
-    externalLayers: XRLayer[];
-    get session(): XRSession | null;
-    get active(): boolean;
-    get aswAvailable(): boolean;
-    get aswActive(): boolean;
-    get layeredActive(): boolean;
-    get isAR(): boolean;
-    get defaultDt(): number;
-    get binding(): XRWebGLBinding | null;
-    get refSpace(): XRReferenceSpace | null;
-    set soundPosition(pos: {
+type CameraControls = {
+    type: "orbit" | "fly" | "trackball";
+    update: (dt: number) => void;
+    frame: (center: ArrayLike<number> | {
         x: number;
         y: number;
         z: number;
-    } | null);
-    enter(ar?: boolean): Promise<{
-        isQuest: boolean;
-        isPico: boolean;
-        isAVP: boolean;
-    }>;
-    exit(): void;
-    renderFrame(dt: number, frame: XRFrame): {
-        source: Float32Array;
-        listener: Float32Array;
-        forward: Float32Array;
-        up: Float32Array;
-    } | null;
-    #private;
-}
-
-type CameraControls = {
-    type: "orbit" | "fly" | "trackball";
-    target: three.Vector3 | null;
-    update: (dt: number) => void;
-    frame: (center: three.Vector3Like, eyePos: three.Vector3Like) => void;
+    }, eyePos: ArrayLike<number> | {
+        x: number;
+        y: number;
+        z: number;
+    }) => void;
     zoom: (factor: number) => void;
-    reset: (target: ArrayLike<number>, eyePos: three.Vector3Like) => void;
+    reset: (target: ArrayLike<number>, eyePos: ArrayLike<number> | {
+        x: number;
+        y: number;
+        z: number;
+    }) => void;
     applyConstraints: (hasTransform: boolean) => void;
+    setBounds: (bounds: Bounds | null) => void;
     dispose: () => void;
 };
 
 declare class Camera2D {
     constructor(canvas: HTMLCanvasElement, controlsType?: "orbit" | "fly" | "trackball");
     get canPresent(): boolean;
-    get threeCamera(): PerspectiveCamera;
     get controls(): CameraControls;
-    get controlsType(): "fly" | "orbit" | "trackball";
+    get controlsType(): "orbit" | "fly" | "trackball";
     setControls(type: "orbit" | "fly" | "trackball"): void;
     setSceneTransform(t: SceneTransform$1 | null): void;
+    setAudioPosition(pos: {
+        x: number;
+        y: number;
+        z: number;
+    } | null): void;
     setViewZSign(sign: 1 | -1): void;
-    setBBox(bbox: {
+    setBBox(bounds: {
         minX: number;
         minY: number;
         minZ: number;
@@ -282,127 +451,45 @@ declare class Camera2D {
         };
     } | null): void;
     update(dt: number): void;
-    apply(player: GraciaPlayer, w: number, h: number): {
-        source: vec3;
-        listener: vec3;
-        forward: vec3;
-        up: vec3;
-    } | null;
+    apply(player: GraciaPlayer, w: number, h: number): void;
     zoom(f: number): void;
     reset(): void;
     dispose(): void;
     #private;
 }
 
-declare function createCanvas(): HTMLCanvasElement;
-declare class GraciaRenderer {
-    static create(Module: any, { container, canvas, backend }?: {
-        container?: HTMLElement;
-        canvas?: HTMLCanvasElement;
-        backend?: "pure" | "hybrid";
-    }): Promise<GraciaRenderer>;
-    constructor(canvas: HTMLCanvasElement);
-    get canvas(): HTMLCanvasElement;
-    get gl(): WebGL2RenderingContext | null;
-    get backend(): "pure" | "hybrid" | null;
-    get player(): GraciaPlayer | null;
-    get device(): GPUDevice | null;
-    init(Module: any, { backend }?: {
-        backend?: "pure" | "hybrid";
-    }): Promise<GraciaPlayer>;
-    switchBackend(backend: "pure" | "hybrid"): void;
-    frame(): void;
-    setVisible(visible: boolean): void;
-    dispose(): void;
+declare class GraciaXR$1 {
+    constructor(player: GraciaPlayer, gl: WebGL2RenderingContext);
+    onFrame: ((dt: number, frame: XRFrame) => void) | null;
+    onBeforeRender: ((dt: number, frame: XRFrame, ref: XRReferenceSpace, pose: XRViewerPose, sources: XRInputSourceArray, player: any) => void) | null;
+    onEyeRender: ((gl: WebGL2RenderingContext, fbo: WebGLFramebuffer, view: XRView, x: number, y: number, w: number, h: number) => void) | null;
+    onASWRender: ((gl: WebGL2RenderingContext, eyes: any[]) => void) | null;
+    onRefReset: (() => void) | null;
+    onSessionEnd: (() => void) | null;
+    externalLayers: XRLayer[];
+    get session(): XRSession | null;
+    get active(): boolean;
+    get aswAvailable(): boolean;
+    get aswActive(): boolean;
+    get layeredActive(): boolean;
+    get isAR(): boolean;
+    get defaultDt(): number;
+    get binding(): XRWebGLBinding | null;
+    get refSpace(): XRReferenceSpace | null;
+    set soundPosition(pos: {
+        x: number;
+        y: number;
+        z: number;
+    } | null);
+    enter(ar?: boolean): Promise<{
+        isQuest: boolean;
+        isPico: boolean;
+        isAVP: boolean;
+    }>;
+    exit(): void;
+    renderFrame(dt: number, frame: XRFrame, sourcePositionScale?: number): void;
     #private;
 }
-
-declare class GraciaApp {
-    static create(Module: any, { container, overlay, mode }?: {
-        container: HTMLElement;
-        overlay?: any;
-        mode?: string;
-    }): Promise<GraciaApp>;
-    onProgress: ((pct: number) => void) | null;
-    onReady: (() => void) | null;
-    onError: ((statusOrError: number | Error) => void) | null;
-    onFrame: (() => void) | null;
-    onBeforeFrame: ((dt: number) => void) | null;
-    onModeChange: ((mode: string, prevMode: string) => void) | null;
-    onSceneChange: ((src: any, idx: number) => void) | null;
-    get player(): GraciaPlayer | null;
-    get renderer(): GraciaRenderer | null;
-    get camera(): Camera2D | null;
-    get canvas(): HTMLCanvasElement;
-    get gl(): WebGLRenderingContext | WebGL2RenderingContext;
-    get audioContext(): AudioContext | null;
-    get device(): GPUDevice | null;
-    get mode(): string;
-    get fallbackMode(): string;
-    get xr(): GraciaXR$1 | null;
-    set drawMode(v: number);
-    get drawMode(): number;
-    supports(mode: string): boolean;
-    set sources(arr: any[]);
-    get sources(): any[];
-    get sceneIndex(): number;
-    loadScene(idx: number): void;
-    start(): void;
-    stop(): void;
-    open(src: object): Promise<void>;
-    close(): void;
-    setMode(mode: string): Promise<void>;
-    setAudio(url: string): void;
-    setVolume(v: number): void;
-    setBackground(color: string | null | undefined): void;
-    setInitialTransform(tf: SceneTransform$1 | null, staticTransform?: SceneTransform$1 | null): void;
-    reset(): void;
-    setControls(type: "orbit" | "fly" | "trackball"): void;
-    setCameraBounds(bounds: {
-        type: "box" | "sphere";
-        position: {
-            x: number;
-            y: number;
-            z: number;
-        };
-        rotation: {
-            x: number;
-            y: number;
-            z: number;
-            w: number;
-        };
-        scale: {
-            x: number;
-            y: number;
-            z: number;
-        };
-    } | null): void;
-    setAudioPosition(pos: {
-        x: number;
-        y: number;
-        z: number;
-    } | null): void;
-    dispose(): void;
-    #private;
-}
-type SceneTransform$1 = {
-    rotation: {
-        x: number;
-        y: number;
-        z: number;
-        w: number;
-    };
-    translation: {
-        x: number;
-        y: number;
-        z: number;
-    };
-    scale: {
-        x: number;
-        y: number;
-        z: number;
-    };
-};
 
 type XRHandState = {
     active: boolean;
@@ -455,6 +542,7 @@ declare class SceneManipulator {
     constructor(player: any, overlay?: any, { directGrab }?: {
         directGrab?: boolean;
     });
+    setOverlay(overlay: any): void;
     reset(): void;
     invalidateBBox(): void;
     setInitialTransform(t: any, zSign?: 1 | -1): void;
@@ -465,10 +553,102 @@ declare class SceneManipulator {
     set locked(v: boolean);
     get locked(): boolean;
     set scaleLocked(v: boolean);
+    get scaleLocked(): boolean;
     resetToInitial(): void;
-    update(frame: XRFrame, ref: XRReferenceSpace, sources: XRInputSource[], uiActive: boolean, uiDragging?: boolean): void;
+    update(dt: number, frame: XRFrame, ref: XRReferenceSpace, sources: XRInputSource[], uiActive: boolean, uiDragging?: boolean): void;
     #private;
 }
+
+declare class GraciaApp {
+    static create(Module: any, { container, overlay, mode }?: {
+        container: HTMLElement;
+        overlay?: any;
+        mode?: string;
+    }): Promise<GraciaApp>;
+    onProgress: ((pct: number) => void) | null;
+    onReady: (() => void) | null;
+    onError: ((statusOrError: number | Error) => void) | null;
+    onFrame: (() => void) | null;
+    onBeforeFrame: ((dt: number) => void) | null;
+    onModeChange: ((mode: string, prevMode: string) => void) | null;
+    onSceneChange: ((src: any, idx: number) => void) | null;
+    get player(): GraciaPlayer | null;
+    get camera(): Camera2D | null;
+    get canvas(): HTMLCanvasElement;
+    get gl(): WebGLRenderingContext | WebGL2RenderingContext;
+    get audioContext(): AudioContext | null;
+    get device(): GPUDevice | null;
+    get mode(): string;
+    get fallbackMode(): string;
+    get xr(): GraciaXR$1 | null;
+    get manipulator(): SceneManipulator | null;
+    set drawMode(v: number);
+    get drawMode(): number;
+    supports(mode: string): boolean;
+    set sources(arr: any[]);
+    get sources(): any[];
+    get sceneIndex(): number;
+    loadScene(idx: number): void;
+    start(): void;
+    stop(): void;
+    open(src: object): Promise<void>;
+    close(): void;
+    setMode(mode: string): Promise<void>;
+    setAudio(url: string): void;
+    setVolume(v: number): void;
+    enableAudio(): void;
+    disableAudio(): void;
+    get audioEnabled(): boolean;
+    setAudioPanner(attr: Partial<PannerNode>): void;
+    setBackground(color: string | null | undefined): void;
+    setInitialTransform(tf: SceneTransform$1 | null, staticTransform?: SceneTransform$1 | null): void;
+    reset(): void;
+    setControls(type: "orbit" | "fly" | "trackball"): void;
+    setCameraBounds(bounds: {
+        type: "box" | "sphere";
+        position: {
+            x: number;
+            y: number;
+            z: number;
+        };
+        rotation: {
+            x: number;
+            y: number;
+            z: number;
+            w: number;
+        };
+        scale: {
+            x: number;
+            y: number;
+            z: number;
+        };
+    } | null): void;
+    setAudioPosition(pos: {
+        x: number;
+        y: number;
+        z: number;
+    } | null): void;
+    dispose(): void;
+    #private;
+}
+type SceneTransform$1 = {
+    rotation: {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+    };
+    translation: {
+        x: number;
+        y: number;
+        z: number;
+    };
+    scale: {
+        x: number;
+        y: number;
+        z: number;
+    };
+};
 
 type EnvPresetName = EnvPresetName$1;
 
@@ -480,6 +660,7 @@ declare class GraciaSplats {
     set camera(c: playcanvas.Entity);
     get camera(): playcanvas.Entity;
     setAudio(url: string): Promise<void>;
+    setAudioPanner(attr: Partial<PannerNode>): void;
     set entity(e: playcanvas.Entity | null);
     get entity(): playcanvas.Entity | null;
     dispose(): void;
@@ -662,6 +843,8 @@ declare class SplatsMesh extends Mesh<BufferGeometry<three.NormalBufferAttribute
     onBeforeShadow: (renderer: any, _object: any, _camera: any, shadowCamera: any) => void;
     get player(): GraciaPlayer;
     setAudio(url: string): Promise<void>;
+    setAudioListener(listener: three.AudioListener | null): void;
+    setAudioPanner(attr: Partial<PannerNode>): void;
     dispose(): void;
     #private;
 }
@@ -671,6 +854,8 @@ declare class SplatsRendererW3 {
     constructor(player: GraciaPlayer, renderer: three.WebGPURenderer);
     root: Object3D<three.Object3DEventMap>;
     get player(): GraciaPlayer;
+    setAudioListener(listener: three.AudioListener | null): void;
+    setAudioPanner(attr: Partial<PannerNode>): void;
     render(renderer: three.WebGPURenderer, scene: three.Scene, camera: three.Camera, overlayScene?: three.Scene): void;
     setStaticModelMatrix(elements: ArrayLike<number>): void;
     dispose(): void;
@@ -849,7 +1034,10 @@ declare class XROverlay {
     });
     set uiStyle(v: string);
     get uiStyle(): string;
-    get grabScale(): any;
+    set manipulator(m: null);
+    get manipulator(): null;
+    get uiActive(): any;
+    get uiDragging(): any;
     get quads(): any[];
     set sources(arr: any[]);
     get sources(): any[];
@@ -867,13 +1055,10 @@ declare class XROverlay {
     get bannerText(): string | null;
     set eventLogger(cb: null);
     get eventLogger(): null;
-    set directGrab(v: boolean);
-    get directGrab(): boolean;
-    setInitialTransform(t: any, zSign?: number): void;
     setPreset(name: any, scale?: number): void;
     syncPreset(name: any): void;
     init(player: any, sess: any, bind: any, ref: any, gl: any, _ar?: boolean): Promise<any[]>;
-    frame(dt: any, frame: any, ref: any, pose: any, sources: any, player: any): void;
+    frame(dt: any, frame: any, _ref: any, pose: any, _sources: any, player: any): void;
     renderEye(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
     onRefReset(): void;
     render(_gl: any, _eyes: any): void;
@@ -896,4 +1081,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, GraciaRenderer, type GraciaSource, GraciaSplats, type GraciaXR, ModernControls, QuadLayer, SceneManipulator, SceneOverlay, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, XROverlay, XRRayRenderer, buildApiSources, createCanvas, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, loadGraciaModule, envCoefsFromPreset as presetToLightProbe, useGraciaPlayer, useGraciaPlaylist };
+export { ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer, type GraciaPlayerState, type GraciaPlaylist, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, QuadLayer, Quat, SceneManipulator, SceneOverlay, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, loadGraciaModule, mat4, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };

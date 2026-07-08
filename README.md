@@ -29,7 +29,7 @@ Volumetric video player for the web. Lifelike 3D content in the browser — flat
 npm install github:gracia-labs/web-sdk              # core SDK
 npm install github:gracia-labs/web-sdk three        # + Three.js
 npm install github:gracia-labs/web-sdk playcanvas   # + PlayCanvas
-npm install github:gracia-labs/web-sdk react gl-matrix  # + React hooks & standalone app
+npm install github:gracia-labs/web-sdk react        # + React hooks
 ```
 
 Or add directly to `package.json`:
@@ -45,7 +45,6 @@ All peer dependencies are optional — install only what your integration needs:
 | `three` | `SplatsMesh`, `XROverlay`, XR controls |
 | `playcanvas` | `GraciaSplats` |
 | `react` | `useGraciaPlayer`, `useGraciaPlaylist` hooks |
-| `gl-matrix` | `GraciaApp` standalone 2D+XR player |
 | `@react-three/fiber` | XR UI panels (R3F-based) |
 | `@react-three/uikit` | XR UI panels |
 | `@preact/signals-core` | XR UI reactive state |
@@ -66,76 +65,9 @@ Each demo below is a self-contained HTML file — view the source for a complete
 
 | Stack | Source | Description |
 |-------|--------|-------------|
-| **React + Vite + TypeScript** | [`examples/react-vite`](examples/react-vite) | Production-ready Vite setup covering COOP/COEP, WASM serving, Strict Mode, cleanup, and other integration pitfalls |
+| **React + Vite + TypeScript** | [`examples/react-vite`](examples/react-vite) | Production-ready Vite setup covering WASM serving, Strict Mode, cleanup, and other integration pitfalls |
 
-## Cross-Origin Isolation
-
-Gracia spawns Web Workers that depend on `SharedArrayBuffer`, which requires a **cross-origin isolated** context. Your server must send these headers on every HTML/JS response:
-
-| Header | Value |
-|--------|-------|
-| `Cross-Origin-Opener-Policy` | `same-origin` |
-| `Cross-Origin-Embedder-Policy` | `require-corp` (recommended) or `credentialless` |
-
-Use `require-corp` for full browser support including Safari / Apple Vision Pro. With `credentialless`, Safari will not be isolated. Third-party resources under `require-corp` need `Cross-Origin-Resource-Policy: cross-origin`.
-
-> **HTTPS required.** `SharedArrayBuffer` needs a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts). `localhost` is exempt.
-
-<details><summary><strong>Dev server configs</strong></summary>
-
-**Vite** (`vite.config.ts`)
-
-```ts
-export default defineConfig({
-  server: { headers: {
-    'Cross-Origin-Opener-Policy': 'same-origin',
-    'Cross-Origin-Embedder-Policy': 'require-corp',
-  } },
-});
-```
-
-**Webpack** (`webpack.config.js`)
-
-```js
-module.exports = {
-  devServer: { headers: {
-    'Cross-Origin-Opener-Policy': 'same-origin',
-    'Cross-Origin-Embedder-Policy': 'require-corp',
-  } },
-};
-```
-
-**Express**
-
-```js
-app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-  next();
-});
-```
-
-</details>
-
-<details><summary><strong>Production — Nginx</strong></summary>
-
-```nginx
-server {
-    add_header Cross-Origin-Opener-Policy  "same-origin"  always;
-    add_header Cross-Origin-Embedder-Policy "require-corp" always;
-
-    location ~* \.(js|wasm|css|html)$ {
-        add_header Cross-Origin-Opener-Policy  "same-origin"  always;
-        add_header Cross-Origin-Embedder-Policy "require-corp" always;
-    }
-}
-```
-
-See [`nginx.conf`](nginx.conf) for a complete example.
-
-</details>
-
-### Vite Plugin (Recommended)
+## Vite Plugin (Recommended)
 
 The SDK ships a unified Vite plugin that handles WASM serving, content-hash cache busting, dynamic import warning suppression, and build-time defines — all in one call:
 
@@ -150,13 +82,12 @@ export default defineConfig({
 The plugin provides:
 
 - **Manifest + aliases:** reads `gracia-manifest.json`, resolves `@gracia/web-sdk/core|aio|wasm`
-- **Dev:** serves hashed WASM with COOP/COEP headers
+- **Dev:** serves hashed WASM during Vite dev
 - **Build:** copies WASM to `assets/` with its content-hashed filename
-- **COI:** sets COOP/COEP on dev/preview (required for Gracia)
 - **Optional dedupe:** pass `dedupe: true` for React/Three apps
 - **Defines:** injects `__GRACIA_MODULE_URL__` for `useGraciaPlayer({ moduleUrl })`
 
-### Serving `GraciaWebCore.js` (non-Vite)
+## Serving `GraciaWebCore.js` (non-Vite)
 
 `GraciaWebCore.js` is precompiled Emscripten glue — serve it as a **static file**, not processed by your bundler.
 
@@ -182,7 +113,7 @@ Then reference it:
 useGraciaPlayer({ containerRef, moduleUrl: `/assets/GraciaWebCore.${wasmHash}.js` });
 ```
 
-### Caching
+## Caching
 
 The SDK uses **content-hash filenames** for cache busting. After `npm install`, the package includes a manifest at `@gracia/web-sdk/manifest` (`dist/gracia-manifest.json`) with hashed filenames for each artifact:
 
@@ -204,14 +135,6 @@ const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your 
 | `*.<hash>.js` | `public, max-age=31536000, immutable` |
 | `*.js` (non-hashed) | `no-cache, must-revalidate` |
 | `*.html` | `no-cache, no-store, must-revalidate` |
-
-### Verification
-
-```js
-self.crossOriginIsolated // → true
-```
-
-If `false`, check both headers are present (`DevTools → Network → Headers`) and no sub-resource is missing `Cross-Origin-Resource-Policy`.
 
 ## API Overview
 
@@ -259,8 +182,7 @@ If `false`, check both headers are present (`DevTools → Network → Headers`) 
 ## Requirements
 
 - **WebGPU** — `navigator.gpu` required ([support](https://caniuse.com/webgpu)): Chrome 113+, Edge 113+, Safari 18+, Firefox Nightly (flag)
-- **HTTPS** — `SharedArrayBuffer` needs a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) (`localhost` exempt)
-- **Cross-Origin Isolation** — COOP + COEP headers (see [above](#cross-origin-isolation))
+- **HTTPS** — WebGPU and WebXR require a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) on non-localhost origins
 - **WebXR** — VR/AR modes only (Meta Quest Browser, etc.)
 
 ## Content Access & Security

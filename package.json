@@ -6,14 +6,14 @@
     "exports": {
         "./core": {
             "types": "./dist/GraciaSDK.d.ts",
-            "default": "./dist/GraciaSDK.8ae882a2c8409bae.js"
+            "default": "./dist/GraciaSDK.52ab6448d5d9595d.js"
         },
         "./aio": {
-            "default": "./dist/GraciaAIO.c8571bac4b6fc23d.js"
+            "default": "./dist/GraciaAIO.0899145217769e3f.js"
         },
         "./wasm": {
             "types": "./dist/GraciaWebCore.d.ts",
-            "default": "./dist/GraciaWebCore.7cba7b5af0e516d5.js"
+            "default": "./dist/GraciaWebCore.c97ea8f003a3f9eb.js"
         },
         "./manifest": "./dist/gracia-manifest.json",
         "./vite-plugin": {
@@ -31,28 +31,20 @@
         "README.md"
     ],
     "peerDependencies": {
-        "@pmndrs/pointer-events": ">=6.0.0",
-        "@preact/signals-core": "^1.14.3",
-        "@react-three/fiber": ">=9.0.0",
-        "@react-three/uikit": ">=1.0.0",
-        "gl-matrix": "^3.4.4",
-        "react": ">=18.0.0",
-        "three": ">=0.150.0"
+        "@pmndrs/pointer-events": "6.6.30",
+        "@react-three/fiber": "9.6.1",
+        "@react-three/uikit": "1.0.74",
+        "react": "19.2.7",
+        "three": "0.185.1"
     },
     "peerDependenciesMeta": {
         "@pmndrs/pointer-events": {
-            "optional": true
-        },
-        "@preact/signals-core": {
             "optional": true
         },
         "@react-three/fiber": {
             "optional": true
         },
         "@react-three/uikit": {
-            "optional": true
-        },
-        "gl-matrix": {
             "optional": true
         },
         "react": {
@@ -62,11 +54,8 @@
             "optional": true
         }
     },
-    "dependencies": {
-        "howler": "^2.2.4"
-    },
     "devDependencies": {
-        "selfsigned": "^5.5.0"
+        "selfsigned": "5.5.0"
     },
     "keywords": [
         "webgpu",
