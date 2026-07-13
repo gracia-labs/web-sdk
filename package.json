@@ -1,19 +1,19 @@
 {
     "name": "@gracia/web-sdk",
-    "version": "0.0.65",
+    "version": "0.0.66",
     "description": "Gracia — volumetric video SDK (player, app, Three.js, XR R3F, React hooks)",
     "type": "module",
     "exports": {
         "./core": {
             "types": "./dist/GraciaSDK.d.ts",
-            "default": "./dist/GraciaSDK.52ab6448d5d9595d.js"
+            "default": "./dist/GraciaSDK.eb870952c48d473b.js"
         },
         "./aio": {
-            "default": "./dist/GraciaAIO.0899145217769e3f.js"
+            "default": "./dist/GraciaAIO.2fdb4e30c65556b7.js"
         },
         "./wasm": {
             "types": "./dist/GraciaWebCore.d.ts",
-            "default": "./dist/GraciaWebCore.c97ea8f003a3f9eb.js"
+            "default": "./dist/GraciaWebCore.4c01ef1bfc2f4371.js"
         },
         "./manifest": "./dist/gracia-manifest.json",
         "./vite-plugin": {

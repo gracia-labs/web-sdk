@@ -68,6 +68,7 @@ declare class GraciaModule {
     sceneSetModelMatrix(id: number, elements: ArrayLike<number>): void;
     sceneOpen(id: number, url: string): void;
     sceneOpenApi(id: number, url: string, token: string): void;
+    registerLocalFile(file: File | FileSystemFileHandle): number;
     sceneOpenLocal(id: number, localId: number): void;
     sceneOpenStatic(id: number, data: Uint8Array): number;
     #private;

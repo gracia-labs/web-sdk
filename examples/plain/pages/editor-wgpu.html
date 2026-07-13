@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gracia Editor (WebGPU)</title>
+    <script type="importmap">{ "imports": {
+        "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+    } }</script>
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: #1a1a1a; color: #ccc;
+        --dim: rgba(255,255,255,.35); --mid: rgba(255,255,255,.6);
+        --hi: #fff; --sh: 0 1px 3px rgba(0,0,0,.7);
+        --glass: rgba(30,30,34,.88); --glass-border: rgba(255,255,255,.08);
+        --hover: rgba(255,255,255,.06);
+        --accent: #5b9cf5; --accent-dim: rgba(91,156,245,.25);
+        --panel-r: 8px;
+    }
+    canvas { display: block; }
+
+    .ov { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; }
+    .ov > * { pointer-events: auto; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .top-left { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; flex: 1; min-width: 0; }
+    .top-right { display: flex; gap: 8px; align-items: flex-start; flex-shrink: 0; max-width: 38%; }
+    .bot { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .spacer { flex: 1; pointer-events: none; }
+
+    .panel {
+        display: flex; align-items: center; gap: 5px; padding: 5px 8px;
+        background: var(--glass); backdrop-filter: blur(16px) saturate(1.3);
+        border: 1px solid var(--glass-border); border-radius: var(--panel-r);
+        box-shadow: 0 2px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .lbl { font: 600 9px/1 inherit; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); text-shadow: var(--sh); white-space: nowrap; }
+    .divider { width: 1px; height: 16px; background: var(--glass-border); margin: 0 2px; flex-shrink: 0; }
+
+    .btn {
+        padding: 4px 10px; border: 0; border-radius: 5px;
+        background: transparent; color: var(--dim); cursor: pointer;
+        font: 600 11px/1.1 inherit; white-space: nowrap;
+        text-shadow: var(--sh); transition: color .12s, background .12s;
+    }
+    .btn:hover:not(:disabled) { color: var(--hi); background: var(--hover); }
+    .btn:disabled { opacity: .2; cursor: not-allowed; }
+    .btn.active { color: var(--accent); background: var(--accent-dim); }
+
+    .color-pick {
+        width: 22px; height: 22px; padding: 0; border: 1px solid var(--glass-border);
+        border-radius: 4px; background: transparent; cursor: pointer;
+    }
+    .color-pick::-webkit-color-swatch-wrapper { padding: 1px; }
+    .color-pick::-webkit-color-swatch { border: 0; border-radius: 3px; }
+    .color-pick::-moz-color-swatch { border: 0; border-radius: 3px; }
+
+    .vb { display: flex; align-items: center; gap: 10px; padding: 2px 0; width: 100%; }
+    .vb-btn { width: 28px; min-width: 28px; height: 28px; border: 0; border-radius: 50%; background: rgba(255,255,255,.1); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .15s; color: #fff; font-size: 13px; }
+    .vb-btn:hover { background: rgba(255,255,255,.18); }
+    .vb-track { flex: 1; height: 3px; background: rgba(255,255,255,.08); border-radius: 2px; position: relative; cursor: pointer; }
+    .vb-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--accent); width: 0; pointer-events: none; opacity: .7; }
+    .vb-thumb { position: absolute; top: 50%; width: 10px; height: 10px; background: #fff; border-radius: 50%; transform: translate(-50%,-50%); left: 0; box-shadow: 0 1px 4px #0008; }
+    .vb-time { color: var(--dim); font: 500 10px/1 inherit; min-width: 65px; text-align: right; text-shadow: var(--sh); }
+    .bar-panel { width: min(480px, calc(100% - 24px)); }
+
+    .info-tag {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 3px 8px; border-radius: 4px; font: 500 10px/1.2 inherit;
+        background: rgba(255,255,255,.05); color: var(--dim);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        max-width: 220px;
+    }
+    .info-tag .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-video { background: #f59b42; }
+    .dot-environment { background: #42c6f5; }
+    .dot-none { background: rgba(255,255,255,.15); }
+
+    .scale-range { width: 88px; accent-color: var(--accent); cursor: pointer; }
+    .scale-input {
+        width: 48px; padding: 2px 4px; border: 1px solid var(--glass-border); border-radius: 4px;
+        background: rgba(255,255,255,.06); color: var(--dim); font: 500 10px/1 inherit;
+        text-align: right; outline: none; -moz-appearance: textfield;
+    }
+    .scale-input::-webkit-inner-spin-button,
+    .scale-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .scale-input:focus { border-color: var(--accent); color: var(--hi); }
+
+    .ctrl-panel {
+        position: fixed; right: 12px; top: 50%; z-index: 11;
+        transform: translateY(-50%);
+        display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 5px 8px;
+        background: var(--glass); backdrop-filter: blur(16px) saturate(1.3);
+        border: 1px solid var(--glass-border); border-radius: var(--panel-r);
+        box-shadow: 0 2px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.03);
+        pointer-events: auto; text-align: left;
+    }
+    .ctrl-btn {
+        display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+        padding: 4px 10px; border: 0; border-radius: 5px;
+        background: transparent; color: var(--dim); cursor: pointer;
+        font: 600 11px/1.1 inherit; white-space: nowrap;
+        text-shadow: var(--sh); transition: color .12s, background .12s;
+    }
+    .ctrl-btn:hover { color: var(--hi); background: var(--hover); }
+    .ctrl-btn.active { color: var(--accent); background: var(--accent-dim); }
+    .ctrl-keys { font-weight: 400; font-size: 9px; color: var(--dim); letter-spacing: .01em; opacity: .6; white-space: normal; line-height: 1.5; text-align: left; }
+    .ctrl-keys b { font-weight: 600; color: rgba(255,255,255,.55); }
+    .ctrl-btn.active .ctrl-keys { opacity: .85; }
+    .ctrl-btn.active .ctrl-keys b { color: rgba(255,255,255,.75); }
+    .ctrl-panel .divider { width: auto; height: 1px; background: var(--glass-border); margin: 2px 0; }
+
+    @media (max-width: 720px) {
+        .ov { padding: 8px; }
+        .top { gap: 6px; flex-wrap: wrap; }
+        .panel { padding: 4px 6px; gap: 3px; }
+        .btn { padding: 3px 7px; font-size: 10px; }
+        .bar-panel { width: calc(100% - 16px); }
+        .ctrl-panel { right: 8px; padding: 6px; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="ov">
+        <div class="top">
+            <div class="top-left">
+                <div class="panel">
+                    <span class="lbl">Editor</span>
+                    <div class="divider"></div>
+                    <button type="button" class="btn" id="btnVideo">Open video&hellip;</button>
+                    <button type="button" class="btn" id="btnClearVideo" disabled>Clear video</button>
+                    <button type="button" class="btn" id="btnEnvironment">Open environment&hellip;</button>
+                    <button type="button" class="btn" id="btnClearEnvironment" disabled>Clear environment</button>
+                    <div class="divider"></div>
+                    <button type="button" class="btn active" id="btnHuman">Human</button>
+                    <button type="button" class="btn active" id="btnPlayerEye">Viewer</button>
+                </div>
+                <div class="panel">
+                    <span class="lbl">Align</span>
+                    <button type="button" class="btn" id="btnImportAlign">Import&hellip;</button>
+                    <button type="button" class="btn" id="btnExportAlign">Export</button>
+                </div>
+                <div class="panel">
+                    <span class="lbl">Gizmo</span>
+                    <button type="button" class="btn active" id="gizTranslate">W</button>
+                    <button type="button" class="btn" id="gizRotate">E</button>
+                    <div class="divider"></div>
+                    <button type="button" class="btn" id="gizTargetToggle">Target: Video</button>
+                    <div class="divider"></div>
+                    <span class="lbl">Scale</span>
+                    <input type="range" class="scale-range" id="gizScaleSlider" min="0.05" max="10" step="0.01" value="1">
+                    <input type="number" class="scale-input" id="gizScaleInput" min="0.05" max="10" step="0.01" value="1.00">
+                </div>
+                <div class="panel">
+                    <span class="lbl">Bounds</span>
+                    <button type="button" class="btn" id="btnBoundsBox">Box</button>
+                    <button type="button" class="btn" id="btnBoundsSphere">Sphere</button>
+                    <button type="button" class="btn" id="btnBoundsClear" disabled>Clear</button>
+                </div>
+            </div>
+            <div class="top-right">
+                <div class="panel">
+                    <span class="lbl">BG</span>
+                    <input type="color" class="color-pick" id="bgColor" value="#2a2a32" title="Background color">
+                </div>
+                <div class="panel">
+                    <span id="tagVideo" class="info-tag"><span class="dot dot-none"></span>Video: none</span>
+                    <span id="tagEnvironment" class="info-tag"><span class="dot dot-none"></span>Environment: none</span>
+                </div>
+            </div>
+        </div>
+        <div class="bot">
+            <div class="panel bar-panel" id="barWrap" style="display:none"></div>
+        </div>
+    </div>
+    <div class="ctrl-panel" id="ctrlPanel">
+        <span class="lbl" style="padding:2px 4px 0">Camera</span>
+        <button type="button" class="ctrl-btn active" data-ctrl="orbit">
+            <span>Orbit</span>
+            <span class="ctrl-keys"><b>Left-click</b> drag to rotate &middot; <b>Right-click</b> drag to pan<br><b>Scroll</b> to zoom in/out</span>
+        </button>
+        <button type="button" class="ctrl-btn" data-ctrl="trackball">
+            <span>Trackball</span>
+            <span class="ctrl-keys"><b>Left-click</b> drag to rotate freely &middot; <b>Right-click</b> drag to pan<br><b>Scroll</b> to zoom in/out</span>
+        </button>
+        <button type="button" class="ctrl-btn" data-ctrl="fly">
+            <span>Fly</span>
+            <span class="ctrl-keys"><b>W/S</b> forward &amp; back &middot; <b>A/D</b> strafe &middot; <b>R/F</b> up &amp; down<br><b>Q/E</b> roll &middot; <b>Drag</b> to look around</span>
+        </button>
+        <div class="divider"></div>
+        <button type="button" class="btn" id="resetCam">Reset camera</button>
+    </div>
+
+    <script type="module">
+    import { FlyControls, GraciaPlayer, loadGraciaModule, OrbitControls, SplatsRendererW3, Stats, THREE, TrackballControls, TransformControls, WebGPURenderer } from '@gracia/web-sdk/aio';
+
+    const GraciaModule = await loadGraciaModule();
+
+    const $ = id => document.getElementById(id);
+    const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
+    const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
+    const fmt = t => (!Number.isFinite(t) || t < 0) ? '0:00' : `${~~(t / 60)}:${String(~~t % 60).padStart(2, '0')}`;
+
+    function createThickAxes(length = 2, radius = 0.008) {
+        const group = new THREE.Group();
+        const tipRadius = radius * 1.8;
+        const tipHeight = radius * 3.5;
+        const shaftLen = length - tipHeight;
+
+        const addAxis = (color, rotX, rotZ, pos) => {
+            const mat = new THREE.MeshBasicMaterial({ color });
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, shaftLen, 16), mat);
+            shaft.position.copy(pos);
+            shaft.rotation.set(rotX, 0, rotZ);
+            group.add(shaft);
+
+            const tip = new THREE.Mesh(new THREE.ConeGeometry(tipRadius, tipHeight, 16), mat);
+            tip.position.copy(pos).add(new THREE.Vector3(0, shaftLen * 0.5 + tipHeight * 0.5, 0).applyEuler(shaft.rotation));
+            tip.rotation.copy(shaft.rotation);
+            group.add(tip);
+        };
+
+        addAxis(0xff4040, 0, -Math.PI / 2, new THREE.Vector3(shaftLen * 0.5, 0, 0));
+        addAxis(0x40ff40, 0, 0, new THREE.Vector3(0, shaftLen * 0.5, 0));
+        addAxis(0x4080ff, Math.PI / 2, 0, new THREE.Vector3(0, 0, shaftLen * 0.5));
+        return group;
+    }
+
+    function createThickGrid(size, divisions, lineWidth = 0.006) {
+        const group = new THREE.Group();
+        const half = size * 0.5;
+        const step = size / divisions;
+        const minorMat = new THREE.MeshBasicMaterial({ color: 0x555555 });
+        const majorMat = new THREE.MeshBasicMaterial({ color: 0x888888 });
+        const y = lineWidth * 0.5;
+
+        for (let i = 0; i <= divisions; i++) {
+            const pos = -half + i * step;
+            const major = i === 0 || i === divisions || i === divisions / 2;
+            const mat = major ? majorMat : minorMat;
+            const w = major ? lineWidth * 1.35 : lineWidth;
+
+            const lineX = new THREE.Mesh(new THREE.BoxGeometry(size, w, w), mat);
+            lineX.position.set(0, y, pos);
+            group.add(lineX);
+
+            const lineZ = new THREE.Mesh(new THREE.BoxGeometry(w, w, size), mat);
+            lineZ.position.set(pos, y, 0);
+            group.add(lineZ);
+        }
+        return group;
+    }
+
+    function createHumanReference(height = 1.75) {
+        const group = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0xbfc5d2, roughness: 0.9, metalness: 0,
+            side: THREE.DoubleSide,
+        });
+
+        const headR = height * 0.065;
+        const headY = height - headR;
+        const shoulderY = headY - headR * 1.55;
+        const hipY = height * 0.52;
+        const legR = height * 0.042;
+        const torsoR = height * 0.105;
+        const armR = legR * 0.72;
+
+        const leg = (x) => {
+            const m = new THREE.Mesh(new THREE.CylinderGeometry(legR, legR * 0.85, hipY, 10), mat);
+            m.position.set(x, hipY * 0.5, 0);
+            return m;
+        };
+        group.add(leg(-torsoR * 0.35), leg(torsoR * 0.35));
+
+        const torsoH = shoulderY - hipY;
+        const torso = new THREE.Mesh(
+            new THREE.CylinderGeometry(torsoR * 0.82, torsoR * 0.95, torsoH, 12), mat);
+        torso.position.y = hipY + torsoH * 0.5;
+        group.add(torso);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 16, 12), mat);
+        head.position.y = headY;
+        group.add(head);
+
+        const armLen = height * 0.36;
+        const arm = (x) => {
+            const g = new THREE.Group();
+            const limbLen = armLen * 0.9;
+            const limb = new THREE.Mesh(
+                new THREE.CylinderGeometry(armR, armR * 0.42, limbLen, 8), mat);
+            limb.position.y = -limbLen * 0.5;
+            const handR = armR * 0.28;
+            const hand = new THREE.Mesh(new THREE.SphereGeometry(handR, 8, 6), mat);
+            hand.position.y = -limbLen - handR * 0.45;
+            g.add(limb, hand);
+            g.position.set(x, shoulderY, 0);
+            return g;
+        };
+        group.add(arm(-torsoR - armR), arm(torsoR + armR));
+
+        return group;
+    }
+
+    function createBoundsMesh(type) {
+        const group = new THREE.Group();
+        group.userData.boundsType = type;
+
+        const fillMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.04, side: THREE.DoubleSide, depthWrite: false });
+
+        let geom;
+        if (type === 'sphere') {
+            geom = new THREE.SphereGeometry(0.5, 24, 16);
+        } else {
+            geom = new THREE.BoxGeometry(1, 1, 1);
+        }
+
+        const fillMesh = new THREE.Mesh(geom, fillMat);
+        group.add(fillMesh);
+
+        const edges = new THREE.EdgesGeometry(geom);
+        const edgeMat = new THREE.LineBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.85 });
+        const edgeLine = new THREE.LineSegments(edges, edgeMat);
+        group.add(edgeLine);
+
+        group.position.set(0, 1, 0);
+        group.scale.set(3, 3, 3);
+        return group;
+    }
+
+    function createEyeMarker(eyePos, targetPos, fov, label, color) {
+        const group = new THREE.Group();
+        const mat = new THREE.MeshBasicMaterial({ color, depthTest: true, depthWrite: true, transparent: true, opacity: 0.9 });
+        const wireMat = new THREE.LineBasicMaterial({ color, depthTest: true, depthWrite: true, transparent: true, opacity: 0.7 });
+
+        const eye = new THREE.Vector3(eyePos.x, eyePos.y, eyePos.z);
+        const target = new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z);
+        const dir = new THREE.Vector3().subVectors(target, eye).normalize();
+
+        const eyeSphere = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 8), mat);
+        eyeSphere.position.copy(eye);
+        group.add(eyeSphere);
+
+        const targetSphere = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 6), mat.clone());
+        targetSphere.material.opacity = 0.6;
+        targetSphere.position.copy(target);
+        group.add(targetSphere);
+
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([eye, target]);
+        const lineMesh = new THREE.Line(lineGeo, new THREE.LineDashedMaterial({
+            color, depthTest: true, depthWrite: true, transparent: true, opacity: 0.5,
+            dashSize: 0.05, gapSize: 0.03,
+        }));
+        lineMesh.computeLineDistances();
+        group.add(lineMesh);
+
+        const frustumLen = 0.25;
+        const aspect = 16 / 9;
+        const halfV = Math.tan((fov * Math.PI / 180) * 0.5) * frustumLen;
+        const halfH = halfV * aspect;
+        const up = new THREE.Vector3(0, 1, 0);
+        const right = new THREE.Vector3().crossVectors(dir, up).normalize();
+        const camUp = new THREE.Vector3().crossVectors(right, dir).normalize();
+
+        const far = eye.clone().add(dir.clone().multiplyScalar(frustumLen));
+        const corners = [
+            far.clone().add(right.clone().multiplyScalar(halfH)).add(camUp.clone().multiplyScalar(halfV)),
+            far.clone().add(right.clone().multiplyScalar(-halfH)).add(camUp.clone().multiplyScalar(halfV)),
+            far.clone().add(right.clone().multiplyScalar(-halfH)).add(camUp.clone().multiplyScalar(-halfV)),
+            far.clone().add(right.clone().multiplyScalar(halfH)).add(camUp.clone().multiplyScalar(-halfV)),
+        ];
+
+        const frustumPts = [];
+        for (let i = 0; i < 4; i++) {
+            frustumPts.push(eye, corners[i]);
+            frustumPts.push(corners[i], corners[(i + 1) % 4]);
+        }
+        const frustumGeo = new THREE.BufferGeometry().setFromPoints(frustumPts);
+        const frustumLines = new THREE.LineSegments(frustumGeo, wireMat);
+        group.add(frustumLines);
+
+        const hexColor = '#' + new THREE.Color(color).getHexString();
+        const labelCanvas = document.createElement('canvas');
+        labelCanvas.width = 256; labelCanvas.height = 64;
+        const ctx = labelCanvas.getContext('2d');
+        ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif';
+        ctx.fillStyle = hexColor;
+        ctx.textAlign = 'center';
+        ctx.fillText(label, 128, 40);
+        const labelTex = new THREE.CanvasTexture(labelCanvas);
+        labelTex.generateMipmaps = false;
+        labelTex.minFilter = THREE.LinearFilter;
+        labelTex.magFilter = THREE.LinearFilter;
+        const labelMat = new THREE.SpriteMaterial({
+            map: labelTex,
+            depthTest: true,
+            depthWrite: true,
+            transparent: true,
+            opacity: 0.85,
+            alphaTest: 0.02,
+            premultipliedAlpha: true,
+        });
+        const sprite = new THREE.Sprite(labelMat);
+        sprite.position.copy(eye).add(new THREE.Vector3(0, 0.15, 0));
+        sprite.scale.set(0.5, 0.125, 1);
+        group.add(sprite);
+
+        group.traverse(child => { child.raycast = () => {}; });
+        return group;
+    }
+
+    if (!navigator.gpu) { document.body.textContent = 'WebGPU not supported'; throw new Error('No WebGPU'); }
+
+    const moduleOpts = opts => GraciaModule({ ...opts, print: console.log, printErr: console.error });
+    const player = await GraciaPlayer.create(moduleOpts, {
+        canvas: document.createElement('canvas'),
+        maxSplatsCount: 8_000_000,
+    });
+
+    /* ── Three.js WebGPU renderer ── */
+
+    const renderer = new WebGPURenderer({ device: player.device, antialias: false, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.8;
+    await renderer.init();
+    document.body.prepend(renderer.domElement);
+
+    const stats = new Stats();
+    stats.dom.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:20;cursor:pointer;opacity:0.75;';
+    document.body.appendChild(stats.dom);
+
+    /* ── Scene ── */
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2a2a32);
+
+    $('bgColor').oninput = e => scene.background.setStyle(e.target.value);
+
+    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.05, 10000);
+    camera.position.set(2, 2.5, 4);
+
+    const DEFAULT_TARGET = new THREE.Vector3(0, 0.4, 0);
+    const DEFAULT_EYE = new THREE.Vector3(2, 2.5, 4);
+
+    let controlsType = 'orbit';
+    let currentControls = null;
+
+    function makeOrbitControls() {
+        const ctl = new OrbitControls(camera, renderer.domElement);
+        ctl.enableDamping = true;
+        ctl.dampingFactor = 0.08;
+        return ctl;
+    }
+
+    function makeFlyControls() {
+        const ctl = new FlyControls(camera, renderer.domElement);
+        ctl.movementSpeed = 2;
+        ctl.rollSpeed = 0.5;
+        ctl.dragToLook = true;
+        return ctl;
+    }
+
+    function makeTrackballControls() {
+        const ctl = new TrackballControls(camera, renderer.domElement);
+        ctl.rotateSpeed = 4.0;
+        ctl.zoomSpeed = 4.0;
+        ctl.panSpeed = 1.2;
+        ctl.staticMoving = false;
+        ctl.dynamicDampingFactor = 0.2;
+        return ctl;
+    }
+
+    function resetCamera() {
+        if (currentControls) currentControls.dispose();
+
+        camera.position.copy(DEFAULT_EYE);
+        camera.up.set(0, 1, 0);
+        camera.lookAt(DEFAULT_TARGET);
+        camera.updateMatrix();
+
+        switch (controlsType) {
+            case 'fly':
+                currentControls = makeFlyControls();
+                break;
+            case 'trackball':
+                currentControls = makeTrackballControls();
+                currentControls.target.copy(DEFAULT_TARGET);
+                currentControls.update();
+                break;
+            default:
+                currentControls = makeOrbitControls();
+                currentControls.target.copy(DEFAULT_TARGET);
+                currentControls.update();
+                break;
+        }
+    }
+
+    function setEditorControls(type) {
+        if (type === controlsType && currentControls) return;
+        controlsType = type;
+        resetCamera();
+        for (const b of document.querySelectorAll('#ctrlPanel [data-ctrl]'))
+            b.classList.toggle('active', b.dataset.ctrl === type);
+    }
+
+    resetCamera();
+
+    $('ctrlPanel').onclick = e => {
+        const btn = e.target.closest('[data-ctrl]');
+        if (!btn) return;
+        setEditorControls(btn.dataset.ctrl);
+    };
+
+    /* ── Lights ── */
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
+
+    /* ── Grid + Axes ── */
+
+    scene.add(createThickGrid(20, 40, 0.006));
+    scene.add(createThickAxes(2, 0.008));
+
+    const humanRef = createHumanReference(1.75);
+    scene.add(humanRef);
+
+    $('btnHuman').onclick = () => {
+        humanRef.visible = !humanRef.visible;
+        $('btnHuman').classList.toggle('active', humanRef.visible);
+    };
+
+    const eyeMarker = createEyeMarker(
+        { x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.8, z: 1 }, 40, 'Viewer', 0x42c6f5
+    );
+    scene.add(eyeMarker);
+
+    $('btnPlayerEye').onclick = () => {
+        eyeMarker.visible = !eyeMarker.visible;
+        $('btnPlayerEye').classList.toggle('active', eyeMarker.visible);
+    };
+
+    /* ── Transform gizmo (rendered in separate overlay pass) ── */
+
+    const gizmoScene = new THREE.Scene();
+
+    const gizmo = new TransformControls(camera, renderer.domElement);
+    gizmo.addEventListener('dragging-changed', e => { if (currentControls) currentControls.enabled = !e.value; });
+    gizmo.addEventListener('mouseDown', () => {
+        if (gizmoTarget === 'video') snapshotEnvWorld();
+    });
+    gizmo.addEventListener('objectChange', () => {
+        if (gizmoTarget === 'video') restoreEnvWorld();
+    });
+    gizmo.setSize(0.7);
+    const gizmoHelper = gizmo.getHelper();
+    gizmoHelper.traverse(child => {
+        if (child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            for (const m of mats) { m.depthTest = false; m.depthWrite = false; }
+        }
+    });
+    gizmoScene.add(gizmoHelper);
+
+    /* ── Splats (video dynamic + environment static) ── */
+
+    let splats = null;
+    let hasVideo = false;
+    let hasEnvironment = false;
+
+    // Environment is a child of video: staticPivot lives under root so its
+    // local matrix represents the environment offset relative to the video transform.
+    const staticPivot = new THREE.Object3D();
+    let gizmoTarget = 'video'; // 'video' | 'environment' | 'bounds'
+
+    const _envWorld = new THREE.Matrix4();
+    const _p = new THREE.Vector3();
+    const _q = new THREE.Quaternion();
+    const _s = new THREE.Vector3();
+
+    function snapshotEnvWorld() {
+        staticPivot.updateWorldMatrix(true, false);
+        _envWorld.copy(staticPivot.matrixWorld);
+    }
+
+    function restoreEnvWorld() {
+        splats.root.updateMatrixWorld(true);
+        const parentInv = new THREE.Matrix4().copy(splats.root.matrixWorld).invert();
+        const newLocal = new THREE.Matrix4().multiplyMatrices(parentInv, _envWorld);
+        newLocal.decompose(_p, _q, _s);
+        staticPivot.position.copy(_p);
+        staticPivot.quaternion.copy(_q);
+        staticPivot.scale.copy(_s);
+        staticPivot.updateMatrix();
+    }
+
+    let boundsShape = null; // { type: 'box'|'sphere', mesh: THREE.Group }
+
+    function syncBoundsButtons() {
+        $('btnBoundsBox').classList.toggle('active', boundsShape?.type === 'box');
+        $('btnBoundsSphere').classList.toggle('active', boundsShape?.type === 'sphere');
+        $('btnBoundsClear').disabled = !boundsShape;
+    }
+
+    function addBounds(type) {
+        removeBounds();
+        const mesh = createBoundsMesh(type);
+        scene.add(mesh);
+        boundsShape = { type, mesh };
+        syncBoundsButtons();
+        setGizmoTarget('bounds');
+    }
+
+    function removeBounds() {
+        if (!boundsShape) return;
+        scene.remove(boundsShape.mesh);
+        boundsShape.mesh.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+        boundsShape = null;
+        syncBoundsButtons();
+        if (gizmoTarget === 'bounds') setGizmoTarget('video');
+    }
+
+    async function initSplats() {
+        splats = SplatsRendererW3.attach(player, renderer);
+        splats.root.add(staticPivot);
+        scene.add(splats.root);
+        gizmo.attach(splats.root);
+        syncScaleSlider();
+    }
+
+    /* ── File picker helper ── */
+
+    async function pickFile(accept) {
+        return new Promise(resolve => {
+            if (window.showOpenFilePicker) {
+                showOpenFilePicker({
+                    types: [{ description: 'Gaussian Splat', accept: { 'application/octet-stream': accept } }],
+                }).then(handles => resolve({ name: handles[0].name, handle: handles[0] }))
+                  .catch(() => resolve(null));
+            } else {
+                const inp = Object.assign(document.createElement('input'), {
+                    type: 'file', accept: accept.join(','), style: 'display:none'
+                });
+                inp.onchange = () => {
+                    const f = inp.files[0];
+                    resolve(f ? { name: f.name, file: f } : null);
+                    inp.remove();
+                };
+                document.body.appendChild(inp);
+                inp.click();
+            }
+        });
+    }
+
+    async function pickJsonFile() {
+        return new Promise(resolve => {
+            if (window.showOpenFilePicker) {
+                showOpenFilePicker({
+                    types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+                }).then(async handles => {
+                    if (!handles[0]) return resolve(null);
+                    resolve(await handles[0].getFile());
+                }).catch(() => resolve(null));
+            } else {
+                const inp = Object.assign(document.createElement('input'), {
+                    type: 'file', accept: '.json,application/json', style: 'display:none'
+                });
+                inp.onchange = () => {
+                    resolve(inp.files[0] ?? null);
+                    inp.remove();
+                };
+                document.body.appendChild(inp);
+                inp.click();
+            }
+        });
+    }
+
+    function trsFromObject(obj) {
+        const q = obj.quaternion;
+        return {
+            rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
+            scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
+            translation: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
+        };
+    }
+
+    function applyTrs(obj, trs) {
+        if (!trs) return;
+        if (trs.translation) {
+            if (Array.isArray(trs.translation)) obj.position.fromArray(trs.translation);
+            else obj.position.set(trs.translation.x, trs.translation.y, trs.translation.z);
+        }
+        if (trs.rotation) {
+            if (Array.isArray(trs.rotation)) {
+                if (trs.rotation.length === 4) obj.quaternion.fromArray(trs.rotation);
+                else if (trs.rotation.length === 3) obj.rotation.set(trs.rotation[0], trs.rotation[1], trs.rotation[2]);
+            } else {
+                obj.quaternion.set(trs.rotation.x, trs.rotation.y, trs.rotation.z, trs.rotation.w);
+            }
+        }
+        if (trs.scale) {
+            if (Array.isArray(trs.scale)) obj.scale.fromArray(trs.scale);
+            else obj.scale.set(trs.scale.x, trs.scale.y, trs.scale.z);
+        }
+        obj.updateMatrix();
+    }
+
+    function exportAlignment() {
+        if (!splats) return;
+        const data = {
+            background: `#${scene.background.getHexString()}`,
+            controls: controlsType,
+            initialTransform: trsFromObject(splats.root),
+            staticTransform: trsFromObject(staticPivot),
+            cameraBounds: boundsShape ? {
+                type: boundsShape.type,
+                position: { x: boundsShape.mesh.position.x, y: boundsShape.mesh.position.y, z: boundsShape.mesh.position.z },
+                rotation: { x: boundsShape.mesh.quaternion.x, y: boundsShape.mesh.quaternion.y, z: boundsShape.mesh.quaternion.z, w: boundsShape.mesh.quaternion.w },
+                scale: { x: boundsShape.mesh.scale.x, y: boundsShape.mesh.scale.y, z: boundsShape.mesh.scale.z },
+            } : null,
+        };
+        const blob = new Blob([JSON.stringify(data, null, 4)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = Object.assign(document.createElement('a'), { href: url, download: 'alignment.json' });
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function importAlignment() {
+        if (!splats) return;
+        const file = await pickJsonFile();
+        if (!file) return;
+        try {
+            const raw = JSON.parse(await file.text());
+            const data = raw.sources?.[0] ?? raw;
+            if (data.background) {
+                scene.background.setStyle(data.background);
+                $('bgColor').value = data.background;
+            }
+            if (data.controls) setEditorControls(data.controls);
+            applyTrs(splats.root, data.initialTransform ?? data.videoTransform ?? data['4dgs']);
+            applyTrs(staticPivot, data.staticTransform ?? data.environmentTransform ?? data['3dgs']);
+            splats.root.updateMatrixWorld(true);
+            staticPivot.updateMatrix();
+
+            if (data.cameraBounds && data.cameraBounds.type) {
+                addBounds(data.cameraBounds.type);
+                applyTrs(boundsShape.mesh, {
+                    translation: data.cameraBounds.position,
+                    rotation: data.cameraBounds.rotation,
+                    scale: data.cameraBounds.scale,
+                });
+            } else {
+                removeBounds();
+            }
+
+            const obj = gizmoObject();
+            if (obj) gizmo.attach(obj);
+            syncScaleSlider();
+        } catch (e) {
+            console.error('Failed to import alignment:', e);
+            alert('Invalid alignment JSON');
+        }
+    }
+
+    /* ── Open files ── */
+
+    function updateTag(id, name, dotClass) {
+        const label = id === 'tagVideo' ? 'Video' : 'Environment';
+        $(id).innerHTML = `<span class="dot ${dotClass}"></span>${label}: ${name}`;
+    }
+
+    function syncContentButtons() {
+        $('btnClearVideo').disabled = !hasVideo;
+        $('btnClearEnvironment').disabled = !hasEnvironment;
+    }
+
+    function openVideo(result) {
+        if (!splats || !result) return;
+        const trs = trsFromObject(splats.root);
+        const p = splats.player;
+        const src = result.handle ? { localFile: result.handle } : { file: result.file };
+        p.open(src);
+        applyTrs(splats.root, trs);
+        splats.root.updateMatrixWorld(true);
+        p.play();
+        hasVideo = true;
+        updateTag('tagVideo', result.name, 'dot-video');
+        $('barWrap').style.display = '';
+        syncContentButtons();
+        const obj = gizmoObject();
+        if (obj) gizmo.attach(obj);
+        syncScaleSlider();
+    }
+
+    async function openEnvironment(result) {
+        if (!splats || !result) return;
+        const trs = trsFromObject(staticPivot);
+        const f = result.handle ? await result.handle.getFile() : result.file;
+        await splats.player.open({ file: f, type: 'static' });
+        applyTrs(staticPivot, trs);
+        staticPivot.updateMatrix();
+        hasEnvironment = true;
+        updateTag('tagEnvironment', result.name, 'dot-environment');
+        syncContentButtons();
+        const obj = gizmoObject();
+        if (obj) gizmo.attach(obj);
+        syncScaleSlider();
+    }
+
+    function clearVideo() {
+        if (!splats || !hasVideo) return;
+        splats.player.clearVideo();
+        hasVideo = false;
+        updateTag('tagVideo', 'none', 'dot-none');
+        $('barWrap').style.display = 'none';
+        syncContentButtons();
+    }
+
+    function clearEnvironment() {
+        if (!splats || !hasEnvironment) return;
+        splats.player.clearEnvironment();
+        hasEnvironment = false;
+        updateTag('tagEnvironment', 'none', 'dot-none');
+        syncContentButtons();
+    }
+
+    $('btnVideo').onclick = async () => { const r = await pickFile(['.mint']); if (r) openVideo(r); };
+    $('btnEnvironment').onclick = async () => { const r = await pickFile(['.sog']); if (r) openEnvironment(r); };
+    $('btnClearVideo').onclick = () => clearVideo();
+    $('btnClearEnvironment').onclick = () => clearEnvironment();
+    $('btnImportAlign').onclick = () => importAlignment();
+    $('btnExportAlign').onclick = () => exportAlignment();
+    $('btnBoundsBox').onclick = () => addBounds('box');
+    $('btnBoundsSphere').onclick = () => addBounds('sphere');
+    $('btnBoundsClear').onclick = () => removeBounds();
+
+    /* ── Player bar (video timeline) ── */
+
+    function mountBar(container) {
+        const bar = mk('div', 'vb', container), btn = mk('button', 'vb-btn', bar);
+        const track = mk('div', 'vb-track', bar), fill = mk('div', 'vb-fill', track);
+        const thumb = mk('div', 'vb-thumb', track), time = mk('span', 'vb-time', bar);
+        const ICO = { play: '\u25B6', pause: '\u23F8', spin: '\u27F3' };
+        let cur = '', drag = false;
+
+        const pos = n => fill.style.width = thumb.style.left = `${n * 100}%`;
+        const pct = e => clamp((e.clientX - track.getBoundingClientRect().left) / track.offsetWidth);
+        const dur = () => splats?.player.duration ?? 0;
+
+        function icon(s) {
+            if (s === cur) return; cur = s;
+            const sz = s === 'play' ? 13 : 11, ml = s === 'play' ? ';margin-left:2px' : '';
+            const anim = s === 'spin' ? ';animation:spin .7s linear infinite;display:inline-block' : '';
+            btn.innerHTML = `<span style="color:#fff;font-size:${sz}px${ml}${anim}">${ICO[s]}</span>`;
+        }
+        icon('play');
+        btn.onclick = () => { if (!splats) return; const p = splats.player; p.isPlaying ? p.pause() : p.play(); };
+
+        track.onpointerdown = e => { e.preventDefault(); drag = true; track.setPointerCapture(e.pointerId); pos(pct(e)); splats?.player.seek(pct(e) * dur()); };
+        track.onpointermove = e => { if (!drag) return; pos(pct(e)); splats?.player.seek(pct(e) * dur()); };
+        track.onpointerup = e => { drag = false; track.releasePointerCapture(e.pointerId); };
+        track.onpointercancel = () => { drag = false; };
+
+        return () => {
+            if (!splats || !hasVideo) return;
+            const p = splats.player;
+            icon(p.isBuffering ? 'spin' : p.isPlaying ? 'pause' : 'play');
+            const c = p.currentTime, d = dur();
+            if (!drag && d > 0) pos(clamp(c / d));
+            time.textContent = `${fmt(c)} / ${fmt(d)}`;
+        };
+    }
+
+    /* ── Gizmo mode controls ── */
+
+    const SCALE_MIN = 0.05;
+    const SCALE_MAX = 10;
+
+    function gizmoObject() {
+        if (gizmoTarget === 'bounds') return boundsShape?.mesh ?? null;
+        if (!splats) return null;
+        return gizmoTarget === 'environment' ? staticPivot : splats.root;
+    }
+
+    function uniformScale(obj) {
+        return Math.cbrt(obj.scale.x * obj.scale.y * obj.scale.z);
+    }
+
+    function syncScaleSlider() {
+        const obj = gizmoObject();
+        if (!obj) return;
+        const s = uniformScale(obj);
+        $('gizScaleSlider').value = clamp(s, SCALE_MIN, SCALE_MAX);
+        $('gizScaleInput').value = s.toFixed(2);
+    }
+
+    function applyUniformScale(s) {
+        const obj = gizmoObject();
+        if (!obj) return;
+        if (gizmoTarget === 'video') snapshotEnvWorld();
+        obj.scale.set(s, s, s);
+        obj.updateMatrix();
+        if (gizmoTarget === 'video') restoreEnvWorld();
+    }
+
+    function setGizmoMode(mode) {
+        if (mode !== 'translate' && mode !== 'rotate') mode = 'translate';
+        gizmo.setMode(mode);
+        $('gizTranslate').classList.toggle('active', mode === 'translate');
+        $('gizRotate').classList.toggle('active', mode === 'rotate');
+    }
+    $('gizTranslate').onclick = () => setGizmoMode('translate');
+    $('gizRotate').onclick    = () => setGizmoMode('rotate');
+
+    $('gizScaleSlider').oninput = e => {
+        const s = parseFloat(e.target.value);
+        $('gizScaleInput').value = s.toFixed(2);
+        applyUniformScale(s);
+    };
+
+    $('gizScaleInput').oninput = e => {
+        const raw = parseFloat(e.target.value);
+        if (!Number.isFinite(raw)) return;
+        const s = clamp(raw, SCALE_MIN, SCALE_MAX);
+        $('gizScaleSlider').value = s;
+        applyUniformScale(s);
+    };
+
+    $('gizScaleInput').onblur = e => {
+        const raw = parseFloat(e.target.value);
+        const s = Number.isFinite(raw) ? clamp(raw, SCALE_MIN, SCALE_MAX) : uniformScale(gizmoObject());
+        e.target.value = s.toFixed(2);
+        $('gizScaleSlider').value = s;
+        applyUniformScale(s);
+    };
+
+    /* ── Gizmo target (video / environment / bounds) ── */
+
+    function setGizmoTarget(target) {
+        if (target === 'bounds' && !boundsShape) target = 'video';
+        if (target !== 'bounds' && !splats) return;
+        gizmoTarget = target;
+        const obj = gizmoObject();
+        if (obj) gizmo.attach(obj);
+        const btn = $('gizTargetToggle');
+        const labels = { video: 'Video', environment: 'Environment', bounds: 'Bounds' };
+        btn.textContent = `Target: ${labels[target]}`;
+        btn.classList.toggle('active', target !== 'video');
+        syncScaleSlider();
+    }
+    $('gizTargetToggle').onclick = () => {
+        const order = ['video', 'environment', 'bounds'];
+        const idx = order.indexOf(gizmoTarget);
+        let next = order[(idx + 1) % order.length];
+        if (next === 'bounds' && !boundsShape) next = order[0];
+        setGizmoTarget(next);
+    };
+
+    /* ── Keyboard shortcuts ── */
+
+    addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (controlsType === 'fly') return;
+        switch (e.key.toLowerCase()) {
+            case 'w': setGizmoMode('translate'); break;
+            case 'e': setGizmoMode('rotate'); break;
+        }
+    });
+
+    /* ── Reset camera ── */
+
+    $('resetCam').onclick = () => resetCamera();
+
+    /* ── Resize ── */
+
+    addEventListener('resize', () => {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+    });
+
+    /* ── Render loop ── */
+
+    const timer = new THREE.Timer();
+    let tickBar;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        stats.begin();
+        timer.update();
+        const dt = timer.getDelta();
+        if (controlsType === 'fly') currentControls.update(dt);
+        else currentControls.update?.();
+
+        staticPivot.updateMatrix();
+        splats.setStaticModelMatrix(staticPivot.matrix.elements);
+        splats.render(renderer, scene, camera, gizmoScene);
+
+        tickBar?.();
+        stats.end();
+    }
+
+    /* ── Bootstrap ── */
+
+    (async () => {
+        try {
+            tickBar = mountBar($('barWrap'));
+            await initSplats();
+            animate();
+        } catch (e) { console.error('Editor init error:', e); }
+    })();
+    </script>
+</body>
+</html>
