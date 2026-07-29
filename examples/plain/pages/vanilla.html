@@ -76,6 +76,14 @@
     .vb-mute:hover { background: rgba(0,0,0,.6); border-color: rgba(255,255,255,.25); color: #fff; }
     .vb-mute svg { width: 14px; height: 14px; }
 
+    .vb-speed { display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border: 1px solid rgba(255,255,255,.15); border-radius: 14px; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); flex-shrink: 0; }
+    .vb-speed input { -webkit-appearance: none; appearance: none; width: 72px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.15); outline: none; cursor: pointer; }
+    .vb-speed input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 11px; height: 11px; border: 0; border-radius: 50%; background: var(--hi); box-shadow: 0 1px 6px rgba(0,0,0,.5); cursor: pointer; }
+    .vb-speed input::-moz-range-thumb { width: 11px; height: 11px; border: 0; border-radius: 50%; background: var(--hi); box-shadow: 0 1px 6px rgba(0,0,0,.5); cursor: pointer; }
+    .vb-speed input:focus-visible { box-shadow: 0 0 0 2px var(--accent-glow); }
+    .vb-speed-val { color: rgba(255,255,255,.6); font: 400 11px/1 inherit; font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
+    .vb-speed-val.mod { color: var(--accent); }
+
     .ctrl-panel { position: fixed; right: 16px; top: 50%; z-index: 10; display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); pointer-events: none; opacity: 0; transform: translateY(-50%) translateX(20px); transition: opacity .3s ease, transform .3s ease; }
     .ctrl-panel.visible { opacity: 1; transform: translateY(-50%) translateX(0); pointer-events: auto; }
     .ctrl-panel .ctrl-title { font: 600 10px/1 inherit; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .06em; padding: 6px 14px 2px; }
@@ -115,6 +123,10 @@
         .dd-toggle { width: 110px; }
         .pill-btn .btn-label { display: none; }
         .pill-btn.icon-only { padding: 0 7px; }
+        .vb { gap: 6px; }
+        .vb-time { min-width: 62px; }
+        .vb-speed { gap: 5px; padding: 0 8px; }
+        .vb-speed input { width: 44px; }
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -254,6 +266,7 @@
     const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
     const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
     const fmt = t => (!Number.isFinite(t) || t < 0) ? '0:00' : `${~~(t / 60)}:${String(~~t % 60).padStart(2, '0')}`;
+    const SPEED_MIN = 0.1, SPEED_MAX = 2, SPEED_STEP = 0.05;
 
     const SVG_ATTRS = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
     const ico = {
@@ -320,7 +333,24 @@
         const bar = mk('div', 'vb', container), btn = mk('button', 'vb-btn', bar);
         const slider = mk('div', 'vb-track', bar), fill = mk('div', 'vb-fill', slider);
         const thumb = mk('div', 'vb-thumb', slider), time = mk('span', 'vb-time', bar);
+        const speedWrap = mk('div', 'vb-speed', bar);
+        const speedInput = mk('input', null, speedWrap), speedVal = mk('span', 'vb-speed-val', speedWrap);
         const muteBtn = mk('button', 'vb-mute', bar);
+
+        Object.assign(speedInput, { type: 'range', min: SPEED_MIN, max: SPEED_MAX, step: SPEED_STEP, title: 'Playback speed' });
+        // Range values are min + n*step in double precision — snap so 1x compares as exactly 1.
+        const snapSpeed = v => Math.round(clamp(v, SPEED_MIN, SPEED_MAX) / SPEED_STEP) * SPEED_STEP;
+        const showSpeed = s => {
+            speedInput.value = s;
+            speedVal.textContent = `${s.toFixed(2).replace(/0$/, '')}x`;
+            speedVal.classList.toggle('mod', s !== 1);
+        };
+        showSpeed(snapSpeed(player.speed ?? 1));
+        speedInput.oninput = () => {
+            const s = snapSpeed(+speedInput.value);
+            player.setSpeed?.(s);
+            showSpeed(s);
+        };
 
         let cur = '', drag = false, rafId;
 
@@ -359,6 +389,7 @@
         slider.onpointercancel = () => { drag = false; };
 
         const onKey = e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; // e.g. the speed slider
             if (e.code === 'Space') { e.preventDefault(); toggle(); }
             else if (e.code === 'ArrowLeft')  { player.seek?.(clamp(player.currentTime - 5, 0, dur())); track('streaming_rewinded'); }
             else if (e.code === 'ArrowRight') { player.seek?.(clamp(player.currentTime + 5, 0, dur())); track('streaming_rewinded'); }

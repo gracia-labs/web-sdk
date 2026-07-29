@@ -143,7 +143,8 @@ declare class GraciaPlayer$1 {
     play(): void;
     pause(): void;
     seek(t: any): void;
-    setSpeed(s: any): void;
+    get speed(): number;
+    setSpeed(s: number): void;
     close(): void;
     clearVideo(): void;
     clearEnvironment(): void;
