@@ -1,6 +1,6 @@
 # Gracia — React + Vite Example
 
-Minimal React app using `@gracia/web-sdk` from the repo `public/` package (run `bun build` at repo root first).
+Minimal React app using `@gracia/web-sdk` from the repo `public/` package (`dist/` is committed, so no build step is needed).
 
 ## Quick start
 
@@ -8,9 +8,10 @@ From repo root:
 
 ```bash
 bun install
-bun build
 bun serve:vite
 ```
+
+`serve:vite` installs this example's dependencies before starting Vite — the example is a separate package, so the root `bun install` does not cover it.
 
 Or from this directory:
 
@@ -43,6 +44,19 @@ export default defineConfig({
 - Serving WASM in dev + copying it on build
 - `__GRACIA_MODULE_URL__` define for `useGraciaPlayer({ moduleUrl })`
 - Optional `dedupe: true` for React / Three apps
+
+### Peer resolution in this example
+
+`dedupe: true` covers `react`, `react-dom`, `three`, and `@react-three/fiber`. That is
+enough for a normal install, where the SDK sits in your own `node_modules` and Vite
+resolves its remaining peers from there.
+
+This example instead loads the bundle from `../../dist` (`file:../..`), which is outside
+the app, so Vite resolves the core bundle's bare imports from `public/dist/` — where none
+of the peers exist. `vite.config.ts` therefore passes an explicit `dedupe` array listing
+every peer the core bundle imports (adding `@react-three/uikit`, `@pmndrs/pointer-events`,
+and `@preact/signals-core`), and `@preact/signals-core` is a direct dependency so it is
+hoisted to the app's `node_modules` rather than left nested under `@react-three/uikit`.
 
 ```tsx
 // App.tsx

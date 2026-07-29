@@ -22,7 +22,7 @@
     },
     "scripts": {
         "serve": "bun examples/plain/serve.mjs",
-        "serve:vite": "bun run --cwd examples/react-vite dev"
+        "serve:vite": "bun install --cwd examples/react-vite && bun run --cwd examples/react-vite dev"
     },
     "files": [
         "dist",

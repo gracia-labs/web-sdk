@@ -11,6 +11,7 @@
     "dependencies": {
         "@gracia/web-sdk": "file:../..",
         "@pmndrs/pointer-events": "^6.6.30",
+        "@preact/signals-core": "^1.14.3",
         "@react-three/fiber": "^9.6.1",
         "@react-three/uikit": "^1.0.74",
         "react": "^19.2.7",

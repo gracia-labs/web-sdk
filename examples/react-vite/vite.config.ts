@@ -13,7 +13,18 @@ export default defineConfig({
         mkcert(),
         ...graciaPlugin({
             bundle: "core",
-            dedupe: true,
+            // The SDK bundle is loaded from ../../dist, outside this package, so Vite
+            // resolves its bare imports from there instead of from the app. Dedupe
+            // pins every peer the core bundle imports to this app's node_modules.
+            dedupe: [
+                "react",
+                "react-dom",
+                "three",
+                "@react-three/fiber",
+                "@react-three/uikit",
+                "@pmndrs/pointer-events",
+                "@preact/signals-core",
+            ],
             distPath: sdkDist,
             streamingBaseUrl: "/api/market/api/v1/streaming/content",
         }),

@@ -98,7 +98,7 @@ With the Vite plugin, WASM is wired at build time — no `moduleUrl` prop needed
 </script>
 ```
 
-Run the local demo: clone the repo, `bun install && bun build && bun serve`, then open `https://localhost:6931`.
+Run the local demo: clone the repo, `bun install && bun serve`, then open `https://localhost:6931`.
 
 ## Examples
 
