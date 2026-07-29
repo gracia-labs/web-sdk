@@ -1,19 +1,18 @@
 {
     "name": "@gracia/web-sdk",
-    "version": "0.0.66",
     "description": "Gracia — volumetric video SDK (player, app, Three.js, XR R3F, React hooks)",
     "type": "module",
     "exports": {
         "./core": {
             "types": "./dist/GraciaSDK.d.ts",
-            "default": "./dist/GraciaSDK.eb870952c48d473b.js"
+            "default": "./dist/GraciaSDK.c6c4601cce78b4ba.js"
         },
         "./aio": {
-            "default": "./dist/GraciaAIO.2fdb4e30c65556b7.js"
+            "default": "./dist/GraciaAIO.5dfc3507ae3c73c3.js"
         },
         "./wasm": {
             "types": "./dist/GraciaWebCore.d.ts",
-            "default": "./dist/GraciaWebCore.4c01ef1bfc2f4371.js"
+            "default": "./dist/GraciaWebCore.831edeb68e4db298.js"
         },
         "./manifest": "./dist/gracia-manifest.json",
         "./vite-plugin": {
@@ -35,6 +34,7 @@
         "@react-three/fiber": "9.6.1",
         "@react-three/uikit": "1.0.74",
         "react": "19.2.7",
+        "react-dom": "19.2.7",
         "three": "0.185.1"
     },
     "peerDependenciesMeta": {
@@ -48,6 +48,9 @@
             "optional": true
         },
         "react": {
+            "optional": true
+        },
+        "react-dom": {
             "optional": true
         },
         "three": {

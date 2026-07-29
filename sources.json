@@ -1,1 +1,161 @@
-{"sources":[]}
+{
+    "sources": [
+        {
+            "id": "direct-fashion-1724",
+            "label": "Direct: Vivid & Translucent (1724)",
+            "displayName": "Vivid & Translucent",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint"
+        },
+        {
+            "id": "direct-karl-kani-liar-liar",
+            "label": "Direct: \"Liar Liar\" by McKenzi Brooke x Karl Kani x Fashionverse",
+            "displayName": "\"Liar Liar\" by McKenzi Brooke x Karl Kani x Fashionverse",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/karl_kani_liar_liar.mint"
+        },
+        {
+            "id": "direct-fashion-streaming",
+            "label": "Direct: Vivid & Translucent",
+            "displayName": "Vivid & Translucent",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/fashion_streaming.mint"
+        },
+        {
+            "id": "direct-doctor",
+            "label": "Direct: Doctor - Checking Joints",
+            "displayName": "Doctor - Checking Joints",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/doctor_s2.mint"
+        },
+        {
+            "id": "direct-cycling",
+            "label": "Direct: Cycling - Awesome Velocity",
+            "displayName": "Cycling - Awesome Velocity",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/cycling_example.mint"
+        },
+        {
+            "id": "direct-amy-may",
+            "label": "Direct: Amy May — Open",
+            "displayName": "Amy May — Open",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/amy_may_streaming.mint"
+        },
+        {
+            "id": "direct-aim-high",
+            "label": "Direct: Aim High",
+            "displayName": "Aim High",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/aim_high_streaming_with_audio.mint"
+        },
+        {
+            "id": "direct-adventury",
+            "label": "Direct: Adventury XR - Learning The Ropes",
+            "displayName": "Adventury XR - Learning The Ropes",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/adventury_gracia.mint"
+        },
+        {
+            "id": "direct-gymnastic",
+            "label": "Direct: Learning The Ropes",
+            "displayName": "Learning The Ropes",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/gymnastic.mint"
+        },
+        {
+            "id": "direct-mma",
+            "label": "Direct: MMA - KO",
+            "displayName": "MMA - KO",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/mint/mma.mint"
+        },
+        {
+            "id": "infra-streaming",
+            "label": "Infra streaming (official demos)",
+            "baseUrl": "https://streaming.gracia.ai/api/v1/streaming/content",
+            "items": [
+                {
+                    "streamingId": "5b1084ed-fb41-446e-8455-dc7579c18db0",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: Learning The Ropes",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "4bb56594-499e-47bc-b88c-27167483f015",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: MMA - KO",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "b8b6e566-20cf-4a3b-93a6-13252237d66e",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: Vivid & Translucent",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "5a2befb6-5072-4276-805a-89de87b4b373",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: fashion_1724",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "01732b7e-063c-445d-b58f-98d2a25b909c",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: Doctor - Checking Joints",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "51260e4c-75fd-4b20-8b9f-a4d176e501a5",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: Aim High",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "cecb0585-6d2d-4010-b1bc-3627fdc4d2b7",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: Cycling - Awesome Velocity",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "5c6e9301-ccc9-4f44-b409-869f591b4773",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: \"Liar Liar\" by McKenzi Brooke x Karl Kani x Fashionverse",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "2b55b6c2-9ed4-4633-b0f8-7ead5bfe5cfb",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: Amy May — Open",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                },
+                {
+                    "streamingId": "2649fe09-a5db-4e94-a99e-e1b71646713e",
+                    "token": "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODUxNjYyOTJ9.wGuwzPd-O6l-IuLFVgzWs0_kICg0CplKsbO1PT4cAHQ",
+                    "label": "Infra: Adventury XR - Learning The Ropes",
+                    "settings": {
+                        "resetPositionOnStart": true
+                    }
+                }
+            ]
+        }
+    ]
+}

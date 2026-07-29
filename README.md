@@ -2,7 +2,7 @@
 
 Volumetric video player for the web. Lifelike 3D content in the browser — flat screen, VR, or AR — with a single JavaScript import.
 
-**Live demos:** [Player](https://demo.gracia.ai/) · [React](https://demo.gracia.ai/react.html) · [Three.js](https://demo.gracia.ai/three.html) · [PlayCanvas](https://demo.gracia.ai/playcanvas.html)
+**Live demos:** [Player](https://demo.gracia.ai/) · [Vanilla UI](https://demo.gracia.ai/vanilla.html) · [React](https://demo.gracia.ai/react.html) · [Three.js](https://demo.gracia.ai/three.html) · [PlayCanvas](https://demo.gracia.ai/playcanvas.html)
 
 ## Highlights
 
@@ -19,7 +19,7 @@ Volumetric video player for the web. Lifelike 3D content in the browser — flat
 |------|-------------|
 | `GraciaWebCore.js` | WASM engine — core playback runtime (zero JS dependencies) |
 | `GraciaSDK.js` | Tree-shakeable ES module — player, Three.js, React hooks, XR |
-| `GraciaAIO.js` | Self-contained demo bundle (includes Three.js, React, etc.) |
+| `GraciaAIO.js` | Self-contained demo bundle (includes Three.js, React, styled player, mount helper) |
 
 `GraciaSDK.js` loads peer dependencies on demand — only what you use. `GraciaAIO.js` bundles third-party libraries unmodified under their original licenses.
 
@@ -44,7 +44,8 @@ All peer dependencies are optional — install only what your integration needs:
 |-----------------|-------------|
 | `three` | `SplatsMesh`, `XROverlay`, XR controls |
 | `playcanvas` | `GraciaSplats` |
-| `react` | `useGraciaPlayer`, `useGraciaPlaylist` hooks |
+| `react` | `useGraciaPlayer`, `useGraciaPlaylist`, `GraciaReactPlayer` |
+| `react-dom` | `mountGraciaPlayer`, `GraciaReactPlayer` |
 | `@react-three/fiber` | XR UI panels (R3F-based) |
 | `@react-three/uikit` | XR UI panels |
 | `@preact/signals-core` | XR UI reactive state |
@@ -52,12 +53,62 @@ All peer dependencies are optional — install only what your integration needs:
 
 ## Quick Start
 
-Each demo below is a self-contained HTML file — view the source for a complete, working example.
+The fastest path is the **styled player** — drop-in UI with playback, seek, scene switching, fullscreen, and VR/AR where supported. Default styles are auto-installed and scoped under `.gr-player`.
+
+React apps import from `@gracia/web-sdk/core`. Plain HTML pages import from `@gracia/web-sdk/aio` (React bundled inside).
+
+### React
+
+```tsx
+import { GraciaReactPlayer } from "@gracia/web-sdk/core";
+
+export function Player() {
+  return (
+    <GraciaReactPlayer
+      streaming={[{ streamingId: "content-id", token: "view-token", label: "Demo" }]}
+      localFiles
+      sceneSelector="menu"
+    />
+  );
+}
+```
+
+With the Vite plugin, WASM is wired at build time — no `moduleUrl` prop needed. Streaming tokens resolve against the Gracia market API by default.
+
+### Plain HTML
+
+```html
+<script type="importmap">{ "imports": {
+  "@gracia/web-sdk/aio": "/path/to/GraciaAIO.<hash>.js",
+  "@gracia/web-sdk/wasm": "/path/to/GraciaWebCore.<hash>.js"
+} }</script>
+<div id="player"></div>
+<script type="module">
+  import { mountGraciaPlayer } from "@gracia/web-sdk/aio";
+
+  const player = mountGraciaPlayer(document.querySelector("#player"), {
+    streaming: [{ streamingId: "content-id", token: "view-token", label: "Demo" }],
+    localFiles: true,
+    sceneSelector: "menu",
+    moduleUrl: "@gracia/web-sdk/wasm",
+  });
+
+  player.update({ streaming: [{ streamingId: "next-id", token: "view-token", label: "Next" }] });
+  player.unmount();
+</script>
+```
+
+Run the local demo: clone the repo, `bun install && bun build && bun serve`, then open `https://localhost:6931`.
+
+## Examples
+
+Each HTML demo is self-contained — open the source for a full working integration.
 
 | Integration | Demo | Source | Description |
 |-------------|------|--------|-------------|
-| **Vanilla JS** — `GraciaApp` | [Player](https://demo.gracia.ai/) | [`examples/plain/pages/index.html`](examples/plain/pages/index.html) | Full-featured player with camera, XR, playback controls |
-| **React** — Hooks | [React](https://demo.gracia.ai/react.html) | [`examples/plain/pages/react.html`](examples/plain/pages/react.html) | Declarative integration with `useGraciaPlayer` and `useGraciaPlaylist` |
+| **Styled player** — `GraciaReactPlayer` / `mountGraciaPlayer` | [Player](https://demo.gracia.ai/) | [`examples/plain/pages/index.html`](examples/plain/pages/index.html) | Recommended starting point — pretty player, playlist, local files, XR |
+| **Vanilla JS** — `GraciaApp` + custom UI | [Vanilla UI](https://demo.gracia.ai/vanilla.html) | [`examples/plain/pages/vanilla.html`](examples/plain/pages/vanilla.html) | Low-level `GraciaApp` with hand-built controls (no styled player) |
+| **React hooks** — `useGraciaPlayer` | [React](https://demo.gracia.ai/react.html) | [`examples/plain/pages/react.html`](examples/plain/pages/react.html) | Declarative integration with hooks and playlist |
 | **Three.js** — `SplatsMesh` | [Three.js](https://demo.gracia.ai/three.html) | [`examples/plain/pages/three.html`](examples/plain/pages/three.html) | Splats as a standard Three.js mesh with environment relighting |
 | **PlayCanvas** — `GraciaSplats` | [PlayCanvas](https://demo.gracia.ai/playcanvas.html) | [`examples/plain/pages/playcanvas.html`](examples/plain/pages/playcanvas.html) | Splats with depth testing and automatic shadow casting |
 
@@ -65,7 +116,7 @@ Each demo below is a self-contained HTML file — view the source for a complete
 
 | Stack | Source | Description |
 |-------|--------|-------------|
-| **React + Vite + TypeScript** | [`examples/react-vite`](examples/react-vite) | Production-ready Vite setup covering WASM serving, Strict Mode, cleanup, and other integration pitfalls |
+| **React + Vite + TypeScript** | [`examples/react-vite`](examples/react-vite) | Production-ready Vite setup with `GraciaReactPlayer`, WASM serving, Strict Mode, and cleanup patterns |
 
 ## Vite Plugin (Recommended)
 
@@ -85,7 +136,16 @@ The plugin provides:
 - **Dev:** serves hashed WASM during Vite dev
 - **Build:** copies WASM to `assets/` with its content-hashed filename
 - **Optional dedupe:** pass `dedupe: true` for React/Three apps
-- **Defines:** injects `__GRACIA_MODULE_URL__` for `useGraciaPlayer({ moduleUrl })`
+- **Defines:** injects `__GRACIA_MODULE_URL__` for the player; optionally `__GRACIA_STREAMING_BASE_URL__` when `streamingBaseUrl` is set
+
+**Custom streaming API** — omit `streamingBaseUrl` to use the default market endpoint. Pass it only when your app needs a different URL (for example a dev proxy):
+
+```ts
+...graciaPlugin({
+  bundle: "core",
+  streamingBaseUrl: "/api/market/api/v1/streaming/content", // non-default only
+})
+```
 
 ## Serving `GraciaWebCore.js` (non-Vite)
 
@@ -149,10 +209,35 @@ const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your 
 
 ### React Hooks
 
-| Hook | Description |
-|------|------------|
+| Hook / export | Description |
+|---------------|------------|
 | `useGraciaPlayer(options)` | Manages player lifecycle, returns reactive state |
 | `useGraciaPlaylist(gracia)` | Multi-source playlist with next/prev/goTo |
+| `GraciaReactPlayer` | Styled React player component |
+| `mountGraciaPlayer` | Vanilla mount helper for the styled player |
+| `GRACIA_PLAYER_DEFAULT_CSS` | Default player CSS string |
+| `installGraciaPlayerStyles` | Installs scoped default styles into `document.head` or a shadow root |
+
+### Styled player
+
+`GraciaReactPlayer` and `mountGraciaPlayer` share the same props. Pass `sources` or `streaming` (`streamingId` + token); when both are set, `streaming` wins. Metadata resolves against the market API by default — override only via `graciaPlugin({ streamingBaseUrl })` or `buildApiSources(items, baseUrl)`.
+
+| Prop | Default | Description |
+|------|---------|-------------|
+| `sources` / `streaming` | — | Pre-built scenes, or id + token pairs the player resolves |
+| `controls` | `true` | Built-in playback, scene, and XR UI |
+| `sceneSelector` | `"stepper"` | `"tabs"` or `"menu"` for playlists |
+| `cameraControls` | `false` | 2D camera selector (`orbit` / `trackball` / `fly`) |
+| `localFiles` | `false` | When `true`, adds open-file control for `.mint` / `.sog` from disk |
+| `muted` | `false` | Initial mute on first ready only |
+| `xrOverlay` | modern UI | `false` disables in-headset UI |
+| `style` / `className` | — | Root styles; use `--gr-player-*` variables (no `theme` prop) |
+| callbacks | — | `onReady`, `onProgress`, `onModeChange`, `onSceneChange`, `onError`, … |
+| `eventLogger` | — | Low-level UI/error events |
+
+Imperative handle (`ref.current` or `mountGraciaPlayer(...).player`): `play`, `pause`, `seek`, `next`/`prev`/`goTo`, `setMode`, `setCameraControls`, `toggleFullscreen`, `openLocalFile`. See [`examples/react-vite`](examples/react-vite) and [`index.html`](examples/plain/pages/index.html).
+
+For custom UI, use `useGraciaPlayer`, `useGraciaPlaylist`, and `XROverlay` instead.
 
 ### XR
 
@@ -185,72 +270,9 @@ const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your 
 - **HTTPS** — WebGPU and WebXR require a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) on non-localhost origins
 - **WebXR** — VR/AR modes only (Meta Quest Browser, etc.)
 
-## Content Access & Security
+## Gracia Streaming Infrastructure
 
-The player needs a **streamingId** (identifies the scene) and a **view token** (authorizes playback). Both can be created in your Gracia account under **Settings → Api Settings**.
-
-> **Important.** **Settings → Api Settings** is available only for partner Gracia accounts. If you want to become a partner, write to support at `support@gracia.ai`.
-
-Base URL: `https://streaming.gracia.ai`
-
-### Option 1: Long-lived View Token (not recommended)
-
-> **Not recommended.** Long-lived tokens are less secure — anyone with the token can watch the content. Use Option 2 whenever possible.
-
-Create a view token in **Settings → Api Settings**, set the `streamingIds` it can access, optionally restrict to specific `domains`, and pass it directly to the player. No backend needed.
-
-Only suitable for: embedded players, kiosks, demo pages where per-user access control is not needed. Always use domain whitelisting to limit exposure.
-
-### Option 2: Short-lived Tokens via Your Backend (recommended)
-
-Implement an endpoint on your backend that your frontend calls when a user wants to watch content. This endpoint verifies access, requests a short-lived view token from Gracia API, and returns the tokens to the frontend. The API token never leaves your server.
-
-Best for: pay-per-view, purchases, subscriptions.
-
-1. Create an **API token** in **Settings → Api Settings**. Store it securely on your server.
-2. Implement an endpoint (e.g. `POST /api/streaming-access/{contentId}`) that authenticates the user, checks access, calls Gracia API to issue a view token, and returns `streamingId` + `viewToken`.
-3. Your frontend calls this endpoint and passes the received tokens to the player.
-
-```
-┌──────────┐         ┌──────────────┐         ┌───────────────┐         ┌──────────────────┐
-│  Player  │         │ Your Backend │         │ Your Database │         │ Gracia Streaming │
-│ (client) │         │              │         │               │         │       API        │
-└────┬─────┘         └──────┬───────┘         └──────┬────────┘         └────────┬─────────┘
-     │                      │                        │                           │
-     │  1. User wants to    │                        │                           │
-     │     watch content    │                        │                           │
-     │─────────────────────>│                        │                           │
-     │                      │                        │                           │
-     │               2. Your backend                 │                           │
-     │                  validates access             │                           │
-     │                      │                        │                           │
-     │                      │  3. Issue view token   │                           │
-     │                      │     POST /view-token/issue                         │
-     │                      │───────────────────────────────────────────────────>│
-     │                      │                        │                           │
-     │                      │  4. View token + tokenId                           │
-     │                      │<───────────────────────────────────────────────────│
-     │                      │                        │                           │
-     │                      │  5. Save token state   │                           │
-     │                      │     {userId, tokenId}  │                           |
-     │                      │───────────────────────>│                           │
-     │                      │                        │                           │
-     │  6. Return streaming │                        │                           │
-     │     ID + view token  │                        │                           │
-     │<─────────────────────│                        │                           │
-     │                      │                        │                           │
-     │  7. Pass streamingId + viewToken to player    │
-     │     → player handles playback                 │
-
-```
-
-When persisting issued tokens, store at least `userId` and `tokenId`, so your backend can safely update or revoke token access later.
-
-## OpenAPI Specification
-
-- Specification file: [`api-streaming-view-token.openapi.yaml`](./api-streaming-view-token.openapi.yaml)
-- To view it in Swagger Editor, open [Swagger Editor](https://editor.swagger.io/) and load this YAML file (or paste the API content directly).
-- You can also use any other Swagger/OpenAPI-compatible editors or viewers supporting the current version of the Specification.
+One option for delivering your content is Gracia's own reliable streaming infrastructure — scenes are hosted and served for you, with per-scene access control. See **[docs.gracia.ai/streaming-usage](https://docs.gracia.ai/streaming-usage)** for how to use it.
 
 ## Acknowledgements
 

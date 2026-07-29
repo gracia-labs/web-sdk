@@ -1,0 +1,77 @@
+================================================================================
+  GRACIA DEMO CONTENT LICENSE
+  Copyright (c) 2026 Gracia Labs. All rights reserved.
+================================================================================
+
+DEFINITION. "Content" means volumetric (4DGS) content published by Gracia Labs ("Licensor")
+in a Gracia 4DGS format, being `.mint` and any other or subsequent format in which Licensor
+distributes 4DGS content, together with its previews and metadata, however obtained,
+whether downloaded, streamed from a location provided by Licensor, supplied for evaluation,
+or included in a repository or sample application.
+
+SCOPE. This License governs Licensor's 4DGS content only. It does not govern static 3DGS
+scenes or any other files that are not Gracia 4DGS content, including `.ply` and `.sog`
+files, whether created by Licensee or obtained from a third party. Such files fall outside
+this License, and nothing in it restricts their use.
+
+The Content is proprietary to Licensor and is published for demonstration and evaluation
+purposes only. It is not open content and is not licensed for production or public use.
+This License does not affect the license of the software development kit; rights in the
+example code are governed by the LICENSE file in this repository. By downloading,
+streaming, or playing the Content, the person or entity doing so ("Licensee") agrees to
+these terms. A person accepting these terms on behalf of an entity represents that they are
+authorised to bind that entity.
+
+1. PERMITTED USE. Licensee may download, cache, and stream the Content and render it using
+   the Gracia SDK, including in the example applications, in Licensee's own test and
+   evaluation builds, and on Licensee's devices and headsets, and may evaluate and benchmark
+   it and demonstrate it in internal reviews, private demonstrations, and presentations.
+   Screenshots and screen recordings of the Content as rendered by the SDK are permitted for
+   those purposes, with attribution to Gracia Labs.
+
+2. RESTRICTIONS. Except to the extent applicable law prohibits such restrictions, Licensee
+   shall not: (a) redistribute, re-host, mirror, or otherwise provide third parties with
+   access to the Content; (b) incorporate the Content in, or distribute it alongside, any
+   product, or use it in marketing or in any other public-facing or commercial context,
+   except with Licensor's prior written permission under Section 3; (c) reverse engineer the
+   formats, codecs, or encoding of the Content, or unpack, convert, or transcode its files;
+   (d) extract or reconstruct the assets underlying the Content, including splats, geometry,
+   meshes, textures, frames, depth data, and camera data; (e) create derivative works of the
+   Content; (f) use the Content, or any material derived from it, to train or evaluate
+   machine learning models; or (g) remove any watermark or notice, or circumvent any
+   access-control or expiry mechanism.
+
+3. PUBLICATION. Any public release incorporating the Content, including an application,
+   game, website, video, installation, or public demonstration, whether free of charge or
+   paid, requires Licensor's prior written permission. Requests for such permission, and for
+   licensing of the Content beyond demonstration and evaluation use, are addressed under
+   separate commercial terms and should be directed to support@gracia.ai.
+
+4. CONTENT PRODUCED FOR LICENSEE. This License concerns Licensor's demonstration content
+   only. The production of 4DGS content for Licensee, and the ownership of and rights in the
+   content so produced, are matters for a commercial agreement between Licensor and Licensee
+   and are neither determined nor restricted by this License. Enquiries should be directed
+   to support@gracia.ai.
+
+5. INTELLECTUAL PROPERTY AND DEPICTED MATERIALS. The Content is licensed, not sold. Licensor
+   retains all right, title, and interest in and to the Content, and its formats and
+   encodings constitute trade secrets. Persons, performances, music, artwork, trademarks,
+   and locations appearing in the Content are subject to rights held by Licensor or by third
+   parties, and this License grants no right in any likeness, performance, or trademark. All
+   rights not expressly granted are reserved.
+
+6. DISCLAIMER OF WARRANTY; LIMITATION OF LIABILITY. THE CONTENT IS PROVIDED "AS IS," WITHOUT
+   WARRANTY OF ANY KIND, TO THE MAXIMUM EXTENT PERMITTED BY LAW. TO THE SAME EXTENT,
+   LICENSOR SHALL HAVE NO LIABILITY ARISING OUT OF OR RELATING TO THE CONTENT, INCLUDING FOR
+   ANY DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, LOST PROFITS, OR LOST DATA.
+   Nothing in this License limits liability that cannot be excluded under applicable law.
+
+7. TERM, TERMINATION, AND GOVERNING LAW. Licensor may add, modify, or withdraw Content at
+   any time, and streams may expire. This License terminates automatically upon Licensee's
+   breach and may be terminated by Licensor at any time. Upon termination, Licensee shall
+   delete all copies and caches of the Content. Sections 2 and 5 through 7 survive
+   termination. Section 8 of the LICENSE file in this repository, governing law and
+   jurisdiction, applies equally to this License.
+
+Enquiries regarding publication, the production of 4DGS content, and licensing beyond
+demonstration and evaluation use: support@gracia.ai

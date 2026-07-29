@@ -1,102 +1,152 @@
 ================================================================================
-  GRACIA WEB SDK — REPOSITORY LICENSE
+  GRACIA SDK — REPOSITORY LICENSE
   Copyright (c) 2026 Gracia Labs. All rights reserved.
-================================================================================
-
-Two licenses apply, by area (where an item falls under Part B, that controls):
-
-  • PART A — Gracia Web SDK software ............ Proprietary (see Part A)
-  • PART B — Examples, samples & documentation .. MIT License (see Part B)
-
-All other files are © Gracia Labs. Third-party dependencies (e.g., Three.js, React,
-gl-matrix) keep their own licenses. Confidentiality/NDA, arbitration, indemnities, audit, support/SLAs,
-source access, OEM, and any other special or non-standard terms are handled only
-under a separate agreement — contact support@gracia.ai.
-
-
-================================================================================
-  PART A — GRACIA WEB SDK PROPRIETARY LICENSE
 --------------------------------------------------------------------------------
-  Applies to the Gracia Web SDK software and all artifacts Licensor distributes in
-  compiled form (JavaScript bundles, WebAssembly modules, type definitions, and related
-  files). Within those artifacts, Part A covers only Licensor's own code; embedded
-  third-party components are not owned by Licensor and are licensed separately (see
-  Section 5). Does NOT apply to Part B (examples).
+  THE ARTIFACTS: `dist/**` — every file in `dist/` and its subdirectories, at any depth
 ================================================================================
 
-The Gracia Web SDK ("Software") is proprietary to Gracia Labs ("Licensor") and is
-not open source. By downloading, installing, or using it, you ("Licensee") accept
-these terms; if you act for an entity, you bind that entity.
+SCOPE. The contents of this repository are licensed under two separate sets of terms:
 
-1. GRANT. Licensor grants you a limited, worldwide, non-exclusive, non-transferable,
-   revocable license to use and integrate the unmodified Software into your
-   applications — including in production and commercially — and to redistribute it
-   only as an embedded component of those applications, not on a standalone basis.
-   You own your applications; you gain no rights except those stated here, and all
-   rights not granted are reserved.
+  • PART A — the Artifacts identified above .................... Proprietary (see Part A)
+  • PART B — all other files in this repository ................. MIT License (see Part B)
 
-2. RESTRICTIONS. Except where applicable law forbids restricting it, you may not:
-   (a) reverse engineer, decompile, disassemble, or attempt to derive the Software's
-   source, algorithms, or internals; (b) modify or create derivative works of the
-   Software; (c) redistribute, sublicense, sell, rent, or host it standalone;
-   (d) circumvent its access-control, licensing, or integrity mechanisms, or remove
-   its notices; or (e) use the Software, its non-public parts, or anything derived
-   from prohibited reverse engineering to build a product that competes with the
-   Software (a substitute for its functionality or value — on any platform, through
-   any interface, in any language, even if free). This does not restrict independent
-   development that does not use the foregoing, and exists only to protect Licensor's
-   copyrights and trade secrets.
+Part A governs the prebuilt distribution files identified above as the Artifacts, which are
+proprietary to Gracia Labs. Part B governs all other files in this repository, including
+the source code, examples, tests, build configuration, and documentation, which are
+licensed under the MIT License.
 
-3. INTELLECTUAL PROPERTY. The Software is licensed, not sold. Licensor retains all
-   right, title, and interest, including copyrights, patents, trademarks, and trade
-   secrets; its non-public internals are trade secrets that Section 2 protects. No
-   patent license is granted beyond what is strictly necessary to use the Software as
-   permitted.
+DEMO CONTENT. Volumetric (4DGS) content published by Gracia Labs is not licensed under this
+file. It is governed by the CONTENT-LICENSE file in this repository, which permits
+demonstration and evaluation use only and requires prior written permission for any
+publication. Static 3DGS scenes, including `.ply` and `.sog` files, are not Gracia 4DGS
+content and are governed by neither file. Content produced by Gracia Labs for a customer is
+governed by that customer's agreement with Gracia Labs.
 
-4. CONTRIBUTIONS. The SDK is distributed only in compiled form, so its proprietary
-   code cannot be contributed to; contributions are to examples, samples, and
-   documentation (such as a new-engine integration or demo). By submitting a
-   contribution, you license it under Part B (MIT) automatically — it becomes part of a
-   collective, openly shared work that anyone, including Licensor, may use, modify, and
-   redistribute under MIT. No contributor or Licensor claims exclusive ownership of the
-   contributed material, and Licensor claims nothing in any third-party engine or
-   platform an example targets. You confirm you have the right to submit it, that it
-   contains no third-party material you are not licensed to contribute, and that it does
-   not reverse engineer the Software or otherwise breach Section 2.
+LICENSE DOCUMENTS. This file and CONTENT-LICENSE are license documents rather than
+software, and are not licensed under Part B. They are Copyright (c) 2026 Gracia Labs, all
+rights reserved. They may be reproduced and distributed verbatim, in whole or in part, as
+required to satisfy the notice requirement of Part B, to accompany the Artifacts, or to
+record the terms applicable to this repository; they may not be modified, and modified
+versions may not be distributed. Nothing in this paragraph prevents any person from
+applying license terms of their own authorship to their own works.
 
-5. THIRD-PARTY COMPONENTS. The SDK relies on third-party libraries (e.g., Three.js,
-   React, gl-matrix) that Licensor does not own and that remain under their own
-   licenses. The SDK normally loads these as peer dependencies; any all-in-one
-   convenience bundle Licensor distributes simply packages them together with the SDK.
-   Licensor claims rights only in its own code, and complying with the third-party
-   licenses is your responsibility.
-
-6. NO WARRANTY; NO LIABILITY. THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF
-   ANY KIND TO THE MAXIMUM EXTENT PERMITTED BY LAW. TO THAT SAME EXTENT, LICENSOR HAS
-   NO LIABILITY WHATSOEVER ARISING FROM OR RELATING TO THE SOFTWARE — INCLUDING FOR ANY
-   DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, LOST PROFITS, OR LOST DATA —
-   AND OWES YOU NOTHING. Nothing here limits liability that cannot be excluded by law.
-
-7. TERM. This License applies until terminated; it ends automatically if you breach it
-   (immediately for a Section 2 breach or a challenge to Licensor's patents). On
-   termination, stop using and delete the Software. Sections 2–6 and 8 survive.
-
-8. GOVERNING LAW. This License is governed by the laws of Licensor's principal place of
-   business, excluding its conflict-of-law rules, and disputes are subject to the courts
-   located there; either party may still seek injunctive relief anywhere to protect its
-   intellectual property. Mandatory local-law and consumer protections apply where
-   required. If any term is unenforceable, it is limited or severed and the rest stays
-   in effect.
-
-For anything not covered above — special, enterprise, or non-standard use: support@gracia.ai
+THIRD-PARTY MATERIALS. Third-party components included in the Artifacts, vendored
+third-party files in this repository, and dependencies retrieved at build or installation
+time remain subject to their own licenses. Confidentiality, arbitration, indemnification,
+audit, support and service levels, source access, OEM arrangements, and any other special
+or non-standard terms are available only under a separate written agreement. Enquiries
+should be directed to support@gracia.ai.
 
 
 ================================================================================
-  PART B — EXAMPLES, SAMPLES & DOCUMENTATION (MIT LICENSE)
+  PART A — GRACIA RENDERER PROPRIETARY LICENSE
 --------------------------------------------------------------------------------
-  Applies to example code, sample integrations, and documentation provided to
-  demonstrate use of the Software, wherever located in this repository. Does NOT
-  apply to the Gracia Web SDK itself (Part A).
+  This Part applies solely to the Artifacts identified at the head of this file: every file
+  in the `dist/` directory and its subdirectories, at any depth, as distributed by Licensor
+  (compiled binaries and WebAssembly modules, bundled and minified JavaScript, import and
+  shared libraries, headers, interface code and type declarations, and packaged metadata),
+  all files they extract or install, and any accompanying debug symbols. It covers only
+  Licensor's own code; third-party components included in the Artifacts are licensed
+  separately, as provided in Section 5. It applies to no other file in this repository, all
+  of which are licensed under Part B.
+================================================================================
+
+The Artifacts are proprietary to Gracia Labs ("Licensor") and are not open source. By
+downloading, installing, extracting, or otherwise using the Artifacts, the person or entity
+doing so ("Licensee") agrees to these terms. A person accepting these terms on behalf of an
+entity represents that they are authorised to bind that entity.
+
+1. LICENSE GRANT. Subject to Licensee's compliance with these terms, Licensor grants
+   Licensee a limited, worldwide, non-exclusive, non-transferable, revocable license to use
+   the unmodified Artifacts to develop and operate Licensee's own applications, including
+   in production and for commercial purposes. This grant includes the rights to install and
+   extract the Artifacts, to compile any headers or interface code they contain into
+   Licensee's binaries, to link against them, to invoke their public application
+   programming interface from any programming language, and to develop bindings or wrappers
+   over that interface. Licensee may redistribute the Artifacts only as a component
+   incorporated in Licensee's own applications, whether embedded in the application,
+   installed alongside its executable, declared as a dependency of Licensee's project, or
+   served from an artifact store or package index operated by Licensee for its own
+   deployments, and may not redistribute them on a standalone basis. Licensee retains
+   ownership of its applications and bindings. No rights are granted other than those
+   expressly stated, and all rights not granted are reserved. Licensee's rights in the
+   source code, build configuration, and documentation that call the Artifacts arise under
+   Part B and are not limited by this Part.
+
+2. RESTRICTIONS. Except to the extent applicable law prohibits such restrictions, Licensee
+   shall not: (a) reverse engineer, decompile, disassemble, deobfuscate, or otherwise
+   attempt to derive the source code, algorithms, or internal design of the compiled
+   binaries and bundled or minified code included in the Artifacts; (b) modify, patch, repackage, or create derivative works of the Artifacts or
+   their binaries, including by editing installed or extracted files or by patching them at
+   runtime; (c) redistribute, sublicense, sell, rent, host, or republish the Artifacts on a
+   standalone basis, including by uploading them to any public package index or registry,
+   whether under Licensor's name or a confusingly similar name; (d) circumvent any
+   access-control, licensing, or integrity mechanism applicable to the Artifacts, including
+   distribution checksums and manifests, or remove any notice, version resource, or
+   metadata; or (e) use the Artifacts, their non-public elements, or any material derived
+   from activities prohibited by this Section to develop a product that competes with the
+   Artifacts, meaning a substitute for their functionality or value on any platform,
+   through any interface, in any programming language, whether or not offered free of
+   charge. This Section does not restrict independent development that does not rely on the
+   foregoing, and exists solely to protect Licensor's copyrights and trade secrets. For the
+   avoidance of doubt, compiling headers contained in the Artifacts into Licensee's
+   binaries, linking against the Artifacts, and modifying, forking, or redistributing the
+   source code, build configuration, and documentation licensed under Part B, including
+   modifying the manner in which they invoke the Artifacts, are permitted and do not breach
+   this Section.
+
+3. INTELLECTUAL PROPERTY. The Artifacts are licensed, not sold. Licensor retains all right,
+   title, and interest in and to the Artifacts, including all copyrights, patents,
+   trademarks, and trade secrets. The internal design of the Artifacts constitutes trade
+   secrets protected by Section 2. No patent license is granted beyond that strictly
+   necessary to use the Artifacts as permitted by this Part.
+
+4. CONTRIBUTIONS. The renderer is distributed only in compiled form, and no contributions
+   to the Artifacts are accepted. Contributions to the source code, examples, tests, build
+   configuration, and documentation are governed by Part B.
+
+5. THIRD-PARTY COMPONENTS. The Artifacts include third-party libraries not owned by
+   Licensor and, at runtime, rely on further components not distributed by Licensor,
+   including package dependencies, system loaders, and graphics drivers. All such
+   components remain subject to their own licenses and terms. Licensor asserts rights only
+   in its own code, and compliance with third-party licenses is Licensee's responsibility.
+
+6. DISCLAIMER OF WARRANTY; LIMITATION OF LIABILITY. THE ARTIFACTS ARE PROVIDED "AS IS,"
+   WITHOUT WARRANTY OF ANY KIND, TO THE MAXIMUM EXTENT PERMITTED BY LAW. TO THE SAME
+   EXTENT, LICENSOR SHALL HAVE NO LIABILITY ARISING OUT OF OR RELATING TO THE ARTIFACTS,
+   INCLUDING FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, LOST PROFITS,
+   OR LOST DATA. Nothing in this Part limits liability that cannot be excluded under
+   applicable law.
+
+7. TERM AND TERMINATION. This Part remains in effect until terminated. It terminates
+   automatically upon Licensee's breach, and with immediate effect upon a breach of
+   Section 2 or the institution of a challenge to Licensor's patents. Upon termination,
+   Licensee shall cease all use and distribution of the Artifacts and delete all copies,
+   including extracted and installed copies. Licensee's rights under Part B are unaffected.
+   Sections 2 through 6 and Section 8 survive termination.
+
+8. GOVERNING LAW. This Part is governed by the laws of Licensor's principal place of
+   business, excluding its conflict-of-law rules, and the courts located there shall have
+   jurisdiction over any dispute. Either party may seek injunctive relief in any
+   jurisdiction to protect its intellectual property. Mandatory provisions of local law and
+   consumer protection law apply where required. If any provision is held unenforceable, it
+   shall be limited or severed and the remaining provisions shall remain in effect.
+
+Enquiries regarding special, enterprise, or non-standard use: support@gracia.ai
+
+
+================================================================================
+  PART B — ALL OTHER FILES IN THIS REPOSITORY (MIT LICENSE)
+--------------------------------------------------------------------------------
+  This Part applies to every file in this repository other than those excluded below,
+  including the source code, examples, tests, build and package manifests, the README, and
+  all documentation, present and future, wherever located in the tree. It does not apply
+  to: the Artifacts identified at the head of this file (Part A); Gracia demo content in
+  any format (CONTENT-LICENSE); this file and CONTENT-LICENSE themselves, which are
+  governed by the LICENSE DOCUMENTS paragraph above; or vendored third-party files, which
+  carry their own notices and remain subject to their own licenses. Dependencies retrieved
+  at build or installation time are not distributed in this repository and remain subject
+  to their own licenses.
 ================================================================================
 
 MIT License

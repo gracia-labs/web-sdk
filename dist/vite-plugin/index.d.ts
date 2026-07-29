@@ -27,10 +27,17 @@ interface GraciaPluginOptions {
     wasmBuildUrl?: string;
     /** Dedupe shared deps when using React/Three alongside the SDK. */
     dedupe?: boolean | string[];
+    /**
+     * Streaming API base injected as `__GRACIA_STREAMING_BASE_URL__` for
+     * `GraciaReactPlayer` when resolving `streaming` items.
+     */
+    streamingBaseUrl?: string;
 }
 declare global {
     /** Injected by `graciaPlugin` — hashed WASM module URL. */
     const __GRACIA_MODULE_URL__: string;
+    /** Injected by `graciaPlugin` when `streamingBaseUrl` is set. */
+    const __GRACIA_STREAMING_BASE_URL__: string | undefined;
 }
 declare function graciaPlugin(opts: GraciaPluginOptions): Plugin[];
 

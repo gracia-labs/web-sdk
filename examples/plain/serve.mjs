@@ -14,7 +14,9 @@ const PID = join(PUBLIC, ".server.pid");
 const manifest = (() => {
     try {
         const m = JSON.parse(readFileSync(MANIFEST, "utf-8"));
-        if (!m.aio?.hash || !m.wasm?.hash) throw new Error("manifest is missing aio.hash or wasm.hash");
+        if (!m.aio?.hash || !m.core?.hash || !m.wasm?.hash) {
+            throw new Error("manifest is missing aio.hash, core.hash, or wasm.hash");
+        }
         return m;
     } catch (err) {
         console.error(`[gracia] cannot read ${MANIFEST}: ${err.message}`);

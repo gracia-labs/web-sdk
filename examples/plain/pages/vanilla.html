@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gracia Player</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script type="importmap">{ "imports": {
+        "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+    } }</script>
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: #000; color: #fff;
+        --accent: #f6fa81;
+        --accent-dim: rgba(246,250,129,.35);
+        --accent-glow: rgba(246,250,129,.15);
+        --dim: rgba(255,255,255,.5); --mid: rgba(255,255,255,.75);
+        --hi: #fff;
+    }
+    body[data-theme="pga"] { --accent: #45b3f7; --accent-dim: rgba(69,179,247,.35); --accent-glow: rgba(69,179,247,.15); }
+    canvas { display: block; }
+    #canvasWrap { position: fixed; inset: 0; }
+    #canvasWrap canvas { background: #000; cursor: grab; }
+    #canvasWrap canvas:active { cursor: grabbing; }
+
+    #loader { position: fixed; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.7); backdrop-filter: blur(6px); transition: opacity .3s ease; }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    #loader.light { background: rgba(0,0,0,.35); backdrop-filter: none; }
+    #loader svg { width: 48px; height: 48px; animation: spin .9s linear infinite; }
+
+    .ov { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 16px; opacity: 0; transition: opacity .3s ease; }
+    .ov.visible { opacity: 1; }
+    .ov.visible > * { pointer-events: auto; }
+
+    .top { display: flex; align-items: baseline; justify-content: space-between; }
+    .top-left, .top-center, .top-right { display: flex; gap: 8px; align-items: center; }
+    .top-left { min-width: 0; flex: 0 1 auto; }
+    .top-center { flex-shrink: 0; }
+    .top-right { flex-shrink: 0; justify-content: flex-end; flex-direction: column; align-items: flex-end; gap: 4px; }
+
+    .bot { display: flex; flex-direction: column; gap: 8px; }
+
+    .pill-btn { height: 28px; padding: 0 12px; border: 1px solid rgba(255,255,255,.15); border-radius: 14px; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); color: rgba(255,255,255,.85); cursor: pointer; font: 500 11px/26px inherit; white-space: nowrap; transition: background .15s, color .12s, border-color .15s; display: inline-flex; align-items: center; gap: 5px; }
+    .pill-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .pill-btn:hover:not(:disabled) { background: rgba(0,0,0,.6); border-color: rgba(255,255,255,.25); color: #fff; }
+    .pill-btn:disabled { opacity: .25; cursor: not-allowed; }
+    .pill-btn.on { background: rgba(0,0,0,.6); border-color: rgba(255,255,255,.25); color: #fff; }
+
+    .dropdown { position: relative; display: inline-block; }
+    .dd-toggle { height: 28px; width: 150px; padding: 0 22px 0 10px; border: 1px solid rgba(255,255,255,.15); border-radius: 14px; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); color: rgba(255,255,255,.85); cursor: pointer; font: 500 11px/26px inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; transition: border-color .15s, color .15s, background .15s; appearance: none; }
+    .dd-toggle::after { content: ''; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); border: 4px solid transparent; border-top: 4px solid rgba(255,255,255,.5); transition: transform .15s; }
+    .dd-toggle:hover { border-color: rgba(255,255,255,.25); background: rgba(0,0,0,.6); color: #fff; }
+    .dropdown.open .dd-toggle::after { transform: translateY(-50%) rotate(180deg); }
+    .dd-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 100%; max-width: calc(100vw - 32px); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: rgba(10,10,10,.92); backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0,0,0,.6); padding: 4px 0; }
+    .dropdown.open .dd-menu { display: block; }
+    .dd-item { display: block; width: 100%; padding: 7px 12px; border: 0; background: 0; color: rgba(255,255,255,.7); cursor: pointer; font: 400 11px/1.4 inherit; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background .1s, color .1s; }
+    .dd-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+    .dd-item.active { color: var(--accent); }
+
+    .vb { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .vb-btn { width: 32px; min-width: 32px; height: 32px; border: 1px solid rgba(255,255,255,.15); border-radius: 50%; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .15s, border-color .15s; color: #fff; }
+    .vb-btn:hover { background: rgba(0,0,0,.6); border-color: rgba(255,255,255,.25); }
+    .vb-btn svg { width: 14px; height: 14px; }
+    .vb-track { flex: 1; height: 4px; background: rgba(255,255,255,.15); border-radius: 2px; position: relative; cursor: pointer; }
+    .vb-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--accent); width: 0; pointer-events: none; }
+    .vb-thumb { position: absolute; top: 50%; width: 12px; height: 12px; background: var(--hi); border-radius: 50%; transform: translate(-50%,-50%); left: 0; box-shadow: 0 1px 6px rgba(0,0,0,.5); }
+    .vb-time { color: rgba(255,255,255,.6); font: 400 11px/1 inherit; min-width: 80px; text-align: right; }
+    .vb-mute { width: 30px; min-width: 30px; height: 30px; border: 1px solid rgba(255,255,255,.15); border-radius: 50%; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; color: rgba(255,255,255,.75); transition: background .15s, color .12s, border-color .15s; }
+    .vb-mute:hover { background: rgba(0,0,0,.6); border-color: rgba(255,255,255,.25); color: #fff; }
+    .vb-mute svg { width: 14px; height: 14px; }
+
+    .ctrl-panel { position: fixed; right: 16px; top: 50%; z-index: 10; display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); pointer-events: none; opacity: 0; transform: translateY(-50%) translateX(20px); transition: opacity .3s ease, transform .3s ease; }
+    .ctrl-panel.visible { opacity: 1; transform: translateY(-50%) translateX(0); pointer-events: auto; }
+    .ctrl-panel .ctrl-title { font: 600 10px/1 inherit; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .06em; padding: 6px 14px 2px; }
+    .ctrl-btn { display: flex; flex-direction: column; align-items: flex-start; padding: 8px 14px; border: 1px solid transparent; border-radius: 10px; background: none; color: rgba(255,255,255,.55); cursor: pointer; font: 500 11px/1.3 inherit; text-align: left; transition: background .15s, color .12s, border-color .15s; }
+    .ctrl-btn:hover { color: rgba(255,255,255,.85); background: rgba(255,255,255,.04); }
+    .ctrl-btn.on { border-color: rgba(255,255,255,.18); color: #fff; background: rgba(255,255,255,.07); }
+    .ctrl-keys { font-weight: 300; font-size: 9px; color: rgba(255,255,255,.3); margin-top: 3px; letter-spacing: .01em; line-height: 1.5; }
+    .ctrl-keys b { font-weight: 600; color: rgba(255,255,255,.5); }
+    .ctrl-btn.on .ctrl-keys { color: rgba(255,255,255,.45); }
+    .ctrl-btn.on .ctrl-keys b { color: rgba(255,255,255,.7); }
+    #debugPanel { position: fixed; left: 16px; top: 52px; z-index: 10; width: 200px; max-width: min(200px, calc(100vw - 32px)); padding: 10px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(0,0,0,.5); backdrop-filter: blur(10px); font: 400 11px/1.6 inherit; color: rgba(255,255,255,.65); display: none; pointer-events: auto; }
+    #debugPanel.visible { display: block; }
+    #debugPanel .dbg-title { font: 600 10px/1 inherit; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    #debugPanel .dbg-row { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; gap: 12px; }
+    #debugPanel .dbg-label { color: rgba(255,255,255,.4); }
+    #debugPanel .dbg-val { color: rgba(255,255,255,.8); font-variant-numeric: tabular-nums; }
+    #debugPanel .dbg-toggle { position: relative; width: 32px; height: 18px; border-radius: 9px; background: rgba(255,255,255,.12); border: none; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+    #debugPanel .dbg-toggle.on { background: var(--accent-dim); }
+    #debugPanel .dbg-toggle::after { content: ''; position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,.5); transition: transform .2s, background .2s; }
+    #debugPanel .dbg-toggle.on::after { transform: translateX(14px); background: var(--accent); }
+    #debugPanel .dbg-sep { height: 1px; background: rgba(255,255,255,.08); margin: 6px 0; }
+    #debugPanel .dbg-log-toggle { display: block; width: 100%; padding: 0; border: 0; background: 0; color: rgba(255,255,255,.35); font: 600 10px/1 inherit; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; text-align: left; margin-top: 8px; transition: color .12s; }
+    #debugPanel .dbg-log-toggle:hover { color: rgba(255,255,255,.55); }
+    #debugPanel .dbg-log { max-height: 140px; overflow-y: auto; padding-top: 6px; }
+    #debugPanel .dbg-log-line { padding: 1px 0; font: 400 10px/1.45 inherit; color: rgba(255,255,255,.55); word-break: break-word; }
+    #debugPanel .dbg-log-line .dbg-log-ts { color: rgba(255,255,255,.3); font-variant-numeric: tabular-nums; margin-right: 5px; }
+    #debugPanel .dbg-log-line.warn { color: rgba(255,255,255,.75); }
+    #debugPanel .dbg-log-line.error { color: #fca5a5; }
+
+    #errorToast { position: fixed; bottom: 20px; left: 50%; z-index: 100; max-width: 380px; width: calc(100% - 32px); padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(248,113,113,.25); background: rgba(127,29,29,.55); backdrop-filter: blur(10px); color: rgba(255,255,255,.9); font: 400 11px/1.5 inherit; pointer-events: none; opacity: 0; transition: opacity .3s ease, transform .3s ease; transform: translateX(-50%) translateY(8px); }
+    #errorToast.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+    @media (max-width: 480px) {
+        .ov { padding: 10px 10px; }
+        .top { gap: 6px; }
+        .top-left, .top-center, .top-right { gap: 4px; }
+        .dd-toggle { width: 110px; }
+        .pill-btn .btn-label { display: none; }
+        .pill-btn.icon-only { padding: 0 7px; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="canvasWrap"></div>
+    <div id="errorToast"></div>
+
+    <div id="loader" class="hidden">
+        <svg viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,.08)" stroke-width="3"/>
+            <path d="M44 24a20 20 0 0 0-20-20" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+    </div>
+
+    <div class="ov visible" id="overlay">
+        <div class="top">
+            <div class="top-left">
+                <div class="dropdown" id="srcDD">
+                    <button type="button" class="dd-toggle" id="srcToggle">Select source&hellip;</button>
+                    <div class="dd-menu" id="srcMenu"></div>
+                </div>
+                <button type="button" class="pill-btn icon-only" id="fileBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="btn-label">Open file</span></button>
+                <input type="file" id="fileInput" accept=".sog,.mint" style="display:none">
+            </div>
+            <div class="top-center">
+                <button type="button" class="pill-btn on" data-mode="pw">2D</button>
+                <button type="button" class="pill-btn" data-mode="vr" disabled>VR</button>
+                <button type="button" class="pill-btn" data-mode="ar" disabled style="display:none">AR</button>
+            </div>
+            <div class="top-right">
+                <button type="button" class="pill-btn icon-only" id="resetBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3 6.75"/><polyline points="3 22 3 16 9 16"/></svg><span class="btn-label">Reset</span></button>
+                <span id="versionPill" style="font:500 9px/1 monospace;color:rgba(255,255,255,.35);padding:2px 6px;border-radius:3px;background:rgba(0,0,0,.4);white-space:nowrap;cursor:default;position:relative;"><span id="vpTip" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:rgba(10,10,10,.95);border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:6px 8px;white-space:pre;font:9px/1.5 monospace;color:rgba(255,255,255,.55);z-index:100;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,.7);pointer-events:none;"></span></span>
+            </div>
+        </div>
+        <div class="bot">
+            <div id="barWrap"></div>
+        </div>
+    </div>
+
+    <div class="ctrl-panel" id="ctrlPanel">
+        <div class="ctrl-title">Camera</div>
+        <button type="button" class="ctrl-btn on" data-ctrl="orbit">
+            <span class="ctrl-label">Orbit</span>
+            <span class="ctrl-keys"><b>Left-click</b> drag to rotate &middot; <b>Right-click</b> drag to pan<br><b>Scroll</b> to zoom in/out</span>
+        </button>
+        <button type="button" class="ctrl-btn" data-ctrl="trackball">
+            <span class="ctrl-label">Trackball</span>
+            <span class="ctrl-keys"><b>Left-click</b> drag to rotate freely &middot; <b>Right-click</b> drag to pan<br><b>Scroll</b> to zoom in/out</span>
+        </button>
+        <button type="button" class="ctrl-btn" data-ctrl="fly">
+            <span class="ctrl-label">Fly</span>
+            <span class="ctrl-keys"><b>W/S</b> forward &amp; back &middot; <b>A/D</b> strafe &middot; <b>R/F</b> up &amp; down<br><b>Q/E</b> roll &middot; <b>Drag</b> to look around</span>
+        </button>
+    </div>
+
+    <div id="debugPanel">
+        <div class="dbg-title">Debug</div>
+        <div class="dbg-row">
+            <span class="dbg-label">FPS</span>
+            <span class="dbg-val" id="dbgFps">--</span>
+        </div>
+        <div class="dbg-row">
+            <span class="dbg-label">WASM</span>
+            <span class="dbg-val" id="dbgWasm">--</span>
+        </div>
+        <div id="dbgBoundsRow" style="display:none">
+            <div class="dbg-sep"></div>
+            <div class="dbg-row">
+                <span class="dbg-label">Show boundaries</span>
+                <button type="button" class="dbg-toggle" id="dbgBoundsToggle"></button>
+            </div>
+        </div>
+        <div class="dbg-sep"></div>
+        <button type="button" class="dbg-log-toggle" id="dbgLogToggle" hidden>Console</button>
+        <div id="dbgLog" class="dbg-log" hidden></div>
+    </div>
+
+    <script type="module">
+    import { buildApiSources, GraciaApp, loadGraciaModule, THREE, XROverlay } from '@gracia/web-sdk/aio';
+
+    // Debug panel (?debug=1) — must be before loadGraciaModule to capture its logs
+    const _dbg = new URLSearchParams(location.search).get('debug') === '1';
+    if (_dbg) {
+        const hdr = document.getElementById('dbgLogToggle');
+        const log = document.getElementById('dbgLog');
+        hdr.hidden = false;
+        log.hidden = false;
+        hdr.onclick = () => { log.hidden = !log.hidden; };
+
+        const wrap = (level, orig) => (...a) => {
+            orig.apply(console, a);
+            const t = new Date(), ts = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
+            const msg = a.map(x => { try { return typeof x === 'object' ? JSON.stringify(x) : String(x); } catch { return String(x); } }).join(' ');
+            const ln = document.createElement('div');
+            ln.className = 'dbg-log-line' + (level !== 'log' ? ` ${level}` : '');
+            const tsEl = document.createElement('span');
+            tsEl.className = 'dbg-log-ts';
+            tsEl.textContent = ts;
+            ln.appendChild(tsEl);
+            ln.appendChild(document.createTextNode(msg.slice(0, 180)));
+            log.appendChild(ln);
+            if (log.children.length > 60) log.firstChild.remove();
+            log.scrollTop = log.scrollHeight;
+        };
+        console.log = wrap('log', console.log);
+        console.warn = wrap('warn', console.warn);
+        console.error = wrap('error', console.error);
+        window._dbgHdr = hdr;
+    }
+
+    const AMPLITUDE_KEY = '__AMPLITUDE_KEY__';
+    let amp = null;
+    let ampQueue = [];
+    if (AMPLITUDE_KEY && !AMPLITUDE_KEY.startsWith('__')) {
+        import('https://cdn.jsdelivr.net/npm/@amplitude/analytics-browser@2/+esm').then(m => {
+            m.init(AMPLITUDE_KEY, { serverUrl: location.origin + '/api/amp/2/httpapi', defaultTracking: true, transport: 'beacon' });
+            amp = m;
+            for (const [name, props] of ampQueue) amp.track(name, props);
+            ampQueue = null;
+        }).catch(() => { ampQueue = null; });
+    }
+
+    const GraciaModule = await loadGraciaModule();
+
+    // Debug tooltip (GPU info; WASM build time appended after load)
+    {
+        const pill = document.getElementById('versionPill');
+        const tip = document.getElementById('vpTip');
+        tip.textContent = `GPU   ${navigator.gpu ? 'yes' : 'NO'}`;
+        pill.onmouseenter = () => { tip.style.display = 'block'; };
+        pill.onmouseleave = () => { tip.style.display = 'none'; };
+        if (window._dbgHdr) window._dbgHdr.textContent = 'Console';
+    }
+
+    const $ = id => document.getElementById(id);
+    const mk = (tag, cls, par) => { const e = document.createElement(tag); if (cls) e.className = cls; par?.appendChild(e); return e; };
+    const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
+    const fmt = t => (!Number.isFinite(t) || t < 0) ? '0:00' : `${~~(t / 60)}:${String(~~t % 60).padStart(2, '0')}`;
+
+    const SVG_ATTRS = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+    const ico = {
+        play:    `<svg ${SVG_ATTRS}><polygon points="6,3 20,12 6,21" fill="currentColor" stroke="none"/></svg>`,
+        pause:   `<svg ${SVG_ATTRS}><rect x="5" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="15" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/></svg>`,
+        spinner: `<svg ${SVG_ATTRS} style="animation:spin .8s linear infinite"><path d="M12 2a10 10 0 0 1 10 10" stroke-width="2.5"/></svg>`,
+        volume:  `<svg ${SVG_ATTRS}><polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor" stroke="none"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`,
+        muted:   `<svg ${SVG_ATTRS}><polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor" stroke="none"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`,
+    };
+
+    const params = new URLSearchParams(location.search);
+    const isDebug = params.get('debug') === '1';
+
+    let currentSource = null;
+    let isMuted = true; // audio off until the user taps the audio button (that gesture unlocks it)
+    let firstReady = false;
+    let showBounds = false;
+    let ctrlPanelForced = isDebug;
+    let sessionStartTime = 0;
+    let maxSceneOpened = 0;
+    let activeMode = 'pw';
+
+    function track(name, props) {
+        const ev = {
+            domain: location.hostname,
+            url: location.href,
+            session_type: activeMode === 'vr' || activeMode === 'ar' ? 'vr' : '2d',
+            content_name: currentSource?.displayName || currentSource?.label,
+            content_id: currentSource?.id,
+            ...props,
+        };
+        if (amp) { amp.track(name, ev); return; }
+        if (ampQueue) ampQueue.push([name, ev]);
+    }
+
+    function endSession() {
+        if (!sessionStartTime) return;
+        track('streaming_session_ended', {
+            duration: Math.round((Date.now() - sessionStartTime) / 1000),
+            max_scene_opened: maxSceneOpened,
+        });
+        sessionStartTime = 0;
+    }
+
+    function showError(msg) {
+        const el = $('errorToast');
+        el.textContent = msg;
+        el.classList.add('visible');
+        clearTimeout(el._tid);
+        el._tid = setTimeout(() => el.classList.remove('visible'), 5000);
+    }
+
+    function showLoader(light = false) {
+        const el = $('loader');
+        el.classList.remove('hidden');
+        el.classList.toggle('light', light);
+    }
+    function hideLoader() {
+        $('loader').classList.add('hidden');
+        $('loader').classList.remove('light');
+    }
+
+    function mountBar(player, container) {
+        const bar = mk('div', 'vb', container), btn = mk('button', 'vb-btn', bar);
+        const slider = mk('div', 'vb-track', bar), fill = mk('div', 'vb-fill', slider);
+        const thumb = mk('div', 'vb-thumb', slider), time = mk('span', 'vb-time', bar);
+        const muteBtn = mk('button', 'vb-mute', bar);
+
+        let cur = '', drag = false, rafId;
+
+        const pos = n => fill.style.width = thumb.style.left = `${n * 100}%`;
+        const dur = () => player.duration ?? 0;
+        const pct = e => clamp((e.clientX - slider.getBoundingClientRect().left) / slider.offsetWidth);
+        const toggle = () => {
+            track(player.isPlaying ? 'streaming_pause_clicked' : 'streaming_play_clicked');
+            player.isPlaying ? player.pause() : player.play();
+        };
+
+        function setIcon(s) {
+            if (s === cur) return; cur = s;
+            btn.innerHTML = ico[s];
+        }
+
+        function syncMuteIcon() {
+            muteBtn.innerHTML = isMuted ? ico.muted : ico.volume;
+        }
+
+        setIcon('play');
+        syncMuteIcon();
+        btn.onclick = toggle;
+        muteBtn.onclick = () => {
+            isMuted = !isMuted;
+            // Runs inside the click gesture, so enableAudio()'s context unlock is honored.
+            if (isMuted) player.disableAudio?.();
+            else { player.enableAudio?.(); player.setVolume?.(1); }
+            syncMuteIcon();
+            track(isMuted ? 'streaming_mute_clicked' : 'streaming_unmute_clicked');
+        };
+
+        slider.onpointerdown = e => { e.preventDefault(); drag = true; pos(pct(e)); player.seek?.(pct(e) * dur()); slider.setPointerCapture(e.pointerId); };
+        slider.onpointermove = e => { if (!drag) return; pos(pct(e)); player.seek?.(pct(e) * dur()); };
+        slider.onpointerup = e => { if (drag) { drag = false; slider.releasePointerCapture(e.pointerId); track('streaming_rewinded'); } };
+        slider.onpointercancel = () => { drag = false; };
+
+        const onKey = e => {
+            if (e.code === 'Space') { e.preventDefault(); toggle(); }
+            else if (e.code === 'ArrowLeft')  { player.seek?.(clamp(player.currentTime - 5, 0, dur())); track('streaming_rewinded'); }
+            else if (e.code === 'ArrowRight') { player.seek?.(clamp(player.currentTime + 5, 0, dur())); track('streaming_rewinded'); }
+        };
+        document.addEventListener('keydown', onKey);
+
+        (function loop() {
+            rafId = requestAnimationFrame(loop);
+            const busy = player.isBuffering ?? false;
+            setIcon(busy ? 'spinner' : player.isPlaying ? 'pause' : 'play');
+            const c = player.currentTime ?? 0, d = dur();
+            if (!drag && d > 0) pos(clamp(c / d));
+            time.textContent = `${fmt(c)} / ${fmt(d)}`;
+            muteBtn.style.display = currentSource?.audio ? '' : 'none';
+        })();
+
+        return () => { cancelAnimationFrame(rafId); document.removeEventListener('keydown', onKey); bar.remove(); };
+    }
+
+    const MARKET = 'https://market.gracia.ai';
+    const DEMO_DOMAIN = '__DEMO_DOMAIN__';
+    if (!DEMO_DOMAIN) $('fileBtn').hidden = false;
+    const DEMO_URL = `/api/market/api/v1/demo${DEMO_DOMAIN ? `?domain=${DEMO_DOMAIN}` : ''}`;
+    const STREAMING_BASE = `${MARKET}/api/v1/streaming/content`;
+    const DEMO_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
+
+    const sources = [];
+
+    async function loadSources() {
+        const results = await Promise.allSettled([
+            (async () => {
+                const res = await fetch(DEMO_URL);
+                if (!res.ok) throw new Error(`Demo API returned ${res.status}`);
+                const demos = await res.json();
+                return Promise.all(demos.map(async (d) => {
+                    if (d.rawMetadata && Object.keys(d.rawMetadata).length > 0) {
+                        return d.rawMetadata;
+                    }
+                    const r = await fetch(`${STREAMING_BASE}/${d.streamingId}`, {
+                        headers: { 'X-VIEW-TOKEN': DEMO_TOKEN },
+                    });
+                    const { metadata, audioFileLink } = r.ok ? await r.json() : {};
+                    return {
+                        id: d.streamingId,
+                        label: d.label ?? metadata?.name ?? d.streamingId,
+                        url: `${STREAMING_BASE}/${d.streamingId}/`,
+                        token: DEMO_TOKEN,
+                        displayName: metadata?.name ?? undefined,
+                        audio: (audioFileLink && metadata?.withAudio !== false) ? audioFileLink : undefined,
+                        initialTransform: metadata?.initialSpawn ?? null,
+                        locked: false,
+                        resetPositionOnStart: true,
+                        autoSwitchToNext: false,
+                    };
+                }));
+            })(),
+            (async () => {
+                const res = await fetch('/api/sources');
+                if (!res.ok) throw new Error(`Sources API returned ${res.status}`);
+                const raw = (await res.json()).sources ?? [];
+                const resolved = [];
+                for (const src of raw)
+                    if (src.items?.length) resolved.push(...await buildApiSources(src.items, src.baseUrl));
+                    else resolved.push(src);
+                return resolved;
+            })(),
+        ]);
+        for (const r of results) {
+            if (r.status === 'fulfilled') sources.push(...r.value);
+            else showError('Failed to load content, please try again later');
+        }
+        for (const s of sources) Object.assign(mk('button', 'dd-item', $('srcMenu')), { textContent: s.label }).dataset.src = s.id;
+    }
+
+    function initDropdown(app) {
+        const dd = $('srcDD'), tog = $('srcToggle'), menu = $('srcMenu');
+        tog.onclick = () => dd.classList.toggle('open');
+        document.addEventListener('click', e => { if (!dd.contains(e.target)) dd.classList.remove('open'); });
+        menu.onclick = e => {
+            const item = e.target.closest('.dd-item'); if (!item) return;
+            dd.classList.remove('open');
+            const idx = sources.findIndex(s => s.id === item.dataset.src);
+            if (idx >= 0) app.loadScene(idx);
+        };
+        app.onSceneChange = src => {
+            currentSource = src;
+            tog.textContent = src.label;
+            for (const i of menu.querySelectorAll('.dd-item')) i.classList.toggle('active', i.dataset.src === src.id);
+            if (src.controls) {
+                for (const b of $('ctrlPanel').querySelectorAll('[data-ctrl]'))
+                    b.classList.toggle('on', b.dataset.ctrl === src.controls);
+            }
+            boundsOverlay.setBounds(src.cameraBounds ?? null);
+            if (src.cameraBounds) console.log('[Bounds] Loaded:', JSON.stringify(src.cameraBounds));
+            if (isDebug) $('dbgBoundsRow').style.display = src.cameraBounds ? '' : 'none';
+        };
+    }
+
+    function syncUI(app) {
+        const m = app?.mode ?? 'pw';
+        for (const b of document.querySelectorAll('[data-mode]')) b.classList.toggle('on', b.dataset.mode === m);
+        const vr = document.querySelector('[data-mode="vr"]'), ar = document.querySelector('[data-mode="ar"]');
+        if (vr) { vr.disabled = !app?.supports('vr'); vr.textContent = m === 'vr' ? 'Exit VR' : 'VR'; }
+        if (ar) { ar.disabled = !app?.supports('ar'); ar.style.display = app?.supports('ar') ? '' : 'none'; ar.textContent = m === 'ar' ? 'Exit AR' : 'AR'; }
+        $('resetBtn').style.display = m === 'pw' ? '' : 'none';
+        const canShow = m === 'pw' || m === 'hw';
+        $('ctrlPanel').classList.toggle('visible', canShow && ctrlPanelForced);
+    }
+
+    /* ── Bounds wireframe overlay (2D canvas) ── */
+
+    const boundsOverlay = (() => {
+        const canvas = document.createElement('canvas');
+        canvas.style.cssText = 'position:fixed;inset:0;z-index:5;pointer-events:none;';
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        let activeBounds = null, corners = null;
+
+        const resize = () => {
+            canvas.width = innerWidth * devicePixelRatio;
+            canvas.height = innerHeight * devicePixelRatio;
+            canvas.style.width = innerWidth + 'px';
+            canvas.style.height = innerHeight + 'px';
+        };
+        resize();
+        addEventListener('resize', resize);
+
+        const FACES = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[0,3,7,4],[1,2,6,5]];
+        const EDGES = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+        const CORNER_SIZE = 4;
+        const SPHERE_SEGMENTS = 64;
+
+        function getAccent() {
+            const raw = getComputedStyle(document.body).getPropertyValue('--accent').trim();
+            const el = document.createElement('canvas').getContext('2d');
+            el.fillStyle = raw || '#f6fa81';
+            return el.fillStyle;
+        }
+
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+
+        let sphereData = null;
+
+        function buildSphereRings(center, radius, rotation) {
+            const rings = [];
+            const quat = rotation
+                ? new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w)
+                : new THREE.Quaternion();
+            const axes = [
+                new THREE.Vector3(1, 0, 0),
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(0, 0, 1),
+            ];
+            for (const axis of axes) {
+                const ring = [];
+                const perpA = new THREE.Vector3();
+                const perpB = new THREE.Vector3();
+                if (Math.abs(axis.x) < 0.9) perpA.crossVectors(axis, new THREE.Vector3(1, 0, 0)).normalize();
+                else perpA.crossVectors(axis, new THREE.Vector3(0, 1, 0)).normalize();
+                perpB.crossVectors(axis, perpA).normalize();
+                for (let i = 0; i <= SPHERE_SEGMENTS; i++) {
+                    const angle = (i / SPHERE_SEGMENTS) * Math.PI * 2;
+                    const pt = new THREE.Vector3()
+                        .addScaledVector(perpA, Math.cos(angle) * radius)
+                        .addScaledVector(perpB, Math.sin(angle) * radius);
+                    pt.applyQuaternion(quat);
+                    pt.add(center);
+                    ring.push(pt);
+                }
+                rings.push(ring);
+            }
+            return rings;
+        }
+
+        function setBounds(bounds) {
+            activeBounds = bounds;
+            sphereData = null;
+            if (!bounds) { corners = null; ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+            if (bounds.type === 'box') {
+                const local = [[-0.5,-0.5,-0.5],[0.5,-0.5,-0.5],[0.5,0.5,-0.5],[-0.5,0.5,-0.5],
+                               [-0.5,-0.5,0.5],[0.5,-0.5,0.5],[0.5,0.5,0.5],[-0.5,0.5,0.5]];
+                const mat = new THREE.Matrix4().compose(
+                    new THREE.Vector3(bounds.position.x, bounds.position.y, bounds.position.z),
+                    new THREE.Quaternion(bounds.rotation.x, bounds.rotation.y, bounds.rotation.z, bounds.rotation.w),
+                    new THREE.Vector3(bounds.scale.x, bounds.scale.y, bounds.scale.z));
+                corners = local.map(c => new THREE.Vector3(...c).applyMatrix4(mat));
+            } else if (bounds.type === 'sphere') {
+                corners = null;
+                const center = new THREE.Vector3(bounds.position.x, bounds.position.y, bounds.position.z);
+                const radius = bounds.radius ?? Math.max(bounds.scale?.x ?? 1, bounds.scale?.y ?? 1, bounds.scale?.z ?? 1) * 0.5;
+                sphereData = { center, radius, rings: buildSphereRings(center, radius, bounds.rotation) };
+            } else {
+                corners = null;
+            }
+        }
+
+        function render(camera) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!activeBounds || !camera) return;
+            if (!corners && !sphereData) return;
+
+            camera.updateMatrixWorld();
+            const mvp = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+            const w = canvas.width, h = canvas.height;
+            const project = v => {
+                const p = v.clone().applyMatrix4(mvp);
+                return p.z < -1 ? null : { x: (p.x * 0.5 + 0.5) * w, y: (1 - (p.y * 0.5 + 0.5)) * h };
+            };
+
+            const accent = getAccent();
+            const dpr = devicePixelRatio;
+
+            if (corners) {
+                const pts = corners.map(project);
+
+                ctx.fillStyle = hexToRgba(accent, 0.045);
+                for (const face of FACES) {
+                    const fp = face.map(i => pts[i]);
+                    if (fp.some(p => !p)) continue;
+                    ctx.beginPath();
+                    ctx.moveTo(fp[0].x, fp[0].y);
+                    for (let i = 1; i < fp.length; i++) ctx.lineTo(fp[i].x, fp[i].y);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                ctx.setLineDash([8 * dpr, 6 * dpr]);
+                ctx.strokeStyle = hexToRgba(accent, 0.7);
+                ctx.lineWidth = 1.5 * dpr;
+                ctx.beginPath();
+                for (const [a, b] of EDGES) {
+                    const pa = pts[a], pb = pts[b];
+                    if (!pa || !pb) continue;
+                    ctx.moveTo(pa.x, pa.y);
+                    ctx.lineTo(pb.x, pb.y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const cs = CORNER_SIZE * dpr;
+                ctx.fillStyle = hexToRgba(accent, 0.85);
+                for (const p of pts) {
+                    if (!p) continue;
+                    ctx.fillRect(p.x - cs * 0.5, p.y - cs * 0.5, cs, cs);
+                }
+            } else if (sphereData) {
+                ctx.setLineDash([8 * dpr, 6 * dpr]);
+                ctx.strokeStyle = hexToRgba(accent, 0.7);
+                ctx.lineWidth = 1.5 * dpr;
+
+                for (const ring of sphereData.rings) {
+                    ctx.beginPath();
+                    let started = false;
+                    for (const pt of ring) {
+                        const p = project(pt);
+                        if (!p) { started = false; continue; }
+                        if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+                        else ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+
+                const centerPt = project(sphereData.center);
+                if (centerPt) {
+                    const cs = CORNER_SIZE * dpr;
+                    ctx.fillStyle = hexToRgba(accent, 0.85);
+                    ctx.fillRect(centerPt.x - cs * 0.5, centerPt.y - cs * 0.5, cs, cs);
+                }
+            }
+        }
+
+        return { setBounds, render };
+    })();
+
+    /* ── Debug panel ── */
+
+    if (isDebug) $('debugPanel').classList.add('visible');
+
+    $('dbgBoundsToggle').onclick = () => {
+        showBounds = !showBounds;
+        $('dbgBoundsToggle').classList.toggle('on', showBounds);
+    };
+
+    const fps = (() => {
+        const samples = new Float64Array(60);
+        let idx = 0, count = 0, last = performance.now();
+        return {
+            tick() {
+                const now = performance.now();
+                samples[idx] = now - last;
+                last = now;
+                idx = (idx + 1) % samples.length;
+                if (count < samples.length) count++;
+            },
+            get() {
+                if (!count) return 0;
+                let sum = 0;
+                for (let i = 0; i < count; i++) sum += samples[i];
+                return Math.round(1000 / (sum / count));
+            },
+        };
+    })();
+
+    (async () => {
+        let app, disposeBar, overlay;
+
+        const resetBar = () => {
+            disposeBar?.();
+            disposeBar = app?.mode === 'pw' ? mountBar(app.player, $('barWrap')) : null;
+        };
+
+        try {
+            try { overlay = new XROverlay(THREE); } catch {}
+            await loadSources();
+
+            app = await GraciaApp.create(
+                opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
+                { container: $('canvasWrap'), overlay, mode: params.get('mode') || 'pw' }
+            );
+            if (app.player.buildUnixTime) {
+                const w = new Date(app.player.buildUnixTime * 1000).toISOString().replace('T', ' ').slice(0, 19);
+                $('vpTip').textContent += `\nWASM  ${w}`;
+                $('dbgWasm').textContent = w;
+            }
+            app.onProgress = () => {};
+            app.onReady = () => {
+                hideLoader();
+                if (!firstReady) sessionStartTime = Date.now();
+                firstReady = true;
+                // Reapply audio choice across scene loads (context stays unlocked once on).
+                if (isMuted) app.disableAudio(); else app.enableAudio();
+                track('streaming_launch_success', { source: 'vega' });
+            };
+            app.onModeChange = () => { activeMode = app.mode; isMuted = !app.audioEnabled; resetBar(); syncUI(app); };
+
+            app.onFrame = () => {
+                const cam = app.camera?.threeCamera;
+                if (showBounds && cam) boundsOverlay.render(cam);
+                else boundsOverlay.render(null);
+
+                fps.tick();
+                if (isDebug) {
+                    $('dbgFps').textContent = fps.get();
+                }
+            };
+
+            initDropdown(app);
+
+            $('ctrlPanel').onclick = e => {
+                const btn = e.target.closest('[data-ctrl]');
+                if (!btn || !app) return;
+                app.setControls(btn.dataset.ctrl);
+                for (const b of $('ctrlPanel').querySelectorAll('[data-ctrl]'))
+                    b.classList.toggle('on', b === btn);
+            };
+
+            const toggleCtrlPanel = () => { ctrlPanelForced = !ctrlPanelForced; syncUI(app); };
+
+            document.addEventListener('keydown', e => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.code === 'KeyM' && !e.ctrlKey && !e.metaKey && !e.altKey) toggleCtrlPanel();
+            });
+
+            document.addEventListener('auxclick', e => {
+                if (e.button === 1) { e.preventDefault(); toggleCtrlPanel(); }
+            });
+
+            $('resetBtn').onclick = () => {
+                if (!app || app.mode !== 'pw') return;
+                track('streaming_reset_clicked');
+                const src = sources[app.sceneIndex];
+                if (src?.initialTransform) {
+                    app.setInitialTransform(src.initialTransform);
+                } else {
+                    app.camera?.reset();
+                }
+            };
+
+            $('fileBtn').onclick = async () => {
+                if (window.showOpenFilePicker) {
+                    let handles;
+                    try {
+                        handles = await showOpenFilePicker({
+                            types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint', '.sog'] } }],
+                        });
+                    } catch { return; }
+                    const handle = handles[0];
+                    const name = handle.name;
+                    $('srcToggle').textContent = name;
+                    showLoader(firstReady);
+                    if (name.endsWith('.sog')) {
+                        const f = await handle.getFile();
+                        app.open({ file: f, type: 'static' });
+                    } else {
+                        app.open({ localFile: handle });
+                    }
+                } else {
+                    $('fileInput').click();
+                }
+            };
+            $('fileInput').onchange = e => {
+                const f = e.target.files[0]; if (!f) return;
+                e.target.value = '';
+                $('srcToggle').textContent = f.name;
+                showLoader(firstReady);
+                const isSog = f.name.endsWith('.sog');
+                app.open(isSog ? { file: f, type: 'static' } : { file: f });
+            };
+
+            const origLoadScene = app.loadScene.bind(app);
+            app.loadScene = idx => {
+                showLoader(firstReady);
+                track('streaming_loading');
+                maxSceneOpened = Math.max(maxSceneOpened, idx + 1);
+                origLoadScene(idx);
+            };
+
+            app.sources = sources;
+            if (overlay) {
+                overlay.bannerText = 'EARLY BETA, 80+ MBPS INTERNET SPEED REQUIRED';
+                const EVT_MAP = {
+                    play_pause:   d => d?.playing ? 'streaming_play_clicked' : 'streaming_pause_clicked',
+                    seek:         () => 'streaming_rewinded',
+                    mute_toggle:  d => d?.muted ? 'streaming_mute_clicked' : 'streaming_unmute_clicked',
+                    reset:        () => 'streaming_reset_clicked',
+                    preset_cycle: () => 'streaming_light_mode_switched',
+                    exit:         () => { endSession(); return 'streaming_quit_scene_clicked'; },
+                };
+                overlay.eventLogger = {
+                    event: (name, data) => { const fn = EVT_MAP[name]; if (fn) track(fn(data)); },
+                    error: (err) => { track('streaming_launch_failed', { errorType: err?.name, errorMessage: err?.message }); showError(err?.message); },
+                };
+            }
+
+            document.addEventListener('click', async e => {
+                const b = e.target.closest('[data-mode]');
+                if (!b || b.disabled || !app) return;
+                const targetMode = b.dataset.mode === app.mode ? app.fallbackMode : b.dataset.mode;
+                if (targetMode === 'vr' || targetMode === 'ar') track('player_streaming_launch_in_vr_clicked');
+                try { await app.setMode(targetMode); }
+                catch (err) { console.error('Mode switch:', err); showError('Could not switch mode, please try again later'); }
+            });
+
+            addEventListener('beforeunload', () => { endSession(); amp?.flush(); });
+
+            app.start(); resetBar(); syncUI(app);
+            if (sources.length > 0) app.loadScene(0);
+        } catch (e) {
+            console.error('Fatal:', e);
+            track('streaming_launch_failed', { errorType: e?.name, errorMessage: e?.message });
+            showError('Something went wrong, please try again later');
+        }
+    })();
+    </script>
+</body>
+</html>
