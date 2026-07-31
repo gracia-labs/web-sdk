@@ -195,8 +195,8 @@
     camera.addComponent('camera', {
         clearColor: new pc.Color(0.32, 0.30, 0.28),
         fov: 50,
-        nearClip: 1,
-        farClip: 10000,
+        nearClip: 0.05,
+        farClip: 5000,
     });
     app.root.addChild(camera);
 
