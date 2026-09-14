@@ -7,6 +7,11 @@ import * as _preact_signals_core from '@preact/signals-core';
 
 declare function loadGraciaModule(wasmSpecifier?: string): Promise<any>;
 
+type PlaybackRange$1 = {
+    start: number;
+    end: number;
+};
+
 declare class ScratchHeap {
     constructor(app: any, size?: number);
     ptr(offset?: number): number;
@@ -55,6 +60,7 @@ declare class GraciaModule {
     sceneIsBuffering(id: number): boolean;
     sceneLastFetchStatus(id: number): any;
     sceneSetTime(id: number, t: number): void;
+    sceneSetPlaybackRange(id: number, start: number, end: number): void;
     sceneSetVisible(id: number, v: boolean): void;
     sceneGetBBox(id: number): {
         minX: number;
@@ -136,13 +142,22 @@ declare class GraciaPlayer$1 {
     get isReady(): boolean;
     get progress(): any;
     get duration(): any;
+    get playbackRange(): PlaybackRange$1 | null;
+    get playbackStart(): number;
+    get playbackEnd(): number;
+    get rangeDuration(): number;
+    get rangeTime(): number;
+    get loopCount(): number;
+    get error(): Error | null;
     get currentTime(): number;
     get isPlaying(): boolean;
     get isBuffering(): boolean;
     get lastFetchStatus(): any;
     play(): void;
     pause(): void;
-    seek(t: any): void;
+    seek(t: number): void;
+    setPlaybackRange(start: number, end: number): void;
+    clearPlaybackRange(): void;
     get speed(): number;
     setSpeed(s: number): void;
     close(): void;
@@ -155,6 +170,7 @@ declare class GraciaPlayer$1 {
         localFile?: File;
         token?: string;
         audio?: string;
+        playbackRange?: PlaybackRange$1 | null;
     }): Promise<void> | undefined;
     get audioContext(): AudioContext | null;
     get audioEnabled(): boolean;
@@ -691,7 +707,12 @@ interface SceneTransform {
         z: number;
     };
 }
+interface PlaybackRange {
+    start: number;
+    end: number;
+}
 interface GraciaSource {
+    playbackRange?: PlaybackRange | null;
     url: string;
     id?: string;
     label?: string;
@@ -730,6 +751,13 @@ interface GraciaPlayback {
     isBuffering: boolean;
     currentTime: number;
     duration: number;
+    playbackRange: PlaybackRange | null;
+    playbackStart: number;
+    playbackEnd: number;
+    rangeDuration: number;
+    rangeTime: number;
+    setPlaybackRange(start: number, end: number): void;
+    clearPlaybackRange(): void;
     isMuted: boolean;
     volume: number;
     play(): void;
@@ -773,6 +801,7 @@ interface GraciaPlayerState {
 }
 
 interface StreamingItemSettings {
+    playbackRange?: PlaybackRange | null;
     resetPositionOnStart?: boolean;
 }
 interface StreamingItem {
@@ -851,6 +880,7 @@ type XROverlayProp = false | XROverlayConfig | undefined;
 interface CommonProps {
     muted?: boolean;
     controls?: boolean;
+    rangeSelector?: boolean;
     cameraControls?: boolean;
     sceneSelector?: SceneSelectorMode;
     localFiles?: boolean;
@@ -883,6 +913,8 @@ interface GraciaPlayerHandle {
     play(): void;
     pause(): void;
     seek(time: number): void;
+    setPlaybackRange(start: number, end: number): void;
+    clearPlaybackRange(): void;
     open(source: string | GraciaSource): void;
     close(): void;
     next(): void;
@@ -1156,4 +1188,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, QuadLayer, Quat, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
+export { type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, type PlaybackRange, QuadLayer, Quat, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };

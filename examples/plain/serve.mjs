@@ -98,9 +98,12 @@ Bun.serve({
     async fetch(req) {
         const { pathname, search } = new URL(req.url);
 
-        if (pathname.startsWith("/api/market/api/v1/demo")) {
-            const upstream = await fetch(`https://market.gracia.ai/api/v1/demo${search}`, {
-                headers: { Accept: "application/json" },
+        if (pathname.startsWith("/api/market/")) {
+            const headers = { Accept: "application/json" };
+            const token = req.headers.get("X-VIEW-TOKEN");
+            if (token) headers["X-VIEW-TOKEN"] = token;
+            const upstream = await fetch(`https://market.gracia.ai${pathname.slice("/api/market".length)}${search}`, {
+                headers,
             });
             return respond(upstream.body, {
                 status: upstream.status,

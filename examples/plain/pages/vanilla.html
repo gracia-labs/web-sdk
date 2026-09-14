@@ -355,7 +355,7 @@
         let cur = '', drag = false, rafId;
 
         const pos = n => fill.style.width = thumb.style.left = `${n * 100}%`;
-        const dur = () => player.duration ?? 0;
+        const dur = () => player.rangeDuration ?? 0;
         const pct = e => clamp((e.clientX - slider.getBoundingClientRect().left) / slider.offsetWidth);
         const toggle = () => {
             track(player.isPlaying ? 'streaming_pause_clicked' : 'streaming_play_clicked');
@@ -383,16 +383,16 @@
             track(isMuted ? 'streaming_mute_clicked' : 'streaming_unmute_clicked');
         };
 
-        slider.onpointerdown = e => { e.preventDefault(); drag = true; pos(pct(e)); player.seek?.(pct(e) * dur()); slider.setPointerCapture(e.pointerId); };
-        slider.onpointermove = e => { if (!drag) return; pos(pct(e)); player.seek?.(pct(e) * dur()); };
+        slider.onpointerdown = e => { e.preventDefault(); drag = true; pos(pct(e)); player.seek?.(player.playbackStart + pct(e) * dur()); slider.setPointerCapture(e.pointerId); };
+        slider.onpointermove = e => { if (!drag) return; pos(pct(e)); player.seek?.(player.playbackStart + pct(e) * dur()); };
         slider.onpointerup = e => { if (drag) { drag = false; slider.releasePointerCapture(e.pointerId); track('streaming_rewinded'); } };
         slider.onpointercancel = () => { drag = false; };
 
         const onKey = e => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; // e.g. the speed slider
             if (e.code === 'Space') { e.preventDefault(); toggle(); }
-            else if (e.code === 'ArrowLeft')  { player.seek?.(clamp(player.currentTime - 5, 0, dur())); track('streaming_rewinded'); }
-            else if (e.code === 'ArrowRight') { player.seek?.(clamp(player.currentTime + 5, 0, dur())); track('streaming_rewinded'); }
+            else if (e.code === 'ArrowLeft')  { player.seek?.(clamp(player.currentTime - 5, player.playbackStart, player.playbackEnd)); track('streaming_rewinded'); }
+            else if (e.code === 'ArrowRight') { player.seek?.(clamp(player.currentTime + 5, player.playbackStart, player.playbackEnd)); track('streaming_rewinded'); }
         };
         document.addEventListener('keydown', onKey);
 
@@ -400,7 +400,7 @@
             rafId = requestAnimationFrame(loop);
             const busy = player.isBuffering ?? false;
             setIcon(busy ? 'spinner' : player.isPlaying ? 'pause' : 'play');
-            const c = player.currentTime ?? 0, d = dur();
+            const c = player.rangeTime ?? 0, d = dur();
             if (!drag && d > 0) pos(clamp(c / d));
             time.textContent = `${fmt(c)} / ${fmt(d)}`;
             muteBtn.style.display = currentSource?.audio ? '' : 'none';
