@@ -606,7 +606,7 @@
 
         const pos = n => fill.style.width = thumb.style.left = `${n * 100}%`;
         const pct = e => clamp((e.clientX - track.getBoundingClientRect().left) / track.offsetWidth);
-        const dur = () => splats?.player.duration ?? 0;
+        const dur = () => splats?.player.rangeDuration ?? 0;
 
         function icon(s) {
             if (s === cur) return; cur = s;
@@ -617,8 +617,8 @@
         icon('play');
         btn.onclick = () => { if (!splats) return; const p = splats.player; p.isPlaying ? p.pause() : p.play(); };
 
-        track.onpointerdown = e => { e.preventDefault(); drag = true; track.setPointerCapture(e.pointerId); pos(pct(e)); splats?.player.seek(pct(e) * dur()); };
-        track.onpointermove = e => { if (!drag) return; pos(pct(e)); splats?.player.seek(pct(e) * dur()); };
+        track.onpointerdown = e => { e.preventDefault(); drag = true; track.setPointerCapture(e.pointerId); pos(pct(e)); splats?.player.seek((splats.player.playbackStart ?? 0) + pct(e) * dur()); };
+        track.onpointermove = e => { if (!drag) return; pos(pct(e)); splats?.player.seek((splats.player.playbackStart ?? 0) + pct(e) * dur()); };
         track.onpointerup = e => { drag = false; track.releasePointerCapture(e.pointerId); };
         track.onpointercancel = () => { drag = false; };
 
@@ -626,7 +626,7 @@
             if (!splats) return;
             const p = splats.player;
             icon(p.isBuffering ? 'spin' : p.isPlaying ? 'pause' : 'play');
-            const c = p.currentTime, d = dur();
+            const c = p.rangeTime, d = dur();
             if (!drag && d > 0) pos(clamp(c / d));
             time.textContent = `${fmt(c)} / ${fmt(d)}`;
         };

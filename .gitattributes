@@ -1,0 +1,2 @@
+# Preserve the exact bytes used by the manifest hashes on every platform.
+dist/*.js -text

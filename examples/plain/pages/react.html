@@ -248,8 +248,8 @@
                         ${!isXR && html`
                             <div class="vb">
                                 <button class="vb-btn" onClick=${() => playback.togglePlay()}>${playIcon}</button>
-                                <${SeekBar} progress=${playback.duration > 0 ? (playback.currentTime / playback.duration) * 100 : 0} duration=${playback.duration} onSeek=${t => playback.seek(t)} />
-                                <span class="vb-time">${fmt(playback.currentTime)} / ${fmt(playback.duration)}</span>
+                                <${SeekBar} progress=${playback.rangeDuration > 0 ? (playback.rangeTime / playback.rangeDuration) * 100 : 0} duration=${playback.rangeDuration} onSeek=${t => playback.seek(playback.playbackStart + t)} />
+                                <span class="vb-time">${fmt(playback.rangeTime)} / ${fmt(playback.rangeDuration)}</span>
                                 <button class="vb-btn" onClick=${() => playback.toggleMute()}>${muteIcon}</button>
                             </div>`}
                         ${gracia.error && html`<div class="status-bar"><span class="tag err">${gracia.error.message}</span></div>`}

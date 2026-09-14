@@ -226,6 +226,7 @@ const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your 
 |------|---------|-------------|
 | `sources` / `streaming` | — | Pre-built scenes, or id + token pairs the player resolves |
 | `controls` | `true` | Built-in playback, scene, and XR UI |
+| `rangeSelector` | `true` | Show the playback range selector for video content |
 | `sceneSelector` | `"stepper"` | `"tabs"` or `"menu"` for playlists |
 | `cameraControls` | `false` | 2D camera selector (`orbit` / `trackball` / `fly`) |
 | `localFiles` | `false` | When `true`, adds open-file control for `.mint` / `.sog` from disk |
@@ -238,6 +239,45 @@ const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your 
 Imperative handle (`ref.current` or `mountGraciaPlayer(...).player`): `play`, `pause`, `seek`, `next`/`prev`/`goTo`, `setMode`, `setCameraControls`, `toggleFullscreen`, `openLocalFile`. See [`examples/react-vite`](examples/react-vite) and [`index.html`](examples/plain/pages/index.html).
 
 For custom UI, use `useGraciaPlayer`, `useGraciaPlaylist`, and `XROverlay` instead.
+
+### Playback ranges
+
+Select a continuous interval of a 4DGS video with `playbackRange`. Both values are seconds in the original file. The start is inclusive; the end is exclusive.
+
+```tsx
+<GraciaReactPlayer
+  sources={[{
+    url: "https://example.com/video.mint",
+    playbackRange: { start: 10, end: 20 },
+  }]}
+/>
+```
+
+The default player has a **Playback range** panel. Drag its two handles or enter start and end values, then select **Apply range**. Select **Full video** to clear the range. Set `rangeSelector={false}` to hide the panel. The XR timeline also respects a range set through the API or desktop panel.
+
+Set a range before the first content fetch through the source option, or change it after `open()`:
+
+```js
+player.setPlaybackRange(10, 20);
+player.seek(12);                 // Original file second 12; selection second 2.
+player.clearPlaybackRange();
+```
+
+These methods are available on `GraciaPlayer`, `app.player`, `gracia.playback` from `useGraciaPlayer`, and the styled player's imperative handle (`ref.current` or `mountGraciaPlayer(...).player`). For API-resolved content, use `streaming: [{ streamingId, token, settings: { playbackRange: { start: 10, end: 20 } } }]`.
+
+| Property | Meaning |
+|----------|---------|
+| `currentTime`, `seek(time)` | Position in original file seconds |
+| `duration` | Full file duration |
+| `playbackRange` | Effective `{ start, end }`, or `null` for the full file |
+| `playbackStart`, `playbackEnd` | Effective bounds, also for full-file playback |
+| `rangeTime`, `rangeDuration` | Position and duration within the selection |
+
+While a range is set, the selected interval loops and playlist auto-next is disabled. Clear the range to restore the source's `autoSwitchToNext` behavior at the next full-video end. A seek does not trigger auto-next. A range change preserves play/pause state and keeps the position if it is inside the new interval; otherwise the position moves to the new start. Seeks clamp to the interval. Each new source uses its own configured range, or the full file if no range is set.
+
+Bounds must be finite, with `0 <= start < end`. The end clamps to the file duration after metadata arrives. A start at or after the file duration is an error. Invalid runtime updates throw `RangeError` and preserve the previous range. Invalid initial ranges discovered after metadata appear in `player.error` and the app's error callback. Ranges require the matching WASM build.
+
+The loader fetches complete chunks that overlap the selection and confines look-ahead to those chunks. It still needs file metadata. Audio uses the same source interval; a shorter audio track is silent until the next video loop. The audio file itself is still fetched in full.
 
 ### XR
 
