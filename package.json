@@ -5,10 +5,10 @@
     "exports": {
         "./core": {
             "types": "./dist/GraciaSDK.d.ts",
-            "default": "./dist/GraciaSDK.6a800f967cdd4ac2.js"
+            "default": "./dist/GraciaSDK.bd4046277f46b5b1.js"
         },
         "./aio": {
-            "default": "./dist/GraciaAIO.7468e62a9052ec8a.js"
+            "default": "./dist/GraciaAIO.d6c84b5ece185f55.js"
         },
         "./wasm": {
             "types": "./dist/GraciaWebCore.d.ts",
@@ -74,5 +74,6 @@
     "license": "SEE LICENSE IN LICENSE",
     "engines": {
         "node": ">=20"
-    }
+    },
+    "version": "0.0.68-html5-audio.1"
 }
