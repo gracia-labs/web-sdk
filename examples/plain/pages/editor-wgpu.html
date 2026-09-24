@@ -443,10 +443,10 @@
     $('bgColor').oninput = e => scene.background.setStyle(e.target.value);
 
     const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.05, 10000);
-    camera.position.set(2, 2.5, 4);
+    camera.position.set(-2, 2.5, -4);
 
     const DEFAULT_TARGET = new THREE.Vector3(0, 0.4, 0);
-    const DEFAULT_EYE = new THREE.Vector3(2, 2.5, 4);
+    const DEFAULT_EYE = new THREE.Vector3(-2, 2.5, -4);
 
     let controlsType = 'orbit';
     let currentControls = null;
@@ -538,7 +538,7 @@
     };
 
     const eyeMarker = createEyeMarker(
-        { x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.8, z: 1 }, 40, 'Viewer', 0x42c6f5
+        { x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.8, z: -1 }, 40, 'Viewer', 0x42c6f5
     );
     scene.add(eyeMarker);
 

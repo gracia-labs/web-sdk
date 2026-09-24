@@ -415,7 +415,6 @@ declare class Camera2D {
         y: number;
         z: number;
     } | null): void;
-    setViewZSign(sign: 1 | -1): void;
     setBBox(bounds: {
         minX: number;
         minY: number;
@@ -519,7 +518,7 @@ declare class SceneManipulator {
     setOverlay(overlay: any): void;
     reset(): void;
     invalidateBBox(): void;
-    setInitialTransform(t: any, zSign?: 1 | -1): void;
+    setInitialTransform(t: any): void;
     get scene(): any;
     get scale(): number;
     get roomMatrix(): Float32Array;

@@ -13,7 +13,7 @@ import { BoundsObject } from "./bounds.js";
 import { defaultBounds, IDENTITY_TRS } from "./metadata.js";
 import { createAxes, createEyeMarker, createGrid, createHuman } from "./refs.js";
 
-const DEFAULT_EYE = new THREE.Vector3(2, 2.5, 4);
+const DEFAULT_EYE = new THREE.Vector3(-2, 2.5, -4);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0.4, 0);
 
 const trsOf = (obj) => ({
@@ -72,7 +72,7 @@ export class Viewer {
             grid: createGrid(),
             axes: createAxes(),
             human: createHuman(),
-            viewer: createEyeMarker({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.8, z: 1 }, 40, "Viewer", 0x42c6f5),
+            viewer: createEyeMarker({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.8, z: -1 }, 40, "Viewer", 0x42c6f5),
         };
         for (const ref of Object.values(this.#refs)) this.scene.add(ref);
 

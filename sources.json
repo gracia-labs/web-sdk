@@ -1,6 +1,54 @@
 {
     "sources": [
         {
+            "id": "pga1",
+            "label": "Min Woo Lee",
+            "displayName": "Min Woo Lee",
+            "type": "stream",
+            "url": "https://gstatic.gracia.ai/demo/pga-015.mint",
+            "staticUrl": "https://gstatic.gracia.ai/demo/pga_combined.sog",
+            "background": "#2a2a32",
+            "resetPositionOnStart": true,
+            "autoSwitchToNext": false,
+            "locked": false,
+            "initialTransform": {
+                "translation": {
+                    "x": 0.544881428603463,
+                    "y": 1.462475860907622,
+                    "z": -2.2994778325440968
+                },
+                "rotation": {
+                    "x": -0.06882206158169853,
+                    "y": 0.0013489529000297164,
+                    "z": -0.9974364582844515,
+                    "w": 0.01955034144684762
+                },
+                "scale": {
+                    "x": 2.71,
+                    "y": 2.71,
+                    "z": 2.71
+                }
+            },
+            "staticTransform": {
+                "translation": {
+                    "x": 0.4847021214250112,
+                    "y": 0.4734670403316138,
+                    "z": 1.0240012536862144
+                },
+                "rotation": {
+                    "x": -0.055626959812192484,
+                    "y": -0.6970303510749654,
+                    "z": 0.7146141278471346,
+                    "w": -0.019518691135483247
+                },
+                "scale": {
+                    "x": 0.24,
+                    "y": 0.24,
+                    "z": 0.24
+                }
+            }
+        },
+        {
             "id": "direct-fashion-1724",
             "label": "Direct: Vivid & Translucent (1724)",
             "displayName": "Vivid & Translucent",
@@ -11,56 +59,38 @@
             "initialTransform": {
                 "translation": {
                     "x": 0,
-                    "y": 0.87063,
-                    "z": 1.199297
+                    "y": 1.121582,
+                    "z": -1.030825
                 },
                 "rotation": {
-                    "x": -0.236748,
-                    "y": -0.243753,
-                    "z": 0.113846,
-                    "w": 0.933581
+                    "x": -0.161235,
+                    "y": 0.838503,
+                    "z": 0.379322,
+                    "w": 0.356414
                 },
                 "scale": {
-                    "x": 1.87,
-                    "y": 1.87,
-                    "z": 1.87
-                }
-            },
-            "staticTransform": {
-                "translation": {
-                    "x": -0.410019,
-                    "y": -0.082223,
-                    "z": -0.673199
-                },
-                "rotation": {
-                    "x": 0.236748,
-                    "y": 0.243753,
-                    "z": -0.113846,
-                    "w": 0.933581
-                },
-                "scale": {
-                    "x": 0.534759,
-                    "y": 0.534759,
-                    "z": 0.534759
+                    "x": 1.77,
+                    "y": 1.77,
+                    "z": 1.77
                 }
             },
             "bounds": {
                 "type": "sector",
                 "position": {
-                    "x": -0.047399,
-                    "y": 1.2,
-                    "z": -0.553556
+                    "x": 0,
+                    "y": 1.586598,
+                    "z": 0.855573
                 },
                 "rotation": {
                     "x": 0,
-                    "y": 0,
+                    "y": 1,
                     "z": 0,
-                    "w": 1
+                    "w": 0
                 },
                 "scale": {
-                    "x": 4,
-                    "y": 2.4,
-                    "z": 4
+                    "x": 5.287915,
+                    "y": 3.172749,
+                    "z": 5.287915
                 },
                 "angleDeg": 90
             }

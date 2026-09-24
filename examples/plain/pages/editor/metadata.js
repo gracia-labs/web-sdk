@@ -141,9 +141,9 @@ export function defaultBounds(type) {
     const radial = sector ? 4 : 2;
     const bounds = {
         type,
-        // A sector's apex sits behind the Viewer, so they start inside it rather than on its edge.
-        position: { x: 0, y: 1.2, z: sector ? -1 : 0 },
-        rotation: { x: 0, y: 0, z: 0, w: 1 },
+        // A sector's apex sits behind the Viewer and opens along −Z, where they look.
+        position: { x: 0, y: 1.2, z: sector ? 1 : 0 },
+        rotation: sector ? { x: 0, y: 1, z: 0, w: 0 } : { x: 0, y: 0, z: 0, w: 1 },
         scale: { x: radial, y: 2.4, z: radial },
     };
     if (sector) bounds.angleDeg = 90;
