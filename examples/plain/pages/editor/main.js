@@ -122,6 +122,7 @@ const modes = segmented(
     [
         { value: "translate", label: "Move", title: "W" },
         { value: "rotate", label: "Rotate", title: "E" },
+        { value: "scale", label: "Scale", title: "R" },
     ],
     "translate",
     (value) => viewer.setGizmoMode(value),
@@ -137,7 +138,7 @@ const scale = slider({
 });
 
 const transformCard = section("Transform", {
-    hint: "Drag the gizmo to place things — <b>W</b> to move, <b>E</b> to rotate. The slider resizes the whole thing, keeping its proportions.",
+    hint: "Drag the gizmo to place things — <b>W</b> to move, <b>E</b> to rotate, <b>R</b> to scale along an axis. The slider resizes the whole thing, keeping its proportions.",
     children: [
         targets,
         modes,
@@ -373,7 +374,7 @@ addEventListener("keydown", (e) => {
     }
     // Fly controls own WASD, so mode shortcuts would fight them.
     if (e.metaKey || e.ctrlKey || e.altKey || viewer.controlsType === "fly") return;
-    const mode = { w: "translate", e: "rotate" }[e.key.toLowerCase()];
+    const mode = { w: "translate", e: "rotate", r: "scale" }[e.key.toLowerCase()];
     if (mode) viewer.setGizmoMode(mode);
 });
 

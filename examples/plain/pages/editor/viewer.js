@@ -227,7 +227,7 @@ export class Viewer {
 
     /**
      * Scales proportionally rather than forcing a cube, so a boundary that arrived non-cubic
-     * from pasted metadata keeps its shape when resized. The slider is the only resize control.
+     * from pasted metadata keeps its shape when resized.
      */
     setOverallScale(value) {
         const obj = this.#object(this.#target);
