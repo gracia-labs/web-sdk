@@ -100,10 +100,6 @@
     #debugPanel .dbg-row { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; gap: 12px; }
     #debugPanel .dbg-label { color: rgba(255,255,255,.4); }
     #debugPanel .dbg-val { color: rgba(255,255,255,.8); font-variant-numeric: tabular-nums; }
-    #debugPanel .dbg-toggle { position: relative; width: 32px; height: 18px; border-radius: 9px; background: rgba(255,255,255,.12); border: none; cursor: pointer; transition: background .2s; flex-shrink: 0; }
-    #debugPanel .dbg-toggle.on { background: var(--accent-dim); }
-    #debugPanel .dbg-toggle::after { content: ''; position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,.5); transition: transform .2s, background .2s; }
-    #debugPanel .dbg-toggle.on::after { transform: translateX(14px); background: var(--accent); }
     #debugPanel .dbg-sep { height: 1px; background: rgba(255,255,255,.08); margin: 6px 0; }
     #debugPanel .dbg-log-toggle { display: block; width: 100%; padding: 0; border: 0; background: 0; color: rgba(255,255,255,.35); font: 600 10px/1 inherit; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; text-align: left; margin-top: 8px; transition: color .12s; }
     #debugPanel .dbg-log-toggle:hover { color: rgba(255,255,255,.55); }
@@ -193,13 +189,6 @@
             <span class="dbg-label">WASM</span>
             <span class="dbg-val" id="dbgWasm">--</span>
         </div>
-        <div id="dbgBoundsRow" style="display:none">
-            <div class="dbg-sep"></div>
-            <div class="dbg-row">
-                <span class="dbg-label">Show boundaries</span>
-                <button type="button" class="dbg-toggle" id="dbgBoundsToggle"></button>
-            </div>
-        </div>
         <div class="dbg-sep"></div>
         <button type="button" class="dbg-log-toggle" id="dbgLogToggle" hidden>Console</button>
         <div id="dbgLog" class="dbg-log" hidden></div>
@@ -283,7 +272,6 @@
     let currentSource = null;
     let isMuted = true; // audio off until the user taps the audio button (that gesture unlocks it)
     let firstReady = false;
-    let showBounds = false;
     let ctrlPanelForced = isDebug;
     let sessionStartTime = 0;
     let maxSceneOpened = 0;
@@ -482,9 +470,6 @@
                 for (const b of $('ctrlPanel').querySelectorAll('[data-ctrl]'))
                     b.classList.toggle('on', b.dataset.ctrl === src.controls);
             }
-            boundsOverlay.setBounds(src.cameraBounds ?? null);
-            if (src.cameraBounds) console.log('[Bounds] Loaded:', JSON.stringify(src.cameraBounds));
-            if (isDebug) $('dbgBoundsRow').style.display = src.cameraBounds ? '' : 'none';
         };
     }
 
@@ -499,185 +484,9 @@
         $('ctrlPanel').classList.toggle('visible', canShow && ctrlPanelForced);
     }
 
-    /* ── Bounds wireframe overlay (2D canvas) ── */
-
-    const boundsOverlay = (() => {
-        const canvas = document.createElement('canvas');
-        canvas.style.cssText = 'position:fixed;inset:0;z-index:5;pointer-events:none;';
-        document.body.appendChild(canvas);
-        const ctx = canvas.getContext('2d');
-        let activeBounds = null, corners = null;
-
-        const resize = () => {
-            canvas.width = innerWidth * devicePixelRatio;
-            canvas.height = innerHeight * devicePixelRatio;
-            canvas.style.width = innerWidth + 'px';
-            canvas.style.height = innerHeight + 'px';
-        };
-        resize();
-        addEventListener('resize', resize);
-
-        const FACES = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[0,3,7,4],[1,2,6,5]];
-        const EDGES = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-        const CORNER_SIZE = 4;
-        const SPHERE_SEGMENTS = 64;
-
-        function getAccent() {
-            const raw = getComputedStyle(document.body).getPropertyValue('--accent').trim();
-            const el = document.createElement('canvas').getContext('2d');
-            el.fillStyle = raw || '#f6fa81';
-            return el.fillStyle;
-        }
-
-        function hexToRgba(hex, alpha) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r},${g},${b},${alpha})`;
-        }
-
-        let sphereData = null;
-
-        function buildSphereRings(center, radius, rotation) {
-            const rings = [];
-            const quat = rotation
-                ? new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w)
-                : new THREE.Quaternion();
-            const axes = [
-                new THREE.Vector3(1, 0, 0),
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(0, 0, 1),
-            ];
-            for (const axis of axes) {
-                const ring = [];
-                const perpA = new THREE.Vector3();
-                const perpB = new THREE.Vector3();
-                if (Math.abs(axis.x) < 0.9) perpA.crossVectors(axis, new THREE.Vector3(1, 0, 0)).normalize();
-                else perpA.crossVectors(axis, new THREE.Vector3(0, 1, 0)).normalize();
-                perpB.crossVectors(axis, perpA).normalize();
-                for (let i = 0; i <= SPHERE_SEGMENTS; i++) {
-                    const angle = (i / SPHERE_SEGMENTS) * Math.PI * 2;
-                    const pt = new THREE.Vector3()
-                        .addScaledVector(perpA, Math.cos(angle) * radius)
-                        .addScaledVector(perpB, Math.sin(angle) * radius);
-                    pt.applyQuaternion(quat);
-                    pt.add(center);
-                    ring.push(pt);
-                }
-                rings.push(ring);
-            }
-            return rings;
-        }
-
-        function setBounds(bounds) {
-            activeBounds = bounds;
-            sphereData = null;
-            if (!bounds) { corners = null; ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
-            if (bounds.type === 'box') {
-                const local = [[-0.5,-0.5,-0.5],[0.5,-0.5,-0.5],[0.5,0.5,-0.5],[-0.5,0.5,-0.5],
-                               [-0.5,-0.5,0.5],[0.5,-0.5,0.5],[0.5,0.5,0.5],[-0.5,0.5,0.5]];
-                const mat = new THREE.Matrix4().compose(
-                    new THREE.Vector3(bounds.position.x, bounds.position.y, bounds.position.z),
-                    new THREE.Quaternion(bounds.rotation.x, bounds.rotation.y, bounds.rotation.z, bounds.rotation.w),
-                    new THREE.Vector3(bounds.scale.x, bounds.scale.y, bounds.scale.z));
-                corners = local.map(c => new THREE.Vector3(...c).applyMatrix4(mat));
-            } else if (bounds.type === 'sphere') {
-                corners = null;
-                const center = new THREE.Vector3(bounds.position.x, bounds.position.y, bounds.position.z);
-                const radius = bounds.radius ?? Math.max(bounds.scale?.x ?? 1, bounds.scale?.y ?? 1, bounds.scale?.z ?? 1) * 0.5;
-                sphereData = { center, radius, rings: buildSphereRings(center, radius, bounds.rotation) };
-            } else {
-                corners = null;
-            }
-        }
-
-        function render(camera) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (!activeBounds || !camera) return;
-            if (!corners && !sphereData) return;
-
-            camera.updateMatrixWorld();
-            const mvp = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-            const w = canvas.width, h = canvas.height;
-            const project = v => {
-                const p = v.clone().applyMatrix4(mvp);
-                return p.z < -1 ? null : { x: (p.x * 0.5 + 0.5) * w, y: (1 - (p.y * 0.5 + 0.5)) * h };
-            };
-
-            const accent = getAccent();
-            const dpr = devicePixelRatio;
-
-            if (corners) {
-                const pts = corners.map(project);
-
-                ctx.fillStyle = hexToRgba(accent, 0.045);
-                for (const face of FACES) {
-                    const fp = face.map(i => pts[i]);
-                    if (fp.some(p => !p)) continue;
-                    ctx.beginPath();
-                    ctx.moveTo(fp[0].x, fp[0].y);
-                    for (let i = 1; i < fp.length; i++) ctx.lineTo(fp[i].x, fp[i].y);
-                    ctx.closePath();
-                    ctx.fill();
-                }
-
-                ctx.setLineDash([8 * dpr, 6 * dpr]);
-                ctx.strokeStyle = hexToRgba(accent, 0.7);
-                ctx.lineWidth = 1.5 * dpr;
-                ctx.beginPath();
-                for (const [a, b] of EDGES) {
-                    const pa = pts[a], pb = pts[b];
-                    if (!pa || !pb) continue;
-                    ctx.moveTo(pa.x, pa.y);
-                    ctx.lineTo(pb.x, pb.y);
-                }
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                const cs = CORNER_SIZE * dpr;
-                ctx.fillStyle = hexToRgba(accent, 0.85);
-                for (const p of pts) {
-                    if (!p) continue;
-                    ctx.fillRect(p.x - cs * 0.5, p.y - cs * 0.5, cs, cs);
-                }
-            } else if (sphereData) {
-                ctx.setLineDash([8 * dpr, 6 * dpr]);
-                ctx.strokeStyle = hexToRgba(accent, 0.7);
-                ctx.lineWidth = 1.5 * dpr;
-
-                for (const ring of sphereData.rings) {
-                    ctx.beginPath();
-                    let started = false;
-                    for (const pt of ring) {
-                        const p = project(pt);
-                        if (!p) { started = false; continue; }
-                        if (!started) { ctx.moveTo(p.x, p.y); started = true; }
-                        else ctx.lineTo(p.x, p.y);
-                    }
-                    ctx.stroke();
-                }
-                ctx.setLineDash([]);
-
-                const centerPt = project(sphereData.center);
-                if (centerPt) {
-                    const cs = CORNER_SIZE * dpr;
-                    ctx.fillStyle = hexToRgba(accent, 0.85);
-                    ctx.fillRect(centerPt.x - cs * 0.5, centerPt.y - cs * 0.5, cs, cs);
-                }
-            }
-        }
-
-        return { setBounds, render };
-    })();
-
     /* ── Debug panel ── */
 
     if (isDebug) $('debugPanel').classList.add('visible');
-
-    $('dbgBoundsToggle').onclick = () => {
-        showBounds = !showBounds;
-        $('dbgBoundsToggle').classList.toggle('on', showBounds);
-    };
 
     const fps = (() => {
         const samples = new Float64Array(60);
@@ -732,10 +541,6 @@
             app.onModeChange = () => { activeMode = app.mode; isMuted = !app.audioEnabled; resetBar(); syncUI(app); };
 
             app.onFrame = () => {
-                const cam = app.camera?.threeCamera;
-                if (showBounds && cam) boundsOverlay.render(cam);
-                else boundsOverlay.render(null);
-
                 fps.tick();
                 if (isDebug) {
                     $('dbgFps').textContent = fps.get();

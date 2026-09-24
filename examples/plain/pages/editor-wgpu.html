@@ -719,7 +719,7 @@
             controls: controlsType,
             initialTransform: trsFromObject(splats.root),
             staticTransform: trsFromObject(staticPivot),
-            cameraBounds: boundsShape ? {
+            bounds: boundsShape ? {
                 type: boundsShape.type,
                 position: { x: boundsShape.mesh.position.x, y: boundsShape.mesh.position.y, z: boundsShape.mesh.position.z },
                 rotation: { x: boundsShape.mesh.quaternion.x, y: boundsShape.mesh.quaternion.y, z: boundsShape.mesh.quaternion.z, w: boundsShape.mesh.quaternion.w },
@@ -750,12 +750,12 @@
             splats.root.updateMatrixWorld(true);
             staticPivot.updateMatrix();
 
-            if (data.cameraBounds && data.cameraBounds.type) {
-                addBounds(data.cameraBounds.type);
+            if (data.bounds && data.bounds.type) {
+                addBounds(data.bounds.type);
                 applyTrs(boundsShape.mesh, {
-                    translation: data.cameraBounds.position,
-                    rotation: data.cameraBounds.rotation,
-                    scale: data.cameraBounds.scale,
+                    translation: data.bounds.position,
+                    rotation: data.bounds.rotation,
+                    scale: data.bounds.scale,
                 });
             } else {
                 removeBounds();

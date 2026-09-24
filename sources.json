@@ -5,7 +5,65 @@
             "label": "Direct: Vivid & Translucent (1724)",
             "displayName": "Vivid & Translucent",
             "type": "stream",
-            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint"
+            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint",
+            "background": "#2a2a32",
+            "controls": "orbit",
+            "initialTransform": {
+                "translation": {
+                    "x": 0,
+                    "y": 0.87063,
+                    "z": 1.199297
+                },
+                "rotation": {
+                    "x": -0.236748,
+                    "y": -0.243753,
+                    "z": 0.113846,
+                    "w": 0.933581
+                },
+                "scale": {
+                    "x": 1.87,
+                    "y": 1.87,
+                    "z": 1.87
+                }
+            },
+            "staticTransform": {
+                "translation": {
+                    "x": -0.410019,
+                    "y": -0.082223,
+                    "z": -0.673199
+                },
+                "rotation": {
+                    "x": 0.236748,
+                    "y": 0.243753,
+                    "z": -0.113846,
+                    "w": 0.933581
+                },
+                "scale": {
+                    "x": 0.534759,
+                    "y": 0.534759,
+                    "z": 0.534759
+                }
+            },
+            "bounds": {
+                "type": "sector",
+                "position": {
+                    "x": -0.047399,
+                    "y": 1.2,
+                    "z": -0.553556
+                },
+                "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                    "w": 1
+                },
+                "scale": {
+                    "x": 4,
+                    "y": 2.4,
+                    "z": 4
+                },
+                "angleDeg": 90
+            }
         },
         {
             "id": "direct-karl-kani-liar-liar",
