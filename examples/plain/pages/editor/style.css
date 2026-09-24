@@ -171,9 +171,13 @@ canvas { display: block; }
 }
 .seg .btn.on { color: var(--accent); background: var(--accent-dim); }
 
-/* Undo / redo: a compact pill rather than a full-width card. */
+/* Undo / redo / reset view: a compact pill at the top centre. */
 .toolbar {
-    align-self: flex-start;
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
     display: flex;
     gap: 3px;
     padding: 4px;

@@ -35,12 +35,19 @@ try {
 const history = new History(viewer.toDoc());
 let restoring = false;
 
-/* ── Left column: everything that becomes metadata ── */
+/* ── Top: history and view ── */
 
 const undo = button("\u21B6  Undo", { title: "Cmd+Z", onClick: () => travel(history.undo()) });
 const redo = button("\u21B7  Redo", { title: "Shift+Cmd+Z", onClick: () => travel(history.redo()) });
-const toolbar = el("div", { class: "card toolbar" }, [undo, redo]);
-left.append(toolbar);
+document.body.append(
+    el("div", { class: "card toolbar" }, [
+        undo,
+        redo,
+        button("Reset view", { onClick: () => viewer.resetCamera() }),
+    ]),
+);
+
+/* ── Left column: everything that becomes metadata ── */
 
 const videoTag = tag("video", "No video");
 const envTag = tag("env", "No environment");
@@ -176,12 +183,7 @@ const sceneCard = section("Surroundings", {
     hint: CAMERA_HINTS.orbit,
     children: [
         cameras,
-        el("div", { class: "row" }, [
-            el("span", { class: "lbl", text: "Background" }),
-            bgInput,
-            el("span", { class: "grow" }),
-            button("Reset view", { onClick: () => viewer.resetCamera() }),
-        ]),
+        el("div", { class: "row" }, [el("span", { class: "lbl", text: "Background" }), bgInput]),
     ],
 });
 left.append(sceneCard);
@@ -352,8 +354,6 @@ function travel(doc) {
 function syncHistoryButtons() {
     show(undo, history.canUndo);
     show(redo, history.canRedo);
-    // An empty toolbar is worse than no toolbar, so it appears with the first edit.
-    show(toolbar, history.canUndo || history.canRedo);
 }
 
 for (const event of ["transform", "bounds", "content"]) viewer.on(event, sync);
