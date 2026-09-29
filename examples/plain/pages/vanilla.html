@@ -195,7 +195,7 @@
     </div>
 
     <script type="module">
-    import { buildApiSources, GraciaApp, loadGraciaModule, THREE, XROverlay } from '@gracia/web-sdk/aio';
+    import { BoundaryRenderer, buildApiSources, GraciaApp, loadGraciaModule, THREE, XROverlay } from '@gracia/web-sdk/aio';
 
     // Debug panel (?debug=1) — must be before loadGraciaModule to capture its logs
     const _dbg = new URLSearchParams(location.search).get('debug') === '1';
@@ -522,7 +522,12 @@
 
             app = await GraciaApp.create(
                 opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
-                { container: $('canvasWrap'), overlay, mode: params.get('mode') || 'pw' }
+                {
+                    container: $('canvasWrap'),
+                    overlay,
+                    boundaryRenderer: new BoundaryRenderer(THREE),
+                    mode: params.get('mode') || 'pw',
+                }
             );
             if (app.player.buildUnixTime) {
                 const w = new Date(app.player.buildUnixTime * 1000).toISOString().replace('T', ' ').slice(0, 19);

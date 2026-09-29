@@ -193,6 +193,23 @@ declare class GraciaPlayer$1 {
     #private;
 }
 
+declare class SceneBoundary {
+    get active(): boolean;
+    get darkness(): number;
+    get outlineOpacity(): number;
+    get outlineUrgent(): boolean;
+    setBounds(config: object | null): this;
+    setRoomMatrix(m: ArrayLike<number> | null): this;
+    reset(): this;
+    update(head: ArrayLike<number> | {
+        x: number;
+        y: number;
+        z: number;
+    }, dt: number): this;
+    ribbon(width: number): Float32Array<ArrayBuffer>;
+    #private;
+}
+
 declare function envCoefsFromSH27(sh: any, lightDir?: null, contrast?: number): Float32Array<ArrayBuffer>;
 declare function envCoefsFromPreset(p: any): Float32Array<ArrayBuffer>;
 
@@ -534,9 +551,10 @@ declare class SceneManipulator {
 }
 
 declare class GraciaApp {
-    static create(Module: any, { container, overlay, mode }?: {
+    static create(Module: any, { container, overlay, boundaryRenderer, mode }?: {
         container: HTMLElement;
         overlay?: any;
+        boundaryRenderer?: any;
         mode?: string;
     }): Promise<GraciaApp>;
     onProgress: ((pct: number) => void) | null;
@@ -546,6 +564,7 @@ declare class GraciaApp {
     onBeforeFrame: ((dt: number) => void) | null;
     onModeChange: ((mode: string, prevMode: string) => void) | null;
     onSceneChange: ((src: any, idx: number) => void) | null;
+    onSceneEnd: ((src: any, idx: number) => void) | null;
     get player(): GraciaPlayer$1 | null;
     get camera(): Camera2D | null;
     get canvas(): HTMLCanvasElement;
@@ -710,6 +729,7 @@ interface UseGraciaPlayerOptions {
     containerRef: RefObject<HTMLElement>;
     mode?: GraciaMode;
     overlay?: any;
+    boundaryRenderer?: any;
     moduleUrl?: string;
     moduleFactory?: () => Promise<any>;
     onReady?: () => void;
@@ -835,7 +855,10 @@ interface GraciaPlaylist {
     prev(): void;
     goTo(index: number): void;
 }
-declare function useGraciaPlaylist(gracia: GraciaPlayerState): GraciaPlaylist;
+interface GraciaPlaylistOptions {
+    onSceneEnd?(source: GraciaSource, index: number): void;
+}
+declare function useGraciaPlaylist(gracia: GraciaPlayerState, options?: GraciaPlaylistOptions): GraciaPlaylist;
 
 type SceneSelectorMode = "menu" | "stepper" | "tabs";
 type XROverlayConfig = {
@@ -928,6 +951,15 @@ declare class SplatsRendererW3 {
     setAudioPanner(attr: Partial<PannerNode>): void;
     render(renderer: three.WebGPURenderer, scene: three.Scene, camera: three.Camera, overlayScene?: three.Scene): void;
     setStaticModelMatrix(elements: ArrayLike<number>): void;
+    dispose(): void;
+    #private;
+}
+
+declare class BoundaryRenderer {
+    constructor(THREE: any);
+    init(gl: WebGL2RenderingContext): void;
+    sync(boundary: SceneBoundary): void;
+    renderEye(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
     dispose(): void;
     #private;
 }
@@ -1113,7 +1145,6 @@ declare class XROverlay {
     get sources(): any[];
     set sceneIndex(i: number);
     get sceneIndex(): number;
-    beginSceneLoad(): void;
     set onSceneChange(fn: null);
     get onSceneChange(): null;
     set onPresetChange(fn: null);
@@ -1122,7 +1153,6 @@ declare class XROverlay {
     get onLock(): null;
     set onScaleLock(fn: null);
     get onScaleLock(): null;
-    set bounds(v: any);
     set bannerText(t: string | null);
     get bannerText(): string | null;
     set eventLogger(cb: null);
@@ -1153,4 +1183,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, QuadLayer, Quat, type SceneBounds, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
+export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, QuadLayer, Quat, type SceneBounds, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
