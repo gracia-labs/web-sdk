@@ -46,22 +46,31 @@ function volumeGeometry(type, angleDeg) {
     return new THREE.BoxGeometry(1, 1, 1);
 }
 
-/** Three great circles, drawn as segments. */
-function sphereOutline() {
+function ring(at) {
     const points = [];
-    const ring = (at) => {
-        for (let i = 0; i < SEGMENTS; i++) {
-            points.push(...at((i / SEGMENTS) * Math.PI * 2), ...at(((i + 1) / SEGMENTS) * Math.PI * 2));
-        }
-    };
-    ring((a) => [Math.cos(a) * 0.5, Math.sin(a) * 0.5, 0]);
-    ring((a) => [Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5]);
-    ring((a) => [0, Math.cos(a) * 0.5, Math.sin(a) * 0.5]);
+    for (let i = 0; i < SEGMENTS; i++) {
+        points.push(...at((i / SEGMENTS) * Math.PI * 2), ...at(((i + 1) / SEGMENTS) * Math.PI * 2));
+    }
+    return points;
+}
 
+function segmentsGeometry(points) {
     const geom = new THREE.BufferGeometry();
     geom.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
     return geom;
 }
+
+/** Three great circles, drawn as segments. */
+function sphereOutline() {
+    return segmentsGeometry([
+        ...ring((a) => [Math.cos(a) * 0.5, Math.sin(a) * 0.5, 0]),
+        ...ring((a) => [Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5]),
+        ...ring((a) => [0, Math.cos(a) * 0.5, Math.sin(a) * 0.5]),
+    ]);
+}
+
+const RING_NORMAL = new THREE.Vector3(0, 0, 1);
+const _eye = new THREE.Vector3();
 
 /**
  * A sphere is smooth, so EdgesGeometry finds no edges above any sane angle threshold and the
@@ -78,6 +87,7 @@ function outlineGeometry(type, volume) {
 export class BoundsObject extends THREE.Group {
     #fill;
     #edges;
+    #silhouette;
 
     constructor(type, angleDeg = 90) {
         super();
@@ -99,7 +109,12 @@ export class BoundsObject extends THREE.Group {
             outlineGeometry(type, geom),
             new THREE.LineBasicMaterial({ color: COLOR, transparent: true, opacity: 0.9 }),
         );
-        this.add(this.#fill, this.#edges);
+        this.#silhouette = new THREE.LineSegments(
+            segmentsGeometry(ring((a) => [Math.cos(a), Math.sin(a), 0])),
+            this.#edges.material,
+        );
+        this.#silhouette.visible = type === "sphere";
+        this.add(this.#fill, this.#edges, this.#silhouette);
     }
 
     /** Swaps geometry in place so an attached gizmo keeps its target. */
@@ -113,11 +128,29 @@ export class BoundsObject extends THREE.Group {
         this.#edges.geometry.dispose();
         this.#fill.geometry = geom;
         this.#edges.geometry = outlineGeometry(type, geom);
+        this.#silhouette.visible = type === "sphere";
+    }
+
+    /** Keeps a sphere's rim ring on its silhouette as seen from `camera`, so it always reads as round. */
+    faceCamera(camera) {
+        if (this.type !== "sphere") return;
+        const r = 0.5;
+        this.updateMatrixWorld();
+        const eye = this.worldToLocal(camera.getWorldPosition(_eye));
+        const d = eye.length();
+        const silhouette = this.#silhouette;
+        silhouette.visible = d > r;
+        if (!silhouette.visible) return;
+        const k = (r * r) / (d * d);
+        silhouette.position.copy(eye).multiplyScalar(k);
+        silhouette.scale.setScalar(r * Math.sqrt(1 - k));
+        silhouette.quaternion.setFromUnitVectors(RING_NORMAL, eye.divideScalar(d));
     }
 
     dispose() {
         this.#fill.geometry.dispose();
         this.#edges.geometry.dispose();
+        this.#silhouette.geometry.dispose();
         this.#fill.material.dispose();
         this.#edges.material.dispose();
     }

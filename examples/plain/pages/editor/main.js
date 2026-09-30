@@ -110,7 +110,7 @@ const removeRow = el("div", { class: "row" }, [
 
 left.append(
     section("Boundary", {
-        hint: "The volume a viewer is expected to stay inside, placed around the <b>Viewer</b>. Moving the video does not move it. A <b>sector</b> is a slice of a cylinder, so its X and Z size stay linked.",
+        hint: "The volume a viewer is expected to stay inside, placed around the <b>Viewer</b>. Moving the video does not move it. A <b>sphere</b> stays round, so its X, Y and Z size stay linked; a <b>sector</b> is a slice of a cylinder, so its X and Z size do.",
         children: [boundsTypes, angleRow, removeRow],
     }),
 );

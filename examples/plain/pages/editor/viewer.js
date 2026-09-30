@@ -32,6 +32,9 @@ function applyTrs(obj, trs) {
 
 const _local = new THREE.Matrix4();
 
+// A sector's radius is `min(scale.x, scale.z)`, and a sphere must stay round.
+const LINKED_AXES = { sector: ["x", "z"], sphere: ["x", "y", "z"] };
+
 /**
  * Everything three.js: renderer, splat roots, gizmo, boundary volume, render loop. The panels
  * drive it through these methods and never reach into the scene graph themselves.
@@ -51,7 +54,6 @@ export class Viewer {
     #listeners = new Map();
     #timer = new THREE.Timer();
     #envWorld = new THREE.Matrix4();
-    #lastSectorScale = new THREE.Vector2();
     #raf = 0;
 
     constructor(player, renderer) {
@@ -87,7 +89,7 @@ export class Viewer {
         });
         this.#gizmo.addEventListener("objectChange", () => {
             if (this.#target === "video") this.#unpin();
-            if (this.#target === "bounds") this.#linkSectorScale();
+            if (this.#target === "bounds") this.#linkScale();
             this.emit("transform");
         });
 
@@ -239,7 +241,6 @@ export class Viewer {
         obj.scale.multiplyScalar(value / current);
         obj.updateMatrix();
         if (this.#target === "video") this.#unpin();
-        if (this.#target === "bounds") this.#lastSectorScale.set(obj.scale.x, obj.scale.z);
         this.emit("transform");
     }
 
@@ -261,19 +262,18 @@ export class Viewer {
     }
 
     /**
-     * A sector is a slice of a cylinder, so the player's radius is `min(scale.x, scale.z)`.
-     * Keeping the pair equal stops the editor drawing a volume the player will not honour.
-     * While dragging, whichever axis just moved wins; for a value arriving from outside there
-     * is no "just moved", so collapse to the smaller — the volume actually enforced.
+     * Keeps the bounds' LINKED_AXES equal, so the editor never draws a volume the player will not
+     * honour. The gizmo rebuilds every drag step from the scale at drag start, so the dragged
+     * handle's axis wins; a value arriving from outside collapses to the smallest.
      */
-    #linkSectorScale(fromOutside = false) {
+    #linkScale() {
         const bounds = this.#bounds;
-        if (!bounds || bounds.type !== "sector") return;
+        const axes = bounds && LINKED_AXES[bounds.type];
+        if (!axes) return;
         const s = bounds.scale;
-        if (fromOutside) s.x = s.z = Math.min(s.x, s.z);
-        else if (s.x !== this.#lastSectorScale.x) s.z = s.x;
-        else if (s.z !== this.#lastSectorScale.y) s.x = s.z;
-        this.#lastSectorScale.set(s.x, s.z);
+        const dragged = this.#gizmo.dragging ? this.#gizmo.axis?.[0].toLowerCase() : undefined;
+        const size = axes.includes(dragged) ? s[dragged] : Math.min(...axes.map((a) => s[a]));
+        for (const a of axes) s[a] = size;
         bounds.updateMatrix();
     }
 
@@ -309,7 +309,7 @@ export class Viewer {
             rotation: bounds.rotation,
             scale: bounds.scale,
         });
-        this.#linkSectorScale(true);
+        this.#linkScale();
         if (this.#target === "bounds") this.#gizmo.attach(this.#bounds);
         else this.setGizmoTarget(this.#target);
         this.emit("bounds");
@@ -485,6 +485,7 @@ export class Viewer {
 
             this.#staticPivot.updateMatrix();
             this.#splats.setStaticModelMatrix(this.#staticPivot.matrix.elements);
+            this.#bounds?.faceCamera(this.camera);
             this.#splats.render(this.renderer, this.scene, this.camera, this.#overlay);
 
             const now = performance.now();
