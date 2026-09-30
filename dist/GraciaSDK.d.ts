@@ -200,6 +200,7 @@ declare class SceneBoundary {
     get outlineUrgent(): boolean;
     setBounds(config: object | null): this;
     setRoomMatrix(m: ArrayLike<number> | null): this;
+    queueIntro(): this;
     reset(): this;
     update(head: ArrayLike<number> | {
         x: number;
