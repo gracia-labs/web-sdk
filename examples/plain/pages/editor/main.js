@@ -1,6 +1,6 @@
 import { createFpsMeter } from "./fps.js";
 import { History } from "./history.js";
-import { readAny, serializeBounds, serializeDoc, serializeTrs } from "./metadata.js";
+import { PARTS, readAny, readPart, serializeBounds, serializeDoc, serializeTrs } from "./metadata.js";
 import { mountTimeline } from "./timeline.js";
 import {
     button,
@@ -8,6 +8,7 @@ import {
     downloadJson,
     el,
     fatal,
+    pasteButton,
     pickFile,
     pickJsonText,
     groupLabel,
@@ -188,22 +189,51 @@ const sceneCard = section("Surroundings", {
 });
 left.append(sceneCard);
 
-const copyBounds = copyButton(
-    "Bounds",
-    () => JSON.stringify(serializeBounds(viewer.getBounds()), null, 2),
-    { title: "Copy the bounds object for the admin's Bounds field" },
-);
-const copySpawn = copyButton(
-    "Initial spawn",
-    () => JSON.stringify(serializeTrs(viewer.getTrs("video")), null, 2),
-    { title: "Copy the transform for the admin's Initial Spawn field" },
-);
+const partError = el("div", { class: "err" });
 
-// Hidden wholesale when neither value exists, so no orphan heading is left behind.
-const copyGroup = el("div", { class: "stack" }, [
-    groupLabel("Copy for the admin"),
-    el("div", { class: "row" }, [copyBounds, copySpawn]),
-]);
+function partRow(label, part, getText, copyTitle) {
+    const copy = copyButton("Copy", getText, { title: copyTitle });
+    const paste = pasteButton(
+        "Paste",
+        (text) => {
+            commit(() => viewer.applyDoc({ [part]: readPart(text, part) }));
+            partError.textContent = "";
+        },
+        {
+            title: `Replace the ${PARTS[part]} with the one on the clipboard, leaving the rest of the scene as it is`,
+            onError: (message) => {
+                partError.textContent = message;
+            },
+        },
+    );
+    const row = el("div", { class: "row" }, [
+        el("span", { class: "lbl", text: label }),
+        el("span", { class: "grow" }),
+        copy,
+        paste,
+    ]);
+    row.copy = copy;
+    return row;
+}
+
+const spawnRow = partRow(
+    "Initial spawn",
+    "initialTransform",
+    () => JSON.stringify(serializeTrs(viewer.getTrs("video")), null, 2),
+    "Copy the transform for the admin's Initial Spawn field",
+);
+const envRow = partRow(
+    "Environment",
+    "staticTransform",
+    () => JSON.stringify(serializeTrs(viewer.getTrs("environment")), null, 2),
+    "Copy the environment transform",
+);
+const boundsRow = partRow(
+    "Bounds",
+    "bounds",
+    () => JSON.stringify(serializeBounds(viewer.getBounds()), null, 2),
+    "Copy the bounds object for the admin's Bounds field",
+);
 
 const json = el("textarea", { class: "json", spellcheck: "false" });
 const jsonError = el("div", { class: "err" });
@@ -246,9 +276,13 @@ function applyJson(text) {
 
 left.append(
     section("Metadata", {
-        hint: "The two <b>copy</b> buttons give the bare objects the content admin's Bounds and Initial Spawn fields expect. The JSON below is the whole scene — edit it and press Apply, or paste in anything copied out of the admin.",
+        hint: "Each part copies and pastes on its own. <b>Copy</b> gives the bare objects the content admin's Initial Spawn and Bounds fields expect. <b>Paste</b> takes just that part from whatever is on the clipboard — a bare object from the admin, a whole scene or a playlist — and leaves the rest of the scene as it is. The JSON below is the whole scene — edit it and press Apply.",
         children: [
-            copyGroup,
+            groupLabel("By part"),
+            spawnRow,
+            envRow,
+            boundsRow,
+            partError,
 
             groupLabel("Whole scene as JSON"),
             json,
@@ -326,9 +360,7 @@ function sync() {
     show(angleRow, bounds?.type === "sector");
     if (bounds?.type === "sector") angle.set(bounds.angleDeg ?? 90);
     show(removeRow, !!bounds);
-    show(copyBounds, !!bounds);
-    show(copySpawn, !!video);
-    show(copyGroup, !!bounds || !!video);
+    show(boundsRow.copy, !!bounds);
 
     bgInput.value = viewer.background;
     cameras.select(viewer.controlsType);

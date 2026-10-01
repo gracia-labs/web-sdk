@@ -154,9 +154,19 @@ export function tag(dotClass, name) {
     return node;
 }
 
+function flasher(node, label) {
+    let timer = 0;
+    return (text) => {
+        node.textContent = text;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            node.textContent = label;
+        }, 1100);
+    };
+}
+
 /** Copies text, flashing the button label so the click has visible feedback. */
 export function copyButton(label, getText, { title } = {}) {
-    let timer = 0;
     const node = button(label, {
         title,
         onClick: async () => {
@@ -172,14 +182,36 @@ export function copyButton(label, getText, { title } = {}) {
                 document.execCommand("copy");
                 area.remove();
             }
-            node.textContent = "Copied";
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-                node.textContent = label;
-            }, 1100);
+            flash("Copied");
         },
     });
+    const flash = flasher(node, label);
     return node;
+}
+
+export function pasteButton(label, onText, { title, onError } = {}) {
+    const node = button(label, {
+        title,
+        onClick: async () => {
+            try {
+                onText(await readClipboard());
+                flash("Pasted");
+            } catch (error) {
+                onError?.(error instanceof Error ? error.message : String(error));
+            }
+        },
+    });
+    const flash = flasher(node, label);
+    return node;
+}
+
+async function readClipboard() {
+    if (!navigator.clipboard?.readText) throw new Error("This browser does not let the page read the clipboard");
+    try {
+        return await navigator.clipboard.readText();
+    } catch {
+        throw new Error("Clipboard access was blocked; allow it for this site and try again");
+    }
 }
 
 export function pickFile(accept) {

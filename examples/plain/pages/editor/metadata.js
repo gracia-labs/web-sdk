@@ -69,21 +69,17 @@ export function readBounds(raw) {
 }
 
 const CONTROLS = ["orbit", "trackball", "fly"];
+const BOUNDS_TYPES = ["box", "sphere", "sector"];
 
-/**
- * Accepts every shape the editor might be handed: a bare bounds object or bare transform copied
- * out of the admin, a full editor document, a `{sources:[…]}` playlist, or streaming metadata.
- * Returns only the parts that were recognised, so a paste never clears unrelated state.
- */
-export function readAny(raw) {
-    if (!raw || typeof raw !== "object") throw new Error("Expected a JSON object");
+const isBoundsShape = (v) => !!v && typeof v === "object" && BOUNDS_TYPES.includes(v.type);
 
-    const bare = readBounds(raw);
-    if (bare) return { bounds: bare };
-
+function sceneOf(raw) {
     const data = (Array.isArray(raw.sources) ? raw.sources[0] : null) ?? raw.metadata ?? raw;
     if (!data || typeof data !== "object") throw new Error("Expected a JSON object");
+    return data;
+}
 
+function partsOf(data) {
     const found = {};
     if (typeof data.background === "string") found.background = data.background;
     else if (typeof data.backgroundColor === "string") found.background = data.backgroundColor;
@@ -96,6 +92,22 @@ export function readAny(raw) {
     if (environment) found.staticTransform = environment;
 
     if ("bounds" in data) found.bounds = readBounds(data.bounds);
+    return found;
+}
+
+/**
+ * Accepts every shape the editor might be handed: a bare bounds object or bare transform copied
+ * out of the admin, a full editor document, a `{sources:[…]}` playlist, or streaming metadata.
+ * Returns only the parts that were recognised, so a paste never clears unrelated state.
+ */
+export function readAny(raw) {
+    if (!raw || typeof raw !== "object") throw new Error("Expected a JSON object");
+
+    const bare = readBounds(raw);
+    if (bare) return { bounds: bare };
+
+    const data = sceneOf(raw);
+    const found = partsOf(data);
 
     // A lone transform pasted from the admin's Initial Spawn field.
     if (!Object.keys(found).length) {
@@ -104,6 +116,46 @@ export function readAny(raw) {
         found.initialTransform = trs;
     }
     return found;
+}
+
+export const PARTS = {
+    initialTransform: "initial spawn",
+    staticTransform: "environment transform",
+    bounds: "bounds",
+};
+
+export function readPart(text, part) {
+    const name = PARTS[part];
+    const trimmed = text.trim();
+    if (!trimmed) throw new Error("The clipboard is empty");
+
+    let raw;
+    try {
+        raw = JSON.parse(trimmed);
+    } catch {
+        throw new Error("The clipboard does not hold JSON");
+    }
+    if (!raw || typeof raw !== "object") throw new Error(`No ${name} in the clipboard`);
+
+    const data = sceneOf(raw);
+
+    if (part === "bounds") {
+        const candidate = "bounds" in data ? data.bounds : isBoundsShape(data) ? data : undefined;
+        if (candidate === undefined) throw new Error("No bounds in the clipboard");
+        if (candidate === null) throw new Error("The copied scene has no bounds");
+        const bounds = readBounds(candidate);
+        if (!bounds) throw new Error("The bounds in the clipboard are incomplete or invalid");
+        return bounds;
+    }
+
+    if (isBoundsShape(data)) throw new Error(`The clipboard holds bounds, not ${name}`);
+    const found = partsOf(data);
+    if (found[part]) return found[part];
+    if (!Object.keys(found).length) {
+        const trs = readTrs(data);
+        if (trs) return trs;
+    }
+    throw new Error(`No ${name} in the clipboard`);
 }
 
 const round = (n) => Math.round(n * 1e6) / 1e6;
