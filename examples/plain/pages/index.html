@@ -52,6 +52,8 @@
 
         const root = document.getElementById('player');
         const status = document.getElementById('status');
+        // ?xr=webgl|webgpu forces the VR/AR backend; 'auto' uses WebGPU where the browser supports it.
+        const xrBackend = new URLSearchParams(location.search).get('xr') || 'auto';
 
         const localFilesEnabled = !DEMO_DOMAIN;
 
@@ -142,6 +144,8 @@
             sources: loadedSources,
             localFiles: localFilesEnabled,
             moduleUrl: '@gracia/web-sdk/wasm',
+            xrBackend,
+            onXRStart: () => console.info(`[gracia] XR session via ${player.player?.gracia.app?.xrBackend}`),
             sceneSelector: 'menu',
             controls: true,
             cameraControls: cameraControlsEnabled,

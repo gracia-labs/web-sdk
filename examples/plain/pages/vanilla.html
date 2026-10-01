@@ -193,6 +193,10 @@
             <span class="dbg-label">WASM</span>
             <span class="dbg-val" id="dbgWasm">--</span>
         </div>
+        <div class="dbg-row">
+            <span class="dbg-label">XR</span>
+            <span class="dbg-val" id="dbgXR">--</span>
+        </div>
         <div id="dbgBoundsRow" style="display:none">
             <div class="dbg-sep"></div>
             <div class="dbg-row">
@@ -279,6 +283,8 @@
 
     const params = new URLSearchParams(location.search);
     const isDebug = params.get('debug') === '1';
+    // ?xr=webgl|webgpu forces the VR/AR backend; 'auto' uses WebGPU where the browser supports it.
+    const xrBackend = params.get('xr') || 'auto';
 
     let currentSource = null;
     let isMuted = true; // audio off until the user taps the audio button (that gesture unlocks it)
@@ -713,8 +719,14 @@
 
             app = await GraciaApp.create(
                 opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
-                { container: $('canvasWrap'), overlay, mode: params.get('mode') || 'pw' }
+                { container: $('canvasWrap'), overlay, mode: params.get('mode') || 'pw', xrBackend }
             );
+            const showXR = () => {
+                const t = `${app.xrBackend}${app.xr ? '' : ` (${xrBackend})`}`;
+                $('dbgXR').textContent = t;
+                return t;
+            };
+            $('vpTip').textContent += `\nXR    ${showXR()}`;
             if (app.player.buildUnixTime) {
                 const w = new Date(app.player.buildUnixTime * 1000).toISOString().replace('T', ' ').slice(0, 19);
                 $('vpTip').textContent += `\nWASM  ${w}`;
@@ -729,7 +741,10 @@
                 if (isMuted) app.disableAudio(); else app.enableAudio();
                 track('streaming_launch_success', { source: 'vega' });
             };
-            app.onModeChange = () => { activeMode = app.mode; isMuted = !app.audioEnabled; resetBar(); syncUI(app); };
+            app.onModeChange = () => {
+                activeMode = app.mode; isMuted = !app.audioEnabled; resetBar(); syncUI(app);
+                if (app.xr) console.info(`[gracia] ${app.mode.toUpperCase()} session via ${showXR()}`);
+            };
 
             app.onFrame = () => {
                 const cam = app.camera?.threeCamera;
