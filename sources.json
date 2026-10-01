@@ -1,99 +1,11 @@
 {
     "sources": [
         {
-            "id": "pga1",
-            "label": "Min Woo Lee",
-            "displayName": "Min Woo Lee",
-            "type": "stream",
-            "url": "https://gstatic.gracia.ai/demo/pga-015.mint",
-            "staticUrl": "https://gstatic.gracia.ai/demo/pga_combined.sog",
-            "background": "#2a2a32",
-            "resetPositionOnStart": true,
-            "autoSwitchToNext": false,
-            "locked": false,
-            "initialTransform": {
-                "translation": {
-                    "x": 0.544881428603463,
-                    "y": 1.462475860907622,
-                    "z": -2.2994778325440968
-                },
-                "rotation": {
-                    "x": -0.06882206158169853,
-                    "y": 0.0013489529000297164,
-                    "z": -0.9974364582844515,
-                    "w": 0.01955034144684762
-                },
-                "scale": {
-                    "x": 2.71,
-                    "y": 2.71,
-                    "z": 2.71
-                }
-            },
-            "staticTransform": {
-                "translation": {
-                    "x": 0.4847021214250112,
-                    "y": 0.4734670403316138,
-                    "z": 1.0240012536862144
-                },
-                "rotation": {
-                    "x": -0.055626959812192484,
-                    "y": -0.6970303510749654,
-                    "z": 0.7146141278471346,
-                    "w": -0.019518691135483247
-                },
-                "scale": {
-                    "x": 0.24,
-                    "y": 0.24,
-                    "z": 0.24
-                }
-            }
-        },
-        {
             "id": "direct-fashion-1724",
             "label": "Direct: Vivid & Translucent (1724)",
             "displayName": "Vivid & Translucent",
             "type": "stream",
-            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint",
-            "background": "#2a2a32",
-            "controls": "orbit",
-            "initialTransform": {
-                "translation": {
-                    "x": 0,
-                    "y": 1.121582,
-                    "z": -1.030825
-                },
-                "rotation": {
-                    "x": -0.161235,
-                    "y": 0.838503,
-                    "z": 0.379322,
-                    "w": 0.356414
-                },
-                "scale": {
-                    "x": 1.77,
-                    "y": 1.77,
-                    "z": 1.77
-                }
-            },
-            "bounds": {
-                "type": "sector",
-                "position": {
-                    "x": 0,
-                    "y": 1.586598,
-                    "z": 0.855573
-                },
-                "rotation": {
-                    "x": 0,
-                    "y": 1,
-                    "z": 0,
-                    "w": 0
-                },
-                "scale": {
-                    "x": 5.287915,
-                    "y": 3.172749,
-                    "z": 5.287915
-                },
-                "angleDeg": 90
-            }
+            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint"
         },
         {
             "id": "direct-karl-kani-liar-liar",
