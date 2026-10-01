@@ -161,9 +161,12 @@
             <input ref=${inputRef} type="file" accept=".mint" style=${{ display: 'none' }} onChange=${onFile} />`;
     }
 
+    // ?xr=webgl|webgpu forces the VR/AR backend; 'auto' uses WebGPU where the browser supports it.
+    const XR_BACKEND = new URLSearchParams(location.search).get('xr') || 'auto';
+
     function TestApp() {
         const containerRef = useRef(null);
-        const gracia = useGraciaPlayer({ containerRef, moduleUrl: '@gracia/web-sdk/wasm' });
+        const gracia = useGraciaPlayer({ containerRef, moduleUrl: '@gracia/web-sdk/wasm', xrBackend: XR_BACKEND });
         const playlist = useGraciaPlaylist(gracia);
 
         useEffect(() => {
@@ -252,7 +255,10 @@
                                 <span class="vb-time">${fmt(playback.currentTime)} / ${fmt(playback.duration)}</span>
                                 <button class="vb-btn" onClick=${() => playback.toggleMute()}>${muteIcon}</button>
                             </div>`}
-                        ${gracia.error && html`<div class="status-bar"><span class="tag err">${gracia.error.message}</span></div>`}
+                        <div class="status-bar">
+                            <span class="tag ${xr.backend === 'webgpu' ? 'on' : ''}">XR ${xr.backend}</span>
+                            ${gracia.error && html`<span class="tag err">${gracia.error.message}</span>`}
+                        </div>
                     </div>
                 </div>
             </div>`;
