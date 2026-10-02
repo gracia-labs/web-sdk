@@ -7,11 +7,6 @@ import * as _preact_signals_core from '@preact/signals-core';
 
 declare function loadGraciaModule(wasmSpecifier?: string): Promise<any>;
 
-type PlaybackRange$1 = {
-    start: number;
-    end: number;
-};
-
 declare class ScratchHeap {
     constructor(app: any, size?: number);
     ptr(offset?: number): number;
@@ -142,20 +137,17 @@ declare class GraciaPlayer$1 {
     get isReady(): boolean;
     get progress(): any;
     get duration(): any;
-    get playbackRange(): PlaybackRange$1 | null;
-    get playbackStart(): number;
-    get playbackEnd(): number;
-    get rangeDuration(): number;
-    get rangeTime(): number;
-    get loopCount(): number;
-    get error(): Error | null;
+    get playbackRange(): {
+        start: number;
+        end: number;
+    } | null;
     get currentTime(): number;
     get isPlaying(): boolean;
     get isBuffering(): boolean;
     get lastFetchStatus(): any;
     play(): void;
     pause(): void;
-    seek(t: number): void;
+    seek(t: any): void;
     setPlaybackRange(start: number, end: number): void;
     clearPlaybackRange(): void;
     get speed(): number;
@@ -170,7 +162,6 @@ declare class GraciaPlayer$1 {
         localFile?: File;
         token?: string;
         audio?: string;
-        playbackRange?: PlaybackRange$1 | null;
     }): Promise<void> | undefined;
     get audioContext(): AudioContext | null;
     get audioEnabled(): boolean;
@@ -708,12 +699,7 @@ interface SceneTransform {
         z: number;
     };
 }
-interface PlaybackRange {
-    start: number;
-    end: number;
-}
 interface GraciaSource {
-    playbackRange?: PlaybackRange | null;
     url: string;
     id?: string;
     label?: string;
@@ -752,13 +738,6 @@ interface GraciaPlayback {
     isBuffering: boolean;
     currentTime: number;
     duration: number;
-    playbackRange: PlaybackRange | null;
-    playbackStart: number;
-    playbackEnd: number;
-    rangeDuration: number;
-    rangeTime: number;
-    setPlaybackRange(start: number, end: number): void;
-    clearPlaybackRange(): void;
     isMuted: boolean;
     volume: number;
     play(): void;
@@ -802,7 +781,6 @@ interface GraciaPlayerState {
 }
 
 interface StreamingItemSettings {
-    playbackRange?: PlaybackRange | null;
     resetPositionOnStart?: boolean;
 }
 interface StreamingItem {
@@ -884,7 +862,6 @@ type XROverlayProp = false | XROverlayConfig | undefined;
 interface CommonProps {
     muted?: boolean;
     controls?: boolean;
-    rangeSelector?: boolean;
     cameraControls?: boolean;
     sceneSelector?: SceneSelectorMode;
     localFiles?: boolean;
@@ -917,8 +894,6 @@ interface GraciaPlayerHandle {
     play(): void;
     pause(): void;
     seek(time: number): void;
-    setPlaybackRange(start: number, end: number): void;
-    clearPlaybackRange(): void;
     open(source: string | GraciaSource): void;
     close(): void;
     next(): void;
@@ -1119,9 +1094,8 @@ declare class ModernControls extends ControlsBase {
     onLockToggle: null;
     onReset: null;
     onAbLoopToggle: null;
-    onAbLoopSelect: null;
-    onAbLoopChange: null;
-    update({ loading, playing, spinning, buffering, progress, timeText, presetName, muted, locked, scaleLocked, abLoopPhase, abLoopStart, abLoopEnd, duration, sceneText, sceneLabel, bannerText, }: {
+    onAbLoopSet: null;
+    update({ loading, playing, spinning, buffering, progress, timeText, presetName, muted, locked, scaleLocked, abLoop, sceneText, sceneLabel, bannerText, }: {
         loading?: boolean | undefined;
         playing?: boolean | undefined;
         spinning?: boolean | undefined;
@@ -1132,10 +1106,12 @@ declare class ModernControls extends ControlsBase {
         muted?: boolean | undefined;
         locked?: boolean | undefined;
         scaleLocked?: boolean | undefined;
-        abLoopPhase?: string | undefined;
-        abLoopStart?: number | undefined;
-        abLoopEnd?: number | undefined;
-        duration?: number | undefined;
+        abLoop?: {
+            phase: string;
+            start: number;
+            end: number;
+            gap: number;
+        } | undefined;
         sceneText?: null | undefined;
         sceneLabel?: null | undefined;
         bannerText?: null | undefined;
@@ -1198,4 +1174,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, type PlaybackRange, QuadLayer, Quat, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
+export { type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, QuadLayer, Quat, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
