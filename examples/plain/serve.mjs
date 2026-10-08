@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import selfsigned from "selfsigned";
 
@@ -42,11 +42,17 @@ const respond = (body, init = {}) => new Response(body, init);
 const resolve = (pathname) => {
     if (pathname.startsWith("/dist/")) return join(DIST, pathname.slice("/dist/".length));
     const leaf = pathname === "/" ? "index.html" : pathname.slice(1);
+
+    // A page may be a directory of modules (pages/editor/), so try PAGES for every request,
+    // not just *.html, and fall back to its index.html. nginx already does both in production.
+    const inPages = join(PAGES, leaf);
+    if (existsSync(inPages) && statSync(inPages).isFile()) return inPages;
+    const indexed = join(inPages, "index.html");
+    if (existsSync(indexed)) return indexed;
+
     if (!leaf.endsWith(".html")) return join(PUBLIC, leaf);
-    const direct = join(PAGES, leaf);
-    if (existsSync(direct)) return direct;
     const internal = join(PAGES, `__${leaf}`);
-    return existsSync(internal) ? internal : direct;
+    return existsSync(internal) ? internal : inPages;
 };
 
 const patchHtml = (html) => {
