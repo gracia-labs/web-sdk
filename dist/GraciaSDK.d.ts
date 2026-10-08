@@ -55,6 +55,7 @@ declare class GraciaModule {
     sceneIsBuffering(id: number): boolean;
     sceneLastFetchStatus(id: number): any;
     sceneSetTime(id: number, t: number): void;
+    sceneSetPlaybackRange(id: number, start: number, end: number): void;
     sceneSetVisible(id: number, v: boolean): void;
     sceneGetBBox(id: number): {
         minX: number;
@@ -136,6 +137,11 @@ declare class GraciaPlayer$1 {
     get isReady(): boolean;
     get progress(): any;
     get duration(): any;
+    get playbackRange(): {
+        start: number;
+        end: number;
+    };
+    get ended(): boolean;
     get currentTime(): number;
     get isPlaying(): boolean;
     get isBuffering(): boolean;
@@ -143,6 +149,8 @@ declare class GraciaPlayer$1 {
     play(): void;
     pause(): void;
     seek(t: any): void;
+    setPlaybackRange(start: number, end: number): void;
+    clearPlaybackRange(): void;
     get speed(): number;
     setSpeed(s: number): void;
     close(): void;
@@ -1001,6 +1009,7 @@ declare class QuadLayer {
     renderFlat(): void;
     init(session: any, binding: any, ref: any, gl: any): Promise<null>;
     show(): void;
+    recenter(): void;
     hide(): void;
     setTransform(xform: any): void;
     stash(): void;
@@ -1031,7 +1040,6 @@ declare class ControlsBase {
         pauseD: _preact_signals_core.Signal<string>;
         spinD: _preact_signals_core.Signal<string>;
         spinR: _preact_signals_core.Signal<number>;
-        fillD: _preact_signals_core.Signal<string>;
         spinFast: _preact_signals_core.Signal<boolean>;
     };
     _updatePlayback(s: any, { loading, playing, spinning, buffering, progress }: {
@@ -1111,7 +1119,9 @@ declare class ModernControls extends ControlsBase {
     onScaleLockToggle: null;
     onLockToggle: null;
     onReset: null;
-    update({ loading, playing, spinning, buffering, progress, timeText, presetName, muted, locked, scaleLocked, sceneText, sceneLabel, bannerText, }: {
+    onAbLoopToggle: null;
+    onAbLoopSet: null;
+    update({ loading, playing, spinning, buffering, progress, timeText, presetName, muted, locked, scaleLocked, abLoop, sceneText, sceneLabel, bannerText, }: {
         loading?: boolean | undefined;
         playing?: boolean | undefined;
         spinning?: boolean | undefined;
@@ -1122,6 +1132,12 @@ declare class ModernControls extends ControlsBase {
         muted?: boolean | undefined;
         locked?: boolean | undefined;
         scaleLocked?: boolean | undefined;
+        abLoop?: {
+            phase: string;
+            start: number;
+            end: number;
+            gap: number;
+        } | undefined;
         sceneText?: null | undefined;
         sceneLabel?: null | undefined;
         bannerText?: null | undefined;
