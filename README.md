@@ -244,6 +244,7 @@ For custom UI, use `useGraciaPlayer`, `useGraciaPlaylist`, and `XROverlay` inste
 | Export | Description |
 |--------|------------|
 | `XROverlay` | Full XR experience — hand tracking, grab-to-move, UI panels |
+| `BoundaryRenderer` | Scene boundary warning (floor outline, darkening) from each source's `bounds`; pass as `boundaryRenderer` to `useGraciaPlayer` or `GraciaApp.create`. Works with any overlay |
 | `ClassicControls` | Compact VR control panel |
 | `ModernControls` | Full-featured VR control panel with mute, lock, drag-to-reposition |
 
