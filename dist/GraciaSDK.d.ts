@@ -215,6 +215,7 @@ type BoundsMesh = {
 declare class Ellipsoid {
     constructor(h: any);
     walls(p: any): number;
+    wallPoint(p: any, out: any): any;
     signedDistance(p: any): number;
     get outline(): null;
     get mesh(): null;
@@ -224,6 +225,7 @@ declare class Ellipsoid {
 declare class Extruded {
     constructor(profile: any, h: any);
     walls(p: any): any;
+    wallPoint(p: any, out: any): any;
     signedDistance(p: any): number;
     get outline(): null;
     get mesh(): null;
@@ -233,6 +235,7 @@ declare class Extruded {
 declare class Loft {
     constructor(rings: any, h: any);
     walls(p: any): number;
+    wallPoint(p: any, out: any): any;
     signedDistance(p: any): number;
     get outline(): Float32Array<ArrayBuffer>;
     get mesh(): null;
@@ -427,6 +430,8 @@ declare class SceneBoundary {
     get outlineUrgent(): boolean;
     get wallOpacity(): number;
     get wallUrgent(): boolean;
+    get wallFocus(): Vec3$1;
+    get wallReach(): number;
     get mesh(): BoundsMesh | null;
     get meshMatrix(): Mat4 | null;
     setBounds(config: object | null): this;

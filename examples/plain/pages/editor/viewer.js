@@ -12,7 +12,7 @@ import {
 } from "@gracia/web-sdk/aio";
 import { BoundsObject } from "./bounds.js";
 import { ShapeHandles } from "./handles.js";
-import { defaultBounds, IDENTITY_TRS, prism } from "./metadata.js";
+import { defaultBounds, IDENTITY_TRS } from "./metadata.js";
 import { createAxes, createEyeMarker, createGrid, createHuman } from "./refs.js";
 
 const DEFAULT_EYE = new THREE.Vector3(-2, 2.5, -4);
@@ -41,12 +41,6 @@ function applyTrs(obj, trs) {
 const _local = new THREE.Matrix4();
 const _turn = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
-const RECTANGLE = [
-    { x: -0.5, z: -0.5 },
-    { x: 0.5, z: -0.5 },
-    { x: 0.5, z: 0.5 },
-    { x: -0.5, z: 0.5 },
-];
 
 // A sector's radius is `min(scale.x, scale.z)`, and a sphere must stay round.
 const LINKED_AXES = { sector: ["x", "z"], sphere: ["x", "y", "z"] };
@@ -151,6 +145,9 @@ export class Viewer {
                 this.emit("transform");
             },
             gizmoActive: () => this.#gizmo.axis !== null || this.#gizmo.dragging,
+            clearGizmoHover: () => {
+                this.#gizmo.axis = null;
+            },
         });
         this.#overlay.add(this.#handles.object, this.#part);
 
@@ -373,20 +370,7 @@ export class Viewer {
     }
 
     setBoundsType(type) {
-        const current = this.getBounds();
-        if (!current) return this.addBounds(type);
-        if (type === current.type) return;
-        const { position, rotation, scale } = current;
-        let next = { type, position, rotation, scale };
-        if (type === "sector") next = { ...next, angleDeg: 90, tiltDeg: 0 };
-        if (type === "polygon") {
-            next =
-                current.type === "box"
-                    ? { ...next, layers: prism(RECTANGLE) }
-                    : defaultBounds(type);
-        }
-        this.setBounds(next);
-        this.emit("commit");
+        if (type !== this.getBounds()?.type) this.addBounds(type);
     }
 
     /** Changes one shape field, e.g. a sector's `angleDeg` or `tiltDeg`, without a history step. */

@@ -18,13 +18,15 @@ const FACE_COLOR = 0x7ad7ff;
 const HOVER_OPACITY = 0.14;
 const PICKED_OPACITY = 0.32;
 const GRAZING = 0.08;
+const RIM = 1.35;
+const PICKED_RIM = 1.8;
+const TIP_OFFSET = 16;
 
 const STYLES = {
     corner: { color: 0xff8a2b, size: 1, opacity: 1 },
     top: { color: 0xffffff, size: 0.85, opacity: 1 },
     ring: { color: 0xffc08a, size: 0.85, opacity: 1 },
     ghost: { color: 0xffffff, size: 0.75, opacity: 0.45 },
-    picked: { color: 0x7ad7ff, size: 1.15, opacity: 1 },
     size: { color: 0x7ad7ff, size: 0.9, opacity: 1 },
 };
 
@@ -255,7 +257,7 @@ function polygonHandles(b) {
                 kind,
                 at: vec(c),
                 plane: c.y,
-                label: () => `${POINT_LABELS[kind]} · click: select`,
+                label: () => POINT_LABELS[kind],
                 drag: (q) => {
                     const dx = snap(q.x) - c.x;
                     const dz = snap(q.z) - c.z;
@@ -467,9 +469,11 @@ export class ShapeHandles {
     #onCommit;
     #onSelect;
     #gizmoActive;
+    #clearGizmoHover;
     #group = new THREE.Group();
     #geometry = new THREE.SphereGeometry(1, 16, 12);
     #materials = new Map();
+    #pickedRim;
     #dots = [];
     #handles = [];
     #edges = [];
@@ -488,29 +492,31 @@ export class ShapeHandles {
     #raycaster = new THREE.Raycaster();
     #tip = document.createElement("div");
 
-    constructor({ camera, dom, onChange, onCommit, onSelect, gizmoActive }) {
+    constructor({ camera, dom, onChange, onCommit, onSelect, gizmoActive, clearGizmoHover }) {
         this.#camera = camera;
         this.#dom = dom;
         this.#onChange = onChange;
         this.#onCommit = onCommit;
         this.#onSelect = onSelect;
         this.#gizmoActive = gizmoActive;
+        this.#clearGizmoHover = clearGizmoHover;
         this.#tip.className = "handle-tip";
         document.body.append(this.#tip);
+        const material = (color, opacity) =>
+            new THREE.MeshBasicMaterial({
+                color,
+                transparent: true,
+                opacity,
+                depthTest: false,
+                depthWrite: false,
+            });
         for (const [kind, style] of Object.entries(STYLES)) {
-            const material = (color, opacity) =>
-                new THREE.MeshBasicMaterial({
-                    color,
-                    transparent: true,
-                    opacity,
-                    depthTest: false,
-                    depthWrite: false,
-                });
             this.#materials.set(kind, {
                 fill: material(style.color, style.opacity),
                 rim: material(0x111114, 0.75 * style.opacity),
             });
         }
+        this.#pickedRim = material(FACE_COLOR, 1);
         this.#ghostDot = this.#dot("ghost");
         this.#ghostDot.visible = false;
         this.#hoverMesh = this.#faceMesh(HOVER_OPACITY);
@@ -641,7 +647,7 @@ export class ShapeHandles {
             const handle = this.#handles[i];
             dot.visible = !!handle;
             if (!handle) return;
-            this.#paint(dot, this.#picked.includes(handle.id) ? "picked" : handle.kind);
+            this.#paint(dot, handle.kind, this.#picked.includes(handle.id));
             dot.position.copy(this.#frame.toWorld(handle.at));
             dot.userData.handle = handle;
         });
@@ -727,7 +733,6 @@ export class ShapeHandles {
     #dot(kind) {
         const dot = new THREE.Group();
         const rim = new THREE.Mesh(this.#geometry);
-        rim.scale.setScalar(1.35);
         rim.renderOrder = 20;
         const fill = new THREE.Mesh(this.#geometry);
         fill.renderOrder = 21;
@@ -737,9 +742,10 @@ export class ShapeHandles {
         return dot;
     }
 
-    #paint(dot, kind) {
+    #paint(dot, kind, picked = false) {
         const { fill, rim } = this.#materials.get(kind);
-        dot.children[0].material = rim;
+        dot.children[0].material = picked ? this.#pickedRim : rim;
+        dot.children[0].scale.setScalar(picked ? PICKED_RIM : RIM);
         dot.children[1].material = fill;
         dot.userData.kind = kind;
     }
@@ -807,9 +813,10 @@ export class ShapeHandles {
     }
 
     #under(e) {
-        if (e.target !== this.#dom || this.#gizmoActive()) return {};
+        if (e.target !== this.#dom) return {};
         const dot = this.#pickDot(e);
         if (dot) return { dot };
+        if (this.#gizmoActive()) return { gizmo: true };
         const ghost = this.#pickEdge(e);
         if (ghost) return { ghost };
         const face = this.#pickFace(e);
@@ -821,10 +828,11 @@ export class ShapeHandles {
         tip.style.display = text ? "block" : "none";
         if (!text) return;
         tip.textContent = text;
-        if (e) {
-            tip.style.left = `${e.clientX + 16}px`;
-            tip.style.top = `${e.clientY + 16}px`;
-        }
+        if (!e) return;
+        const beside = (at, size, room) =>
+            at + TIP_OFFSET + size > room ? at - TIP_OFFSET - size : at + TIP_OFFSET;
+        tip.style.left = `${beside(e.clientX, tip.offsetWidth, innerWidth)}px`;
+        tip.style.top = `${beside(e.clientY, tip.offsetHeight, innerHeight)}px`;
     }
 
     #faceTip(face) {
@@ -834,10 +842,32 @@ export class ShapeHandles {
         return `${face.name} · click to select${add}`;
     }
 
+    #dotTip(handle) {
+        if (!handle.key) return handle.label();
+        const state = this.#picked.includes(handle.id) ? "selected" : "click: select";
+        return `${handle.label()} · ${state}`;
+    }
+
+    #hoverAt(e) {
+        const { dot, ghost, face } = this.#under(e);
+        this.#hover = dot ?? null;
+        this.#ghostDot.visible = !!ghost;
+        if (ghost) this.#ghostDot.position.copy(ghost.at);
+        const lit = face && !this.#picked.includes(face.id) ? [face] : [];
+        this.#showFaces(this.#hoverMesh, lit);
+        this.#dom.style.cursor = dot ? "grab" : ghost ? "copy" : face ? "pointer" : "";
+        this.#showTip(
+            dot ? this.#dotTip(dot) : (ghost?.edge.label ?? (face && this.#faceTip(face))),
+            e,
+        );
+        return dot;
+    }
+
     #onDown = (e) => {
         if (e.button !== 0) return;
-        const { dot, ghost, face } = this.#under(e);
-        this.#press = { x: e.clientX, y: e.clientY, face, empty: !dot && !ghost && !face };
+        const { dot, ghost, face, gizmo } = this.#under(e);
+        const empty = !dot && !ghost && !face && !gizmo;
+        this.#press = { x: e.clientX, y: e.clientY, face, empty };
         if (!dot && !ghost) return;
         e.stopPropagation();
         e.preventDefault();
@@ -868,14 +898,10 @@ export class ShapeHandles {
         const drag = this.#drag;
         if (!drag) {
             if (e.buttons) return;
-            const { dot, ghost, face } = this.#under(e);
-            this.#hover = dot ?? null;
-            this.#ghostDot.visible = !!ghost;
-            if (ghost) this.#ghostDot.position.copy(ghost.at);
-            const lit = face && !this.#picked.includes(face.id) ? [face] : [];
-            this.#showFaces(this.#hoverMesh, lit);
-            this.#dom.style.cursor = dot ? "grab" : ghost ? "copy" : face ? "pointer" : "";
-            this.#showTip(dot?.label() ?? ghost?.edge.label ?? (face && this.#faceTip(face)), e);
+            if (this.#hoverAt(e)) {
+                e.stopPropagation();
+                this.#clearGizmoHover();
+            }
             return;
         }
         e.stopPropagation();
@@ -901,14 +927,16 @@ export class ShapeHandles {
             if (!click) return;
             if (press.face) this.#toggle(press.face.id, e.shiftKey);
             else if (press.empty && e.target === this.#dom) this.clearSelection();
+            else return;
+            this.#hoverAt(e);
             return;
         }
         e.stopPropagation();
         if (this.#dom.hasPointerCapture(e.pointerId)) this.#dom.releasePointerCapture(e.pointerId);
         this.#drag = null;
-        this.#dom.style.cursor = this.#hover ? "grab" : "";
         if (drag.moved) this.#onCommit();
         else if (drag.handle.key) this.#toggle(drag.id, drag.shift);
+        this.#hoverAt(e);
     };
 
     #onDoubleClick = (e) => {

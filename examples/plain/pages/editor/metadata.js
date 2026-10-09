@@ -204,7 +204,7 @@ const TRAPEZOID = [
     { x: -0.5, z: 0.5 },
 ];
 
-export const prism = (corners, heights = [-0.5, 0.5]) =>
+const prism = (corners, heights = [-0.5, 0.5]) =>
     heights.map((y) => corners.map((c) => ({ x: c.x, y, z: c.z })));
 
 export function defaultBounds(type) {
