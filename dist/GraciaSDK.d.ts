@@ -208,9 +208,9 @@ declare const POLYGON_MAX_CORNERS: 64;
 declare const POLYGON_MAX_LAYERS: 8;
 type BoundsMesh = {
     positions: Float32Array;
-    uvs: Float32Array;
+    grid: Float32Array;
     indices: Uint32Array;
-    floorStart: number;
+    capStart: number;
 };
 declare class Ellipsoid {
     constructor(h: any);
@@ -427,9 +427,9 @@ declare class SceneBoundary {
     get active(): boolean;
     get darkness(): number;
     get outlineOpacity(): number;
-    get outlineUrgent(): boolean;
+    get outlineUrgency(): number;
     get wallOpacity(): number;
-    get wallUrgent(): boolean;
+    get wallUrgency(): number;
     get wallFocus(): Vec3$1;
     get wallReach(): number;
     get mesh(): BoundsMesh | null;
