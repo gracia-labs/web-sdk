@@ -201,21 +201,42 @@ declare class GraciaPlayer$1 {
     #private;
 }
 
-declare class SceneBoundary {
-    get active(): boolean;
-    get darkness(): number;
-    get outlineOpacity(): number;
-    get outlineUrgent(): boolean;
-    setBounds(config: object | null): this;
-    setRoomMatrix(m: ArrayLike<number> | null): this;
-    queueIntro(): this;
-    reset(): this;
-    update(head: ArrayLike<number> | {
-        x: number;
-        y: number;
-        z: number;
-    }, dt: number): this;
-    ribbon(width: number): Float32Array<ArrayBuffer>;
+declare function sectorApexShift(config: any, half: ArrayLike<number>): number;
+declare function boundsShape(config: any, half: ArrayLike<number>): Ellipsoid | Extruded | Loft;
+declare const SECTOR_TILT_MAX: 75;
+declare const POLYGON_MAX_CORNERS: 64;
+declare const POLYGON_MAX_LAYERS: 8;
+type BoundsMesh = {
+    positions: Float32Array;
+    uvs: Float32Array;
+    indices: Uint32Array;
+    floorStart: number;
+};
+declare class Ellipsoid {
+    constructor(h: any);
+    walls(p: any): number;
+    signedDistance(p: any): number;
+    get outline(): null;
+    get mesh(): null;
+    get lines(): null;
+    #private;
+}
+declare class Extruded {
+    constructor(profile: any, h: any);
+    walls(p: any): any;
+    signedDistance(p: any): number;
+    get outline(): null;
+    get mesh(): null;
+    get lines(): null;
+    #private;
+}
+declare class Loft {
+    constructor(rings: any, h: any);
+    walls(p: any): number;
+    signedDistance(p: any): number;
+    get outline(): Float32Array<ArrayBuffer>;
+    get mesh(): null;
+    get lines(): null;
     #private;
 }
 
@@ -397,6 +418,29 @@ declare namespace mat4 {
 }
 declare function pointToImpl(out: any, m: any, p?: readonly number[], scale?: number): any;
 declare function poseToImpl(out: any, m: any): any;
+
+declare function isValidBounds(b: any): boolean;
+declare class SceneBoundary {
+    get active(): boolean;
+    get darkness(): number;
+    get outlineOpacity(): number;
+    get outlineUrgent(): boolean;
+    get wallOpacity(): number;
+    get wallUrgent(): boolean;
+    get mesh(): BoundsMesh | null;
+    get meshMatrix(): Mat4 | null;
+    setBounds(config: object | null): this;
+    setRoomMatrix(m: ArrayLike<number> | null): this;
+    queueIntro(): this;
+    reset(): this;
+    update(head: ArrayLike<number> | {
+        x: number;
+        y: number;
+        z: number;
+    }, dt: number): this;
+    ribbon(width: number): Float32Array<ArrayBuffer>;
+    #private;
+}
 
 declare const ENV_PRESETS: Record<EnvPresetName$1, EnvPreset | null>;
 type EnvPreset = {
@@ -634,7 +678,7 @@ type SceneTransform$1 = {
     };
 };
 type SceneBounds$1 = {
-    type: "box" | "sphere" | "sector";
+    type: "box" | "sphere" | "sector" | "polygon";
     position: {
         x: number;
         y: number;
@@ -652,6 +696,12 @@ type SceneBounds$1 = {
         z: number;
     };
     angleDeg?: number;
+    tiltDeg?: number;
+    layers?: {
+        x: number;
+        y: number;
+        z: number;
+    }[][];
 };
 
 type EnvPresetName = EnvPresetName$1;
@@ -693,7 +743,7 @@ interface SceneTransform {
     };
 }
 interface SceneBounds {
-    type: "box" | "sphere" | "sector";
+    type: "box" | "sphere" | "sector" | "polygon";
     position: {
         x: number;
         y: number;
@@ -711,6 +761,12 @@ interface SceneBounds {
         z: number;
     };
     angleDeg?: number;
+    tiltDeg?: number;
+    layers?: {
+        x: number;
+        y: number;
+        z: number;
+    }[][];
 }
 interface GraciaSource {
     url: string;
@@ -1200,4 +1256,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, QuadLayer, Quat, type SceneBounds, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
+export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, POLYGON_MAX_CORNERS, POLYGON_MAX_LAYERS, QuadLayer, Quat, SECTOR_TILT_MAX, type SceneBounds, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, boundsShape, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, isValidBounds, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, sectorApexShift, useGraciaPlayer, useGraciaPlaylist, vec3 };

@@ -1,3 +1,5 @@
+import { isValidBounds, SECTOR_TILT_MAX } from "@gracia/web-sdk/aio";
+
 /**
  * Scene metadata as the player and the content admin exchange it.
  *
@@ -51,25 +53,27 @@ export function readTrs(raw) {
  * is "no boundary" rather than an error, matching how the player treats it.
  */
 export function readBounds(raw) {
-    if (!raw || typeof raw !== "object") return null;
-    const { type } = raw;
-    if (type !== "box" && type !== "sphere" && type !== "sector") return null;
+    if (!raw || typeof raw !== "object" || !BOUNDS_TYPES.includes(raw.type)) return null;
 
-    const position = readVec3(raw.position);
-    const rotation = readQuat(raw.rotation);
-    const scale = readVec3(raw.scale);
-    if (!position || !rotation || !scale) return null;
-    if (!(scale.x > 0) || !(scale.y > 0) || !(scale.z > 0)) return null;
-
-    const bounds = { type, position, rotation, scale };
-    if (type === "sector") {
+    const bounds = {
+        type: raw.type,
+        position: readVec3(raw.position),
+        rotation: readQuat(raw.rotation),
+        scale: readVec3(raw.scale),
+    };
+    if (raw.type === "sector") {
         bounds.angleDeg = Math.min(360, Math.max(1, Math.abs(isNum(raw.angleDeg) ? raw.angleDeg : 90)));
+        bounds.tiltDeg = Math.min(
+            SECTOR_TILT_MAX,
+            Math.max(-SECTOR_TILT_MAX, isNum(raw.tiltDeg) ? raw.tiltDeg : 0),
+        );
     }
-    return bounds;
+    if (raw.type === "polygon") bounds.layers = raw.layers;
+    return isValidBounds(bounds) ? bounds : null;
 }
 
 const CONTROLS = ["orbit", "trackball", "fly"];
-const BOUNDS_TYPES = ["box", "sphere", "sector"];
+const BOUNDS_TYPES = ["box", "sphere", "sector", "polygon"];
 
 const isBoundsShape = (v) => !!v && typeof v === "object" && BOUNDS_TYPES.includes(v.type);
 
@@ -161,6 +165,7 @@ export function readPart(text, part) {
 const round = (n) => Math.round(n * 1e6) / 1e6;
 const vec3 = (v) => ({ x: round(v.x), y: round(v.y), z: round(v.z) });
 const quat = (q) => ({ x: round(q.x), y: round(q.y), z: round(q.z), w: round(q.w) });
+const layers = (rings) => rings.map((ring) => ring.map(vec3));
 
 export function serializeBounds(bounds) {
     if (!bounds) return null;
@@ -170,7 +175,11 @@ export function serializeBounds(bounds) {
         rotation: quat(bounds.rotation),
         scale: vec3(bounds.scale),
     };
-    if (bounds.type === "sector") out.angleDeg = Math.round(bounds.angleDeg ?? 90);
+    if (bounds.type === "sector") {
+        out.angleDeg = Math.round(bounds.angleDeg ?? 90);
+        if (bounds.tiltDeg) out.tiltDeg = Math.round(bounds.tiltDeg);
+    }
+    if (bounds.type === "polygon") out.layers = layers(bounds.layers);
     return out;
 }
 
@@ -188,16 +197,38 @@ export function serializeDoc(doc) {
     };
 }
 
+const TRAPEZOID = [
+    { x: -0.15, z: -0.5 },
+    { x: 0.15, z: -0.5 },
+    { x: 0.5, z: 0.5 },
+    { x: -0.5, z: 0.5 },
+];
+
+export const prism = (corners, heights = [-0.5, 0.5]) =>
+    heights.map((y) => corners.map((c) => ({ x: c.x, y, z: c.z })));
+
 export function defaultBounds(type) {
+    if (type === "polygon") {
+        return {
+            type,
+            position: { x: 0, y: 1.2, z: 0.5 },
+            rotation: { x: 0, y: 0, z: 0, w: 1 },
+            scale: { x: 4, y: 2.4, z: 3 },
+            layers: prism(TRAPEZOID),
+        };
+    }
     const sector = type === "sector";
     const radial = sector ? 4 : 2;
     const bounds = {
         type,
-        // A sector's apex sits behind the Viewer and opens along −Z, where they look.
-        position: { x: 0, y: 1.2, z: sector ? 1 : 0 },
-        rotation: sector ? { x: 0, y: 1, z: 0, w: 0 } : { x: 0, y: 0, z: 0, w: 1 },
+        // A sector's apex sits in front of the Viewer, where they look, and opens back toward them.
+        position: { x: 0, y: 1.2, z: sector ? -1 : 0 },
+        rotation: { x: 0, y: 0, z: 0, w: 1 },
         scale: { x: radial, y: type === "sphere" ? radial : 2.4, z: radial },
     };
-    if (sector) bounds.angleDeg = 90;
+    if (sector) {
+        bounds.angleDeg = 90;
+        bounds.tiltDeg = 0;
+    }
     return bounds;
 }

@@ -1,6 +1,7 @@
 import {
     FlyControls,
     GraciaPlayer,
+    isValidBounds,
     loadGraciaModule,
     OrbitControls,
     SplatsRendererW3,
@@ -10,11 +11,18 @@ import {
     WebGPURenderer,
 } from "@gracia/web-sdk/aio";
 import { BoundsObject } from "./bounds.js";
-import { defaultBounds, IDENTITY_TRS } from "./metadata.js";
+import { ShapeHandles } from "./handles.js";
+import { defaultBounds, IDENTITY_TRS, prism } from "./metadata.js";
 import { createAxes, createEyeMarker, createGrid, createHuman } from "./refs.js";
 
 const DEFAULT_EYE = new THREE.Vector3(-2, 2.5, -4);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0.4, 0);
+const FRAME_MARGIN = 1.15;
+const UNIT_BOX = new THREE.Box3(
+    new THREE.Vector3(-0.5, -0.5, -0.5),
+    new THREE.Vector3(0.5, 0.5, 0.5),
+);
+const FRAME_FROM = new THREE.Vector3(-2, 4.5, -4).normalize();
 
 const trsOf = (obj) => ({
     translation: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
@@ -31,6 +39,14 @@ function applyTrs(obj, trs) {
 }
 
 const _local = new THREE.Matrix4();
+const _turn = new THREE.Quaternion();
+const UP = new THREE.Vector3(0, 1, 0);
+const RECTANGLE = [
+    { x: -0.5, z: -0.5 },
+    { x: 0.5, z: -0.5 },
+    { x: 0.5, z: 0.5 },
+    { x: -0.5, z: 0.5 },
+];
 
 // A sector's radius is `min(scale.x, scale.z)`, and a sphere must stay round.
 const LINKED_AXES = { sector: ["x", "z"], sphere: ["x", "y", "z"] };
@@ -45,6 +61,10 @@ export class Viewer {
     #staticPivot = new THREE.Object3D();
     #overlay = new THREE.Scene();
     #gizmo;
+    #handles;
+    #part = new THREE.Object3D();
+    #mode = "translate";
+    #upright = false;
     #controls = null;
     #controlsType = "orbit";
     #refs;
@@ -82,14 +102,28 @@ export class Viewer {
         this.#gizmo.setSize(0.75);
         this.#gizmo.addEventListener("dragging-changed", (e) => {
             if (this.#controls) this.#controls.enabled = !e.value;
-            if (!e.value) this.emit("commit");
+            if (e.value) return;
+            if (this.#gizmo.object === this.#part) {
+                this.#handles.endTransform();
+                this.#attachGizmo();
+            }
+            this.emit("commit");
         });
         this.#gizmo.addEventListener("mouseDown", () => {
-            if (this.#target === "video") this.#pin();
+            if (this.#gizmo.object === this.#part) this.#handles.beginTransform();
+            else if (this.#target === "video") this.#pin();
         });
         this.#gizmo.addEventListener("objectChange", () => {
-            if (this.#target === "video") this.#unpin();
-            if (this.#target === "bounds") this.#linkScale();
+            if (this.#gizmo.object === this.#part) {
+                const part = this.#part;
+                const bounds = this.#handles.transform(part.position, part.quaternion, part.scale);
+                if (bounds && isValidBounds(bounds)) this.setBounds(bounds);
+            } else if (this.#target === "video") {
+                this.#unpin();
+            } else if (this.#target === "bounds") {
+                this.#linkScale();
+                this.#syncHandles();
+            }
             this.emit("transform");
         });
 
@@ -102,6 +136,23 @@ export class Viewer {
             }
         });
         this.#overlay.add(helper);
+
+        this.#handles = new ShapeHandles({
+            camera: this.camera,
+            dom: renderer.domElement,
+            onChange: (bounds) => {
+                if (!isValidBounds(bounds)) return;
+                this.setBounds(bounds);
+                this.emit("transform");
+            },
+            onCommit: () => this.emit("commit"),
+            onSelect: () => {
+                this.#attachGizmo();
+                this.emit("transform");
+            },
+            gizmoActive: () => this.#gizmo.axis !== null || this.#gizmo.dragging,
+        });
+        this.#overlay.add(this.#handles.object, this.#part);
 
         this.#splats = SplatsRendererW3.attach(player, renderer);
         this.#splats.root.add(this.#staticPivot);
@@ -241,6 +292,7 @@ export class Viewer {
         obj.scale.multiplyScalar(value / current);
         obj.updateMatrix();
         if (this.#target === "video") this.#unpin();
+        this.#syncHandles();
         this.emit("transform");
     }
 
@@ -268,7 +320,7 @@ export class Viewer {
      */
     #linkScale() {
         const bounds = this.#bounds;
-        const axes = bounds && LINKED_AXES[bounds.type];
+        const axes = bounds && LINKED_AXES[bounds.shapeType];
         if (!axes) return;
         const s = bounds.scale;
         const dragged = this.#gizmo.dragging ? this.#gizmo.axis?.[0].toLowerCase() : undefined;
@@ -283,14 +335,12 @@ export class Viewer {
         const b = this.#bounds;
         if (!b) return null;
         const trs = trsOf(b);
-        const bounds = {
-            type: b.type,
+        return {
+            ...b.shape,
             position: trs.translation,
             rotation: trs.rotation,
             scale: trs.scale,
         };
-        if (b.type === "sector") bounds.angleDeg = b.angleDeg;
-        return bounds;
     }
 
     setBounds(bounds) {
@@ -299,10 +349,10 @@ export class Viewer {
             return;
         }
         if (!this.#bounds) {
-            this.#bounds = new BoundsObject(bounds.type, bounds.angleDeg ?? 90);
+            this.#bounds = new BoundsObject(bounds);
             this.scene.add(this.#bounds);
         } else {
-            this.#bounds.setShape(bounds.type, bounds.angleDeg ?? 90);
+            this.#bounds.setShape(bounds);
         }
         applyTrs(this.#bounds, {
             translation: bounds.position,
@@ -310,30 +360,51 @@ export class Viewer {
             scale: bounds.scale,
         });
         this.#linkScale();
-        if (this.#target === "bounds") this.#gizmo.attach(this.#bounds);
-        else this.setGizmoTarget(this.#target);
+        if (this.#target !== "bounds") this.setGizmoTarget(this.#target);
+        this.#syncHandles();
         this.emit("bounds");
     }
 
     addBounds(type) {
         this.setBounds(defaultBounds(type));
         this.setGizmoTarget("bounds");
+        this.#frameBounds();
         this.emit("commit");
     }
 
     setBoundsType(type) {
         const current = this.getBounds();
         if (!current) return this.addBounds(type);
-        const next = { ...current, type };
-        if (type === "sector") next.angleDeg = current.angleDeg ?? 90;
-        else delete next.angleDeg;
+        if (type === current.type) return;
+        const { position, rotation, scale } = current;
+        let next = { type, position, rotation, scale };
+        if (type === "sector") next = { ...next, angleDeg: 90, tiltDeg: 0 };
+        if (type === "polygon") {
+            next =
+                current.type === "box"
+                    ? { ...next, layers: prism(RECTANGLE) }
+                    : defaultBounds(type);
+        }
         this.setBounds(next);
         this.emit("commit");
     }
 
-    setSectorAngle(angleDeg) {
-        if (!this.#bounds || this.#bounds.type !== "sector") return;
-        this.#bounds.setShape("sector", Math.min(360, Math.max(1, Math.round(angleDeg))));
+    /** Changes one shape field, e.g. a sector's `angleDeg` or `tiltDeg`, without a history step. */
+    setShapeField(key, value) {
+        const current = this.getBounds();
+        if (!current) return;
+        const next = { ...current, [key]: value };
+        if (isValidBounds(next)) this.setBounds(next);
+    }
+
+    /** Turns the bounds around the vertical axis through their origin. */
+    turnBounds(degrees) {
+        if (!this.#bounds) return;
+        _turn.setFromAxisAngle(UP, (degrees * Math.PI) / 180);
+        this.#bounds.quaternion.premultiply(_turn);
+        this.#bounds.updateMatrix();
+        this.#syncHandles();
+        this.emit("transform");
         this.emit("bounds");
     }
 
@@ -343,6 +414,7 @@ export class Viewer {
         this.#bounds.dispose();
         this.#bounds = null;
         this.setGizmoTarget(this.#target);
+        this.#syncHandles();
         this.emit("bounds");
     }
 
@@ -370,15 +442,69 @@ export class Viewer {
         if (!available.includes(target)) target = available[0] ?? null;
         this.#target = target ?? "video";
 
-        const obj = target ? this.#object(target) : null;
-        if (obj) this.#gizmo.attach(obj);
-        else this.#gizmo.detach();
+        this.#syncHandles();
         this.emit("transform");
     }
 
     setGizmoMode(mode) {
-        this.#gizmo.setMode(mode);
+        this.#mode = mode;
+        this.#attachGizmo();
         this.emit("transform");
+    }
+
+    /** What the gizmo is on when part of the boundary is picked, else null. */
+    get selection() {
+        return this.#target === "bounds" ? this.#handles.selection : null;
+    }
+
+    get availableModes() {
+        return this.selection?.modes ?? ["translate", "rotate", "scale"];
+    }
+
+    clearSelection() {
+        this.#handles.clearSelection();
+    }
+
+    get upright() {
+        return this.#upright;
+    }
+
+    setUpright(on) {
+        this.#upright = on;
+        this.#attachGizmo();
+        this.emit("transform");
+    }
+
+    #attachGizmo() {
+        const selection = this.selection;
+        const modes = this.availableModes;
+        this.#gizmo.setMode(modes.includes(this.#mode) ? this.#mode : modes[0]);
+        if (selection) {
+            if (!this.#gizmo.dragging) {
+                this.#part.position.copy(selection.position);
+                this.#part.quaternion.copy(selection.quaternion);
+                this.#part.scale.setScalar(1);
+                this.#part.updateMatrixWorld();
+            }
+            this.#gizmo.setSpace("local");
+            if (this.#gizmo.object !== this.#part) this.#gizmo.attach(this.#part);
+        } else {
+            const obj = this.#object(this.#target);
+            this.#gizmo.setSpace("world");
+            if (obj) this.#gizmo.attach(obj);
+            else this.#gizmo.detach();
+        }
+        const upright =
+            !selection && this.#upright && this.#target === "bounds" && this.#gizmo.mode === "rotate";
+        const axes = upright ? ["Y"] : (selection?.axes ?? ["X", "Y", "Z"]);
+        this.#gizmo.showX = axes.includes("X");
+        this.#gizmo.showY = axes.includes("Y");
+        this.#gizmo.showZ = axes.includes("Z");
+    }
+
+    #syncHandles() {
+        this.#handles.set(this.#target === "bounds" ? this.getBounds() : null);
+        this.#attachGizmo();
     }
 
     /* ── camera & view ── */
@@ -424,6 +550,22 @@ export class Viewer {
             orbit.update();
             this.#controls = orbit;
         }
+        this.#frameBounds();
+    }
+
+    /** Looks down on the whole boundary, steeply enough that its floor and top are easy to drag on. */
+    #frameBounds() {
+        const target = this.#controls?.target;
+        if (!this.#bounds || !target) return;
+        this.#bounds.updateMatrixWorld();
+        const sphere = UNIT_BOX.clone()
+            .applyMatrix4(this.#bounds.matrixWorld)
+            .getBoundingSphere(new THREE.Sphere());
+        const halfFov = (this.camera.fov * Math.PI) / 360;
+        const distance = (sphere.radius * FRAME_MARGIN) / Math.sin(halfFov);
+        target.copy(sphere.center);
+        this.camera.position.copy(sphere.center).addScaledVector(FRAME_FROM, distance);
+        this.#controls.update();
     }
 
     get background() {
@@ -464,9 +606,7 @@ export class Viewer {
         }
         if (doc.staticTransform) applyTrs(this.#staticPivot, doc.staticTransform);
         if ("bounds" in doc) this.setBounds(doc.bounds);
-
-        const obj = this.#object(this.#target);
-        if (obj) this.#gizmo.attach(obj);
+        this.#syncHandles();
         this.emit("transform");
         this.emit("bounds");
     }
@@ -485,7 +625,9 @@ export class Viewer {
 
             this.#staticPivot.updateMatrix();
             this.#splats.setStaticModelMatrix(this.#staticPivot.matrix.elements);
+            this.#bounds?.refresh();
             this.#bounds?.faceCamera(this.camera);
+            this.#handles.update();
             this.#splats.render(this.renderer, this.scene, this.camera, this.#overlay);
 
             const now = performance.now();

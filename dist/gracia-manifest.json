@@ -1,13 +1,13 @@
 {
   "core": {
-    "filename": "GraciaSDK.8acfa3c890e99b7c.js",
-    "hash": "8acfa3c890e99b7cf82361fb104179198430247abb02b10fe4c371aa9b775d5b",
-    "size": 249959
+    "filename": "GraciaSDK.38b5dae5b0c7045d.js",
+    "hash": "38b5dae5b0c7045daf4d3aa24b07df46af11367296f6910d8290446db9ec546b",
+    "size": 261943
   },
   "aio": {
-    "filename": "GraciaAIO.b1e91e6b34ddac47.js",
-    "hash": "b1e91e6b34ddac4775ae8f650bb21905a908e8cfaaa8665d495c0644a8394734",
-    "size": 2765986
+    "filename": "GraciaAIO.dfb44432d48d86c0.js",
+    "hash": "dfb44432d48d86c0cc7b0463b9fb7500fdfd2a424ae14c61f0decf5bcf488f63",
+    "size": 2778856
   },
   "wasm": {
     "filename": "GraciaWebCore.585476515ecfd78f.js",
