@@ -202,7 +202,7 @@ declare class GraciaPlayer$1 {
 }
 
 declare function sectorApexShift(config: any, half: ArrayLike<number>): number;
-declare function boundsShape(config: any, half: ArrayLike<number>): Ellipsoid | Extruded | Loft;
+declare function boundsShape(config: any, half: ArrayLike<number>): Ellipsoid | Loft | Extruded;
 declare const SECTOR_TILT_MAX: 75;
 declare const POLYGON_MAX_CORNERS: 64;
 declare const POLYGON_MAX_LAYERS: 8;
@@ -220,18 +220,18 @@ declare class Ellipsoid {
     get lines(): null;
     #private;
 }
+declare class Loft {
+    constructor(walls: Float64Array[], caps: Float64Array[], lines: Float32Array);
+    signedDistance(p: any): number;
+    get outlines(): Float32Array<ArrayBuffer>[];
+    get mesh(): null;
+    get lines(): Float32Array<ArrayBufferLike>;
+    #private;
+}
 declare class Extruded {
     constructor(profile: any, h: any);
     signedDistance(p: any): number;
     get outlines(): null;
-    get mesh(): null;
-    get lines(): null;
-    #private;
-}
-declare class Loft {
-    constructor(rings: any, h: any);
-    signedDistance(p: any): number;
-    get outlines(): Float32Array<ArrayBuffer>[];
     get mesh(): null;
     get lines(): null;
     #private;
