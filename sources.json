@@ -5,14 +5,144 @@
             "label": "Direct: Vivid & Translucent (1724)",
             "displayName": "Vivid & Translucent",
             "type": "stream",
-            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint"
+            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint",
+            "bounds": {
+                "type": "sector",
+                "position": {
+                    "x": 0,
+                    "y": 1.2,
+                    "z": -1.746668
+                },
+                "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                    "w": 1
+                },
+                "scale": {
+                    "x": 10.61,
+                    "y": 2.4,
+                    "z": 10.61
+                },
+                "angleDeg": 90,
+                "tiltDeg": 31
+            }
         },
         {
             "id": "direct-karl-kani-liar-liar",
             "label": "Direct: \"Liar Liar\" by McKenzi Brooke x Karl Kani x Fashionverse",
             "displayName": "\"Liar Liar\" by McKenzi Brooke x Karl Kani x Fashionverse",
             "type": "stream",
-            "url": "https://gstatic.gracia.ai/demo/mint/karl_kani_liar_liar.mint"
+            "url": "https://gstatic.gracia.ai/demo/mint/karl_kani_liar_liar.mint",
+            "bounds": {
+                "type": "polygon",
+                "position": {
+                    "x": 0,
+                    "y": 1.2,
+                    "z": 0.376268
+                },
+                "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                    "w": 1
+                },
+                "scale": {
+                    "x": 4,
+                    "y": 2.4,
+                    "z": 3.61
+                },
+                "layers": [
+                    [
+                        {
+                            "x": -0.15,
+                            "y": -0.5,
+                            "z": -0.331025
+                        },
+                        {
+                            "x": 0.15,
+                            "y": -0.5,
+                            "z": -0.331025
+                        },
+                        {
+                            "x": 0.5,
+                            "y": -0.5,
+                            "z": 0.5
+                        },
+                        {
+                            "x": -0.5,
+                            "y": -0.5,
+                            "z": 0.5
+                        }
+                    ],
+                    [
+                        {
+                            "x": -0.19,
+                            "y": -0.394273,
+                            "z": -0.5
+                        },
+                        {
+                            "x": 0.11,
+                            "y": -0.394273,
+                            "z": -0.5
+                        },
+                        {
+                            "x": 0.5,
+                            "y": -0.085939,
+                            "z": 0.5
+                        },
+                        {
+                            "x": -0.5,
+                            "y": -0.085939,
+                            "z": 0.5
+                        }
+                    ],
+                    [
+                        {
+                            "x": -0.19,
+                            "y": -0.109446,
+                            "z": -0.5
+                        },
+                        {
+                            "x": 0.11,
+                            "y": -0.109446,
+                            "z": -0.5
+                        },
+                        {
+                            "x": 0.5,
+                            "y": 0.198887,
+                            "z": 0.5
+                        },
+                        {
+                            "x": -0.5,
+                            "y": 0.198887,
+                            "z": 0.5
+                        }
+                    ],
+                    [
+                        {
+                            "x": -0.15,
+                            "y": 0.5,
+                            "z": -0.331025
+                        },
+                        {
+                            "x": 0.15,
+                            "y": 0.5,
+                            "z": -0.331025
+                        },
+                        {
+                            "x": 0.5,
+                            "y": 0.5,
+                            "z": 0.5
+                        },
+                        {
+                            "x": -0.5,
+                            "y": 0.5,
+                            "z": 0.5
+                        }
+                    ]
+                ]
+            }
         },
         {
             "id": "direct-fashion-streaming",

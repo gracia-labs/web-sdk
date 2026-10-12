@@ -1,3 +1,4 @@
+import { SECTOR_TILT_MAX } from "@gracia/web-sdk/aio";
 import { createFpsMeter } from "./fps.js";
 import { History } from "./history.js";
 import { PARTS, readAny, readPart, serializeBounds, serializeDoc, serializeTrs } from "./metadata.js";
@@ -90,6 +91,7 @@ const boundsTypes = segmented(
         { value: "box", label: "Box" },
         { value: "sphere", label: "Sphere" },
         { value: "sector", label: "Sector" },
+        { value: "polygon", label: "Polygon" },
     ],
     null,
     (value) => viewer.setBoundsType(value),
@@ -101,18 +103,48 @@ const angle = slider({
     step: 1,
     value: 90,
     digits: 0,
-    onInput: (value) => viewer.setSectorAngle(value),
+    onInput: (value) => viewer.setShapeField("angleDeg", value),
     onCommit: () => viewer.emit("commit"),
 });
 const angleRow = el("div", { class: "row" }, [el("span", { class: "lbl w", text: "Angle" }), angle]);
+
+const tilt = slider({
+    min: -SECTOR_TILT_MAX,
+    max: SECTOR_TILT_MAX,
+    step: 1,
+    value: 0,
+    digits: 0,
+    onInput: (value) => viewer.setShapeField("tiltDeg", value),
+    onCommit: () => viewer.emit("commit"),
+});
+const tiltRow = el("div", { class: "row" }, [
+    el("span", {
+        class: "lbl w",
+        text: "Tilt",
+        title: "Lean of the near edge, towards the opening",
+    }),
+    tilt,
+]);
+
+const turnRow = el("div", { class: "row" }, [
+    el("span", { class: "lbl w", text: "Turn" }),
+    button("\u21BA 15\u00B0", {
+        title: "Turn left around the vertical axis",
+        onClick: () => commit(() => viewer.turnBounds(15)),
+    }),
+    button("\u21BB 15\u00B0", {
+        title: "Turn right around the vertical axis",
+        onClick: () => commit(() => viewer.turnBounds(-15)),
+    }),
+]);
 const removeRow = el("div", { class: "row" }, [
     button("Remove boundary", { onClick: () => commit(() => viewer.removeBounds()) }),
 ]);
 
 left.append(
     section("Boundary", {
-        hint: "The volume a viewer is expected to stay inside, placed around the <b>Viewer</b>. Moving the video does not move it. A <b>sphere</b> stays round, so its X, Y and Z size stay linked; a <b>sector</b> is a slice of a cylinder, so its X and Z size do.",
-        children: [boundsTypes, angleRow, removeRow],
+        hint: "The volume a viewer is expected to stay inside, placed around the <b>Viewer</b>. Moving the video does not move it. <b>Click</b> a wall, a part of a wall or the top (it lights up blue) to move, turn or resize just that part with the gizmo; <b>Shift</b>+click picks more. Points you add on an edge cut the walls into smaller parts. The dots fine-tune: <b>blue</b> ones change size, angle and height, <b>orange</b> corners move a wall edge on the floor, <b>white</b> tops lean a wall or the sector's near edge, <b>peach</b> ring points bend the walls, and <b>Shift</b>+drag moves a point up or down. On a polygon, point at an edge and click the pale dot to add a corner or a ring there; double-click a point to remove it. A <b>sphere</b> stays round, so its X, Y and Z size stay linked; a <b>sector</b> is a slice of a cylinder, so its X and Z size do.",
+        children: [boundsTypes, angleRow, tiltRow, turnRow, removeRow],
     }),
 );
 
@@ -145,13 +177,23 @@ const scale = slider({
     onCommit: () => viewer.emit("commit"),
 });
 
+const editingName = tag("env", "");
+const editingRow = el("div", { class: "row" }, [
+    el("span", { class: "lbl w", text: "Editing" }),
+    editingName,
+    button("Whole boundary", {
+        title: "Put the gizmo back on the whole boundary (Esc)",
+        onClick: () => viewer.clearSelection(),
+    }),
+]);
+
+const upright = toggle("Keep upright", false, (on) => viewer.setUpright(on));
+const uprightRow = el("div", { class: "row" }, [upright]);
+const scaleRow = el("div", { class: "row" }, [el("span", { class: "lbl w", text: "Scale" }), scale]);
+
 const transformCard = section("Transform", {
-    hint: "Drag the gizmo to place things — <b>W</b> to move, <b>E</b> to rotate, <b>R</b> to scale along an axis. The slider resizes the whole thing, keeping its proportions.",
-    children: [
-        targets,
-        modes,
-        el("div", { class: "row" }, [el("span", { class: "lbl w", text: "Scale" }), scale]),
-    ],
+    hint: "Pick what to move, then drag the gizmo — <b>W</b> to move, <b>E</b> to rotate, <b>R</b> to scale along an axis. <b>Click</b> a wall, the top or a point of the boundary to put the gizmo on just that part; <b>Shift</b>+click adds more. <b>Esc</b>, a click on empty space or <b>Whole boundary</b> brings the gizmo back. <b>Keep upright</b> lets the whole boundary turn only around the vertical. The slider resizes the whole thing, keeping its proportions.",
+    children: [targets, editingRow, modes, uprightRow, scaleRow],
 });
 left.append(transformCard);
 
@@ -353,12 +395,26 @@ function sync() {
     targets.select(viewer.gizmoTarget);
     modes.select(viewer.gizmoMode);
     scale.set(viewer.overallScale);
+    const selection = viewer.selection;
+    show(editingRow, !!selection);
+    if (selection) editingName.set(selection.name, true);
+    for (const mode of ["translate", "rotate", "scale"]) {
+        modes.setHidden(mode, !viewer.availableModes.includes(mode));
+    }
+    show(scaleRow, !selection);
+    show(uprightRow, viewer.gizmoTarget === "bounds" && !selection);
+    upright.set(viewer.upright);
 
     const bounds = viewer.getBounds();
     boundsTypes.select(bounds?.type ?? null);
     targets.setHidden("bounds", !bounds);
     show(angleRow, bounds?.type === "sector");
-    if (bounds?.type === "sector") angle.set(bounds.angleDeg ?? 90);
+    show(tiltRow, bounds?.type === "sector" && (bounds.angleDeg ?? 90) < 360);
+    show(turnRow, !!bounds && bounds.type !== "sphere");
+    if (bounds?.type === "sector") {
+        angle.set(bounds.angleDeg ?? 90);
+        tilt.set(bounds.tiltDeg ?? 0);
+    }
     show(removeRow, !!bounds);
     show(boundsRow.copy, !!bounds);
 
@@ -402,6 +458,10 @@ addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
         travel(e.shiftKey ? history.redo() : history.undo());
+        return;
+    }
+    if (e.key === "Escape") {
+        viewer.clearSelection();
         return;
     }
     // Fly controls own WASD, so mode shortcuts would fight them.
