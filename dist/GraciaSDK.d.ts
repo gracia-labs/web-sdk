@@ -469,9 +469,26 @@ type CameraControls = {
     dispose: () => void;
 };
 
+declare class GraciaCamera$1 {
+    constructor(fov?: number, aspect?: number, near?: number, far?: number);
+    position: Vec3$1;
+    target: Vec3$1;
+    up: any;
+    matrixWorld: Mat4;
+    projectionMatrix: Mat4;
+    fov: number;
+    aspect: number;
+    near: number;
+    far: number;
+    lookAt(target: any): Mat4;
+    updateProjectionMatrix(): void;
+    updateMatrixWorld(): Mat4;
+    setAxes(right: any, up: any, back: any): Mat4;
+}
 declare class Camera2D {
     constructor(canvas: HTMLCanvasElement, controlsType?: "orbit" | "fly" | "trackball");
     get canPresent(): boolean;
+    get view(): GraciaCamera$1;
     get controls(): CameraControls;
     get controlsType(): "orbit" | "fly" | "trackball";
     setControls(type: "orbit" | "fly" | "trackball"): void;
@@ -1023,6 +1040,10 @@ declare class BoundaryRenderer {
     sync(boundary: SceneBoundary): void;
     renderUnderlay(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
     renderEye(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
+    renderOver(canvas: HTMLCanvasElement, view: {
+        projectionMatrix: ArrayLike<number>;
+        matrixWorld: ArrayLike<number>;
+    }): void;
     dispose(): void;
     #private;
 }

@@ -6,12 +6,49 @@
             "displayName": "Vivid & Translucent",
             "type": "stream",
             "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint",
+            "staticUrl": "https://gstatic.gracia.ai/demo/pga_combined.sog",
+            "initialTransform": {
+                "translation": {
+                    "x": -0.229088,
+                    "y": 1.222804,
+                    "z": -1.381312
+                },
+                "rotation": {
+                    "x": -0.243697,
+                    "y": 0.813971,
+                    "z": 0.428983,
+                    "w": 0.306653
+                },
+                "scale": {
+                    "x": 1.7,
+                    "y": 1.7,
+                    "z": 1.7
+                }
+            },
+            "staticTransform": {
+                "translation": {
+                    "x": -0.58928,
+                    "y": 0.051224,
+                    "z": -0.826887
+                },
+                "rotation": {
+                    "x": 0.043494,
+                    "y": 0.274536,
+                    "z": 0.878183,
+                    "w": -0.389272
+                },
+                "scale": {
+                    "x": 0.588235,
+                    "y": 0.588235,
+                    "z": 0.588235
+                }
+            },
             "bounds": {
                 "type": "sector",
                 "position": {
                     "x": 0,
                     "y": 1.2,
-                    "z": -1.746668
+                    "z": -2.761851
                 },
                 "rotation": {
                     "x": 0,
@@ -20,12 +57,11 @@
                     "w": 1
                 },
                 "scale": {
-                    "x": 10.61,
+                    "x": 9.26,
                     "y": 2.4,
-                    "z": 10.61
+                    "z": 9.26
                 },
-                "angleDeg": 90,
-                "tiltDeg": 31
+                "angleDeg": 90
             }
         },
         {
