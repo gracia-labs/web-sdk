@@ -122,6 +122,12 @@ declare class GraciaPlayer$1 {
         w: number;
         h: number;
     }): boolean;
+    renderDynamic(target: {
+        color: GPUTexture;
+        w: number;
+        h: number;
+    }): boolean;
+    get hasStatic(): boolean;
     copyTexture(src: GPUTexture, dst: GPUTexture, size?: [number, number, number] | null): void;
     renderHybridViewport(w: number, h: number, { gl, drawMode, enableMesh, x, y, eye }?: {
         gl?: WebGL2RenderingContext;
@@ -423,12 +429,14 @@ declare class SceneBoundary {
     get outline(): Float32Array<ArrayBuffer>;
     get surface(): Float32Array<ArrayBuffer>;
     get aboveSplats(): number;
+    get reach(): number;
+    get outside(): number;
     get mesh(): BoundsMesh | null;
     get meshMatrix(): Mat4 | null;
     setBounds(config: object | null): this;
     setRoomMatrix(m: ArrayLike<number> | null): this;
     queueIntro(): this;
-    reset(): this;
+    reset(look?: BoundaryLook): this;
     update(head: ArrayLike<number> | {
         x: number;
         y: number;
@@ -437,6 +445,15 @@ declare class SceneBoundary {
     ribbon(width: number): Float32Array<ArrayBuffer>;
     #private;
 }
+type BoundaryLook = {
+    ramp: number[][];
+    reach: number;
+    dark: {
+        from: number;
+        to: number;
+        max: number;
+    };
+};
 
 declare const ENV_PRESETS: Record<EnvPresetName$1, EnvPreset | null>;
 type EnvPreset = {
@@ -1043,7 +1060,7 @@ declare class BoundaryRenderer {
     renderOver(canvas: HTMLCanvasElement, view: {
         projectionMatrix: ArrayLike<number>;
         matrixWorld: ArrayLike<number>;
-    }): void;
+    }, splats?: () => HTMLCanvasElement | OffscreenCanvas | null): void;
     dispose(): void;
     #private;
 }
