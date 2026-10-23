@@ -803,7 +803,7 @@ interface StreamingItem {
     token: string;
     label?: string;
     settings?: StreamingItemSettings;
-    rawMetadata?: Record<string, string>;
+    rawMetadata?: Partial<GraciaSource>;
 }
 interface Vec3 {
     x: number;

@@ -199,15 +199,17 @@
             const streaming = [];
 
             for (const demo of demos) {
-                if (demo.rawMetadata && Object.keys(demo.rawMetadata).length > 0) {
-                    resolved.push(demo.rawMetadata);
-                } else if (demo.streamingId) {
+                const hasRawMetadata = demo.rawMetadata && Object.keys(demo.rawMetadata).length > 0;
+                if (demo.streamingId) {
                     streaming.push({
                         streamingId: demo.streamingId,
                         token: DEMO_TOKEN,
                         label: demo.label,
                         settings: { resetPositionOnStart: true },
+                        ...(hasRawMetadata && { rawMetadata: demo.rawMetadata }),
                     });
+                } else if (hasRawMetadata) {
+                    resolved.push(demo.rawMetadata);
                 } else {
                     console.warn('[index] demo item has no rawMetadata or streamingId:', demo);
                 }
