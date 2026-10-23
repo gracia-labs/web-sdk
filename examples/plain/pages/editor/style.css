@@ -374,3 +374,17 @@ canvas { display: block; }
     .col { width: 244px; }
     #timeline { width: min(380px, calc(100vw - 590px)); }
 }
+
+.handle-tip {
+    position: fixed;
+    z-index: 30;
+    display: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--glass);
+    color: var(--hi);
+    font-size: 11px;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: var(--sh);
+}

@@ -122,6 +122,12 @@ declare class GraciaPlayer$1 {
         w: number;
         h: number;
     }): boolean;
+    renderDynamic(target: {
+        color: GPUTexture;
+        w: number;
+        h: number;
+    }): boolean;
+    get hasStatic(): boolean;
     copyTexture(src: GPUTexture, dst: GPUTexture, size?: [number, number, number] | null): void;
     renderHybridViewport(w: number, h: number, { gl, drawMode, enableMesh, x, y, eye }?: {
         gl?: WebGL2RenderingContext;
@@ -201,23 +207,23 @@ declare class GraciaPlayer$1 {
     #private;
 }
 
-declare class SceneBoundary {
-    get active(): boolean;
-    get darkness(): number;
-    get outlineOpacity(): number;
-    get outlineUrgent(): boolean;
-    setBounds(config: object | null): this;
-    setRoomMatrix(m: ArrayLike<number> | null): this;
-    queueIntro(): this;
-    reset(): this;
-    update(head: ArrayLike<number> | {
-        x: number;
-        y: number;
-        z: number;
-    }, dt: number): this;
-    ribbon(width: number): Float32Array<ArrayBuffer>;
-    #private;
-}
+declare function sectorApexShift(config: any, half: ArrayLike<number>): number;
+declare function boundsShape(config: any, half: ArrayLike<number>): BoundsShape;
+declare const SECTOR_TILT_MAX: 75;
+declare const POLYGON_MAX_CORNERS: 64;
+declare const POLYGON_MAX_LAYERS: 8;
+type BoundsShape = {
+    signedDistance(p: ArrayLike<number>): number;
+    outlines: Float32Array[];
+    mesh: BoundsMesh;
+    lines: Float32Array;
+};
+type BoundsMesh = {
+    positions: Float32Array;
+    grid: Float32Array;
+    indices: Uint32Array;
+    capStart: number;
+};
 
 declare function envCoefsFromSH27(sh: any, lightDir?: null, contrast?: number): Float32Array<ArrayBuffer>;
 declare function envCoefsFromPreset(p: any): Float32Array<ArrayBuffer>;
@@ -398,6 +404,39 @@ declare namespace mat4 {
 declare function pointToImpl(out: any, m: any, p?: readonly number[], scale?: number): any;
 declare function poseToImpl(out: any, m: any): any;
 
+declare function isValidBounds(b: any): boolean;
+declare class SceneBoundary {
+    get active(): boolean;
+    get darkness(): number;
+    get outline(): Float32Array<ArrayBuffer>;
+    get surface(): Float32Array<ArrayBuffer>;
+    get aboveSplats(): number;
+    get reach(): number;
+    get outside(): number;
+    get mesh(): BoundsMesh | null;
+    get meshMatrix(): Mat4 | null;
+    setBounds(config: object | null): this;
+    setRoomMatrix(m: ArrayLike<number> | null): this;
+    queueIntro(): this;
+    reset(look?: BoundaryLook): this;
+    update(head: ArrayLike<number> | {
+        x: number;
+        y: number;
+        z: number;
+    }, dt: number): this;
+    ribbon(width: number): Float32Array<ArrayBuffer>;
+    #private;
+}
+type BoundaryLook = {
+    ramp: number[][];
+    reach: number;
+    dark: {
+        from: number;
+        to: number;
+        max: number;
+    };
+};
+
 declare const ENV_PRESETS: Record<EnvPresetName$1, EnvPreset | null>;
 type EnvPreset = {
     ambient: number[];
@@ -429,9 +468,26 @@ type CameraControls = {
     dispose: () => void;
 };
 
+declare class GraciaCamera$1 {
+    constructor(fov?: number, aspect?: number, near?: number, far?: number);
+    position: Vec3$1;
+    target: Vec3$1;
+    up: any;
+    matrixWorld: Mat4;
+    projectionMatrix: Mat4;
+    fov: number;
+    aspect: number;
+    near: number;
+    far: number;
+    lookAt(target: any): Mat4;
+    updateProjectionMatrix(): void;
+    updateMatrixWorld(): Mat4;
+    setAxes(right: any, up: any, back: any): Mat4;
+}
 declare class Camera2D {
     constructor(canvas: HTMLCanvasElement, controlsType?: "orbit" | "fly" | "trackball");
     get canPresent(): boolean;
+    get view(): GraciaCamera$1;
     get controls(): CameraControls;
     get controlsType(): "orbit" | "fly" | "trackball";
     setControls(type: "orbit" | "fly" | "trackball"): void;
@@ -461,6 +517,7 @@ declare class GraciaXR$1 {
     constructor(player: GraciaPlayer$1, gl: WebGL2RenderingContext);
     onFrame: ((dt: number, frame: XRFrame) => void) | null;
     onBeforeRender: ((dt: number, frame: XRFrame, ref: XRReferenceSpace, pose: XRViewerPose, sources: XRInputSourceArray, player: any) => void) | null;
+    onBeforeEyeRender: ((gl: WebGL2RenderingContext, fbo: WebGLFramebuffer, view: XRView, x: number, y: number, w: number, h: number) => void) | null;
     onEyeRender: ((gl: WebGL2RenderingContext, fbo: WebGLFramebuffer, view: XRView, x: number, y: number, w: number, h: number) => void) | null;
     onASWRender: ((gl: WebGL2RenderingContext, eyes: any[]) => void) | null;
     onRefReset: (() => void) | null;
@@ -634,7 +691,7 @@ type SceneTransform$1 = {
     };
 };
 type SceneBounds$1 = {
-    type: "box" | "sphere" | "sector";
+    type: "box" | "sphere" | "sector" | "polygon";
     position: {
         x: number;
         y: number;
@@ -652,6 +709,12 @@ type SceneBounds$1 = {
         z: number;
     };
     angleDeg?: number;
+    tiltDeg?: number;
+    layers?: {
+        x: number;
+        y: number;
+        z: number;
+    }[][];
 };
 
 type EnvPresetName = EnvPresetName$1;
@@ -693,7 +756,7 @@ interface SceneTransform {
     };
 }
 interface SceneBounds {
-    type: "box" | "sphere" | "sector";
+    type: "box" | "sphere" | "sector" | "polygon";
     position: {
         x: number;
         y: number;
@@ -711,6 +774,12 @@ interface SceneBounds {
         z: number;
     };
     angleDeg?: number;
+    tiltDeg?: number;
+    layers?: {
+        x: number;
+        y: number;
+        z: number;
+    }[][];
 }
 interface GraciaSource {
     url: string;
@@ -968,7 +1037,12 @@ declare class BoundaryRenderer {
     constructor(THREE: any);
     init(gl: WebGL2RenderingContext): void;
     sync(boundary: SceneBoundary): void;
+    renderUnderlay(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
     renderEye(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
+    renderOver(canvas: HTMLCanvasElement, view: {
+        projectionMatrix: ArrayLike<number>;
+        matrixWorld: ArrayLike<number>;
+    }, splats?: () => HTMLCanvasElement | OffscreenCanvas | null): void;
     dispose(): void;
     #private;
 }
@@ -1200,4 +1274,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, QuadLayer, Quat, type SceneBounds, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
+export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, POLYGON_MAX_CORNERS, POLYGON_MAX_LAYERS, QuadLayer, Quat, SECTOR_TILT_MAX, type SceneBounds, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, boundsShape, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, isValidBounds, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, sectorApexShift, useGraciaPlayer, useGraciaPlaylist, vec3 };

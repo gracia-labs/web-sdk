@@ -5,14 +5,180 @@
             "label": "Direct: Vivid & Translucent (1724)",
             "displayName": "Vivid & Translucent",
             "type": "stream",
-            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint"
+            "url": "https://gstatic.gracia.ai/demo/mint/fashion_example_1724.mint",
+            "staticUrl": "https://gstatic.gracia.ai/demo/pga_combined.sog",
+            "initialTransform": {
+                "translation": {
+                    "x": -0.229088,
+                    "y": 1.222804,
+                    "z": -1.381312
+                },
+                "rotation": {
+                    "x": -0.243697,
+                    "y": 0.813971,
+                    "z": 0.428983,
+                    "w": 0.306653
+                },
+                "scale": {
+                    "x": 1.7,
+                    "y": 1.7,
+                    "z": 1.7
+                }
+            },
+            "staticTransform": {
+                "translation": {
+                    "x": -0.58928,
+                    "y": 0.051224,
+                    "z": -0.826887
+                },
+                "rotation": {
+                    "x": 0.043494,
+                    "y": 0.274536,
+                    "z": 0.878183,
+                    "w": -0.389272
+                },
+                "scale": {
+                    "x": 0.588235,
+                    "y": 0.588235,
+                    "z": 0.588235
+                }
+            },
+            "bounds": {
+                "type": "sector",
+                "position": {
+                    "x": 0,
+                    "y": 1.2,
+                    "z": -2.761851
+                },
+                "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                    "w": 1
+                },
+                "scale": {
+                    "x": 9.26,
+                    "y": 2.4,
+                    "z": 9.26
+                },
+                "angleDeg": 90
+            }
         },
         {
             "id": "direct-karl-kani-liar-liar",
             "label": "Direct: \"Liar Liar\" by McKenzi Brooke x Karl Kani x Fashionverse",
             "displayName": "\"Liar Liar\" by McKenzi Brooke x Karl Kani x Fashionverse",
             "type": "stream",
-            "url": "https://gstatic.gracia.ai/demo/mint/karl_kani_liar_liar.mint"
+            "url": "https://gstatic.gracia.ai/demo/mint/karl_kani_liar_liar.mint",
+            "bounds": {
+                "type": "polygon",
+                "position": {
+                    "x": 0,
+                    "y": 1.2,
+                    "z": 0.376268
+                },
+                "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                    "w": 1
+                },
+                "scale": {
+                    "x": 4,
+                    "y": 2.4,
+                    "z": 3.61
+                },
+                "layers": [
+                    [
+                        {
+                            "x": -0.15,
+                            "y": -0.5,
+                            "z": -0.331025
+                        },
+                        {
+                            "x": 0.15,
+                            "y": -0.5,
+                            "z": -0.331025
+                        },
+                        {
+                            "x": 0.5,
+                            "y": -0.5,
+                            "z": 0.5
+                        },
+                        {
+                            "x": -0.5,
+                            "y": -0.5,
+                            "z": 0.5
+                        }
+                    ],
+                    [
+                        {
+                            "x": -0.19,
+                            "y": -0.394273,
+                            "z": -0.5
+                        },
+                        {
+                            "x": 0.11,
+                            "y": -0.394273,
+                            "z": -0.5
+                        },
+                        {
+                            "x": 0.5,
+                            "y": -0.085939,
+                            "z": 0.5
+                        },
+                        {
+                            "x": -0.5,
+                            "y": -0.085939,
+                            "z": 0.5
+                        }
+                    ],
+                    [
+                        {
+                            "x": -0.19,
+                            "y": -0.109446,
+                            "z": -0.5
+                        },
+                        {
+                            "x": 0.11,
+                            "y": -0.109446,
+                            "z": -0.5
+                        },
+                        {
+                            "x": 0.5,
+                            "y": 0.198887,
+                            "z": 0.5
+                        },
+                        {
+                            "x": -0.5,
+                            "y": 0.198887,
+                            "z": 0.5
+                        }
+                    ],
+                    [
+                        {
+                            "x": -0.15,
+                            "y": 0.5,
+                            "z": -0.331025
+                        },
+                        {
+                            "x": 0.15,
+                            "y": 0.5,
+                            "z": -0.331025
+                        },
+                        {
+                            "x": 0.5,
+                            "y": 0.5,
+                            "z": 0.5
+                        },
+                        {
+                            "x": -0.5,
+                            "y": 0.5,
+                            "z": 0.5
+                        }
+                    ]
+                ]
+            }
         },
         {
             "id": "direct-fashion-streaming",
