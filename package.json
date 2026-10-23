@@ -5,10 +5,10 @@
     "exports": {
         "./core": {
             "types": "./dist/GraciaSDK.d.ts",
-            "default": "./dist/GraciaSDK.c5ae15bdfe641f26.js"
+            "default": "./dist/GraciaSDK.05051b41c5c8ff32.js"
         },
         "./aio": {
-            "default": "./dist/GraciaAIO.253050d76ffb2300.js"
+            "default": "./dist/GraciaAIO.dfa2375a103ae833.js"
         },
         "./wasm": {
             "types": "./dist/GraciaWebCore.d.ts",
