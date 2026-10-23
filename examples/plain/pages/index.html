@@ -43,6 +43,7 @@
 
     <script type="module">
         import { buildApiSources, mountGraciaPlayer } from '@gracia/web-sdk/aio';
+        import { mountXRDebug, XR_BACKENDS } from './xr-debug.js';
 
         const STREAMING_BASE = '/api/market/api/v1/streaming/content';
         const DEMO_DOMAIN = '__DEMO_DOMAIN__';
@@ -54,6 +55,8 @@
         const status = document.getElementById('status');
 
         const localFilesEnabled = !DEMO_DOMAIN;
+        const params = new URLSearchParams(location.search);
+        const xrBackend = XR_BACKENDS.includes(params.get('xr')) ? params.get('xr') : 'auto';
 
         let amp = null;
         let ampQueue = [];
@@ -77,6 +80,7 @@
         let firstReady = false;
         let sessionStartTime = 0;
         let maxSceneOpened = 0;
+        let xrDebug = null;
 
         const formatError = (error) => error instanceof Error ? error.message : String(error);
         const showStatus = (message, kind = 'info') => {
@@ -141,6 +145,7 @@
         const baseProps = () => ({
             sources: loadedSources,
             localFiles: localFilesEnabled,
+            xrBackend,
             moduleUrl: '@gracia/web-sdk/wasm',
             sceneSelector: 'menu',
             controls: true,
@@ -163,10 +168,14 @@
                     if (fn) track(fn(data));
                 },
             },
-            onError: reportPlayerError,
+            onError: (error, data) => {
+                reportPlayerError(error, data);
+                xrDebug?.error(error, data);
+            },
         });
 
         const player = mountGraciaPlayer(root, { ...baseProps(), sources: [] });
+        if (localFilesEnabled || params.has('debug')) xrDebug = mountXRDebug(player, { xrBackend });
         const applyProps = () => player.update(baseProps());
 
         const isTextInputTarget = (target) => {

@@ -18,8 +18,9 @@ declare class ScratchHeap {
 }
 
 declare class GraciaModule {
-    static boot(Module: any, canvas: HTMLCanvasElement, { maxSplatsCount }?: {
+    static boot(Module: any, canvas: HTMLCanvasElement, { maxSplatsCount, xrCompatible }?: {
         maxSplatsCount?: number;
+        xrCompatible?: boolean;
     }): Promise<{
         module: GraciaModule;
         device: GPUDevice;
@@ -34,6 +35,9 @@ declare class GraciaModule {
     setModelMatrix(elements: ArrayLike<number>): void;
     initPure(isBGRA: boolean): void;
     pureRenderTo(color: GPUTexture, depth: GPUTexture | null | undefined, w: number, h: number): boolean;
+    pureRenderXR(eyes: Array<{
+        sub: XRGPUSubImage;
+    }>, clearAlpha: number, spaceWarp: boolean): boolean;
     initHybrid(gl: WebGL2RenderingContext): void;
     hybridFrame(w: number, h: number, drawMode: number): void;
     hybridPreprocess(w: number, h: number): any;
@@ -86,11 +90,12 @@ declare class GraciaPlayer$1 {
         powerPreference: string;
         xrCompatible: boolean;
     };
-    static create(Module: any, { canvas, gl, backend, maxSplatsCount }?: {
+    static create(Module: any, { canvas, gl, backend, maxSplatsCount, xrCompatible }?: {
         canvas?: HTMLCanvasElement;
         gl?: WebGLRenderingContext | WebGL2RenderingContext;
         backend?: "pure" | "hybrid";
         maxSplatsCount?: number;
+        xrCompatible?: boolean;
     }): Promise<GraciaPlayer$1>;
     static preferredFormat(): GPUTextureFormat;
     static #gl2(canvas: any): any;
@@ -122,6 +127,11 @@ declare class GraciaPlayer$1 {
         w: number;
         h: number;
     }): boolean;
+    renderXR(eyes: Array<{
+        view: XRView;
+        projection: ArrayLike<number>;
+        sub: XRGPUSubImage;
+    }>, clearAlpha?: number, spaceWarp?: boolean): boolean;
     copyTexture(src: GPUTexture, dst: GPUTexture, size?: [number, number, number] | null): void;
     renderHybridViewport(w: number, h: number, { gl, drawMode, enableMesh, x, y, eye }?: {
         gl?: WebGL2RenderingContext;
@@ -458,11 +468,19 @@ declare class Camera2D {
 }
 
 declare class GraciaXR$1 {
-    constructor(player: GraciaPlayer$1, gl: WebGL2RenderingContext);
+    constructor(player: GraciaPlayer$1, gl: WebGL2RenderingContext | null, { backend, ensureGL }?: {
+        backend?: "auto" | "webgl" | "webgpu";
+        ensureGL?: () => WebGL2RenderingContext | null;
+    });
     onFrame: ((dt: number, frame: XRFrame) => void) | null;
     onBeforeRender: ((dt: number, frame: XRFrame, ref: XRReferenceSpace, pose: XRViewerPose, sources: XRInputSourceArray, player: any) => void) | null;
     onEyeRender: ((gl: WebGL2RenderingContext, fbo: WebGLFramebuffer, view: XRView, x: number, y: number, w: number, h: number) => void) | null;
     onASWRender: ((gl: WebGL2RenderingContext, eyes: any[]) => void) | null;
+    onViewsRender: ((eyes: Array<{
+        view: XRView;
+        projection: ArrayLike<number>;
+        sub: XRGPUSubImage;
+    }>, frame: XRFrame) => void) | null;
     onRefReset: (() => void) | null;
     onSessionEnd: (() => void) | null;
     externalLayers: XRLayer[];
@@ -473,7 +491,12 @@ declare class GraciaXR$1 {
     get layeredActive(): boolean;
     get isAR(): boolean;
     get defaultDt(): number;
-    get binding(): XRWebGLBinding | null;
+    get binding(): XRWebGLBinding | XRGPUBinding | null;
+    get api(): "webgl" | "webgpu" | null;
+    get gpu(): {
+        device: GPUDevice;
+        format: GPUTextureFormat;
+    } | null;
     get refSpace(): XRReferenceSpace | null;
     set soundPosition(pos: {
         x: number;
@@ -560,11 +583,12 @@ declare class SceneManipulator {
 }
 
 declare class GraciaApp {
-    static create(Module: any, { container, overlay, boundaryRenderer, mode }?: {
+    static create(Module: any, { container, overlay, boundaryRenderer, mode, xrBackend, }?: {
         container: HTMLElement;
         overlay?: any;
         boundaryRenderer?: any;
         mode?: string;
+        xrBackend?: "auto" | "webgl" | "webgpu";
     }): Promise<GraciaApp>;
     onProgress: ((pct: number) => void) | null;
     onReady: (() => void) | null;
@@ -586,6 +610,7 @@ declare class GraciaApp {
     get manipulator(): SceneManipulator | null;
     set drawMode(v: number);
     get drawMode(): number;
+    get xrBackend(): "webgl" | "webgpu";
     supports(mode: string): boolean;
     set sources(arr: any[]);
     get sources(): any[];
@@ -673,6 +698,7 @@ declare class GraciaSplats {
 }
 
 type GraciaMode = "pw" | "hw" | "vr" | "ar";
+type XRBackend = "auto" | "webgl" | "webgpu";
 type CameraControlsType = "orbit" | "fly" | "trackball";
 interface SceneTransform {
     rotation?: {
@@ -737,6 +763,7 @@ interface GraciaEventLogger {
 interface UseGraciaPlayerOptions {
     containerRef: RefObject<HTMLElement>;
     mode?: GraciaMode;
+    xrBackend?: XRBackend;
     overlay?: any;
     boundaryRenderer?: any;
     moduleUrl?: string;
@@ -774,6 +801,7 @@ interface GraciaXR {
     vrSupported: boolean;
     arSupported: boolean;
     isActive: boolean;
+    backend: "webgl" | "webgpu";
     setMode(mode: GraciaMode): Promise<void>;
 }
 interface GraciaPlayerState {
@@ -798,12 +826,12 @@ interface GraciaPlayerState {
 interface StreamingItemSettings {
     resetPositionOnStart?: boolean;
 }
-interface StreamingItem {
+interface StreamingItem extends Pick<GraciaSource, "staticUrl" | "staticTransform"> {
     streamingId: string;
     token: string;
     label?: string;
     settings?: StreamingItemSettings;
-    rawMetadata?: Partial<GraciaSource>;
+    rawMetadata?: Record<string, string>;
 }
 interface Vec3 {
     x: number;
@@ -882,6 +910,7 @@ interface CommonProps {
     sceneSelector?: SceneSelectorMode;
     localFiles?: boolean;
     xrOverlay?: XROverlayProp;
+    xrBackend?: XRBackend;
     className?: string;
     style?: CSSProperties;
     children?: ReactNode | ((api: GraciaPlayerRenderProps) => ReactNode);
@@ -966,9 +995,17 @@ declare class SplatsRendererW3 {
 
 declare class BoundaryRenderer {
     constructor(THREE: any);
-    init(gl: WebGL2RenderingContext): void;
+    init(gl: WebGL2RenderingContext | null, gpu?: {
+        device: GPUDevice;
+        format: GPUTextureFormat;
+    } | null): void;
     sync(boundary: SceneBoundary): void;
     renderEye(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
+    renderViews(eyes: Array<{
+        view: XRView;
+        projection: ArrayLike<number>;
+        sub: XRGPUSubImage;
+    }>): void;
     dispose(): void;
     #private;
 }
@@ -1007,7 +1044,7 @@ declare class QuadLayer {
     clearPointer(): void;
     initFlat(): void;
     renderFlat(): void;
-    init(session: any, binding: any, ref: any, gl: any): Promise<null>;
+    init(session: any, binding: any, ref: any, gl: any, gpu?: null): Promise<null>;
     show(): void;
     recenter(): void;
     hide(): void;
@@ -1017,6 +1054,7 @@ declare class QuadLayer {
     updatePosition(pose: any): void;
     drawContent(frame: any): void;
     renderEye(gl: any, view: any, x: any, y: any, w: any, h: any): void;
+    renderViews(eyes: any): void;
     handleInput(leftHand: any, rightHand: any, viewerPose: any): boolean;
     dispose(): void;
     #private;
@@ -1176,9 +1214,13 @@ declare class XROverlay {
     get eventLogger(): null;
     setPreset(name: any, scale?: number): void;
     syncPreset(name: any): void;
-    init(player: any, sess: any, bind: any, ref: any, gl: any, _ar?: boolean): Promise<any[]>;
+    init(player: any, sess: any, bind: any, ref: any, gl: any, _ar?: boolean, gpu?: {
+        device: GPUDevice;
+        format: GPUTextureFormat;
+    } | null): Promise<any[]>;
     frame(dt: any, frame: any, _ref: any, pose: any, _sources: any, player: any): void;
     renderEye(gl: any, fbo: any, view: any, x: any, y: any, w: any, h: any): void;
+    renderViews(eyes: any, frame: any): void;
     onRefReset(): void;
     render(_gl: any, _eyes: any): void;
     dispose(): void;
@@ -1200,4 +1242,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, QuadLayer, Quat, type SceneBounds, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
+export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, QuadLayer, Quat, type SceneBounds, SceneManipulator, SceneOverlay, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, type XRBackend, XROverlay, XRRayRenderer, axis, bbox, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, useGraciaPlayer, useGraciaPlaylist, vec3 };
