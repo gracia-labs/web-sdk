@@ -225,6 +225,7 @@ const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your 
 | Prop | Default | Description |
 |------|---------|-------------|
 | `sources` / `streaming` | — | Pre-built scenes, or id + token pairs the player resolves |
+| `scenario` | — | Where a branching pack opens; see [Branching](#branching) |
 | `controls` | `true` | Built-in playback, scene, and XR UI |
 | `sceneSelector` | `"stepper"` | `"tabs"` or `"menu"` for playlists |
 | `cameraControls` | `false` | 2D camera selector (`orbit` / `trackball` / `fly`) |
@@ -238,6 +239,44 @@ const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your 
 Imperative handle (`ref.current` or `mountGraciaPlayer(...).player`): `play`, `pause`, `seek`, `next`/`prev`/`goTo`, `setMode`, `setCameraControls`, `toggleFullscreen`, `openLocalFile`. See [`examples/react-vite`](examples/react-vite) and [`index.html`](examples/plain/pages/index.html).
 
 For custom UI, use `useGraciaPlayer`, `useGraciaPlaylist`, and `XROverlay` instead.
+
+### Branching
+
+A pack branches when its scenes say what follows them: at a fork the viewer picks the next scene, in 2D and in the headset. Add these fields to the scenes of `streaming` or `sources`:
+
+| Scene field | Description |
+|-------|-------------|
+| `sceneOrder` | The scene's id in the pack, unique; links point at it. Defaults to the scene's position in the list, from 0 |
+| `nextSceneOrders` | Ids of the scenes that may follow. Unset plays the next scene in the list, `[]` ends the story, two or more make a fork |
+| `modalTitle` | The question asked at this scene's fork |
+| `scenarioName` | Label of the choice that leads to this scene |
+
+The `scenario` prop holds the part that belongs to the whole pack. It is needed only when the story may open at more than one scene:
+
+| `scenario` field | Description |
+|-------|-------------|
+| `roots` | Ids of the scenes the story may open at. Two or more ask the viewer before anything plays |
+| `defaultRoot` | The opening taken when nobody answers |
+| `modalTitle` | The question asked by that first fork |
+
+```js
+mountGraciaPlayer(root, {
+  streaming: [
+    { streamingId: "<intro>", token, label: "Intro", nextSceneOrders: [1, 2], modalTitle: "Where do we go?" },
+    { streamingId: "<rooftop>", token, label: "Rooftop", scenarioName: "The rooftop", nextSceneOrders: [] },
+    { streamingId: "<inside>", token, label: "Inside", scenarioName: "Stay inside" },
+    { streamingId: "<party>", token, label: "Party", nextSceneOrders: [] },
+  ],
+});
+```
+
+`sources` take the same fields beside `url`. [`examples/plain/pages/branching`](examples/plain/pages/branching/index.html) is a working pack.
+
+- A fork is asked as its scene runs out; the scene then holds on its last frame. After 15 s with no answer, the first choice is taken.
+- The scene menu lists the route taken: its scenes, each fork with the number of the branch taken, and a dash for each scene still ahead of an unanswered fork. Picking a fork asks it again, so the viewer can change the answer. A branching pack always uses the menu, whatever `sceneSelector` says.
+- A link to a scene the pack doesn't have stops the player with an error that names it (`onError`, phase `"scenario"`).
+- `eventLogger` receives `scenario_prompt` `{ from, reopened }` and `scenario_choose` `{ from, to, scenarioName }`. A choice made by the countdown is not reported.
+- `sources`, `streaming` and `scenario` restart the story when their identity changes: memoize them.
 
 ### XR
 

@@ -191,41 +191,36 @@
             amp?.flush();
         });
 
+        // A row with a streamingId streams, and its rawMetadata adds to the scene: a branching
+        // pack's nextSceneOrders, modalTitle, scenarioName. A row without one is its rawMetadata.
+        // The row's sortOrder is the scene's sceneOrder, which links name.
         async function loadDemoSources() {
             const response = await fetch(DEMO_URL);
             if (!response.ok) throw new Error(`Demo API returned ${response.status}`);
             const demos = await response.json();
-            const resolved = [];
-            const streaming = [];
 
-            for (const demo of demos) {
+            const scenes = await Promise.allSettled(demos.map(async (demo) => {
                 const hasRawMetadata = demo.rawMetadata && Object.keys(demo.rawMetadata).length > 0;
-                if (demo.streamingId) {
-                    streaming.push({
-                        streamingId: demo.streamingId,
-                        token: DEMO_TOKEN,
-                        label: demo.label,
-                        settings: { resetPositionOnStart: true },
-                        ...(hasRawMetadata && { rawMetadata: demo.rawMetadata }),
-                    });
-                } else if (hasRawMetadata) {
-                    resolved.push(demo.rawMetadata);
-                } else {
-                    console.warn('[index] demo item has no rawMetadata or streamingId:', demo);
+                const meta = { sceneOrder: demo.sortOrder ?? undefined, ...demo.rawMetadata };
+                if (!demo.streamingId) {
+                    if (!hasRawMetadata) throw new Error(`demo item "${demo.label}" has no rawMetadata or streamingId`);
+                    return meta;
                 }
-            }
+                const [source] = await buildApiSources([{
+                    streamingId: demo.streamingId,
+                    token: DEMO_TOKEN,
+                    label: demo.label,
+                    settings: { resetPositionOnStart: true },
+                    rawMetadata: meta,
+                }], STREAMING_BASE);
+                return source;
+            }));
 
-            const built = await Promise.allSettled(
-                streaming.map((item) => buildApiSources([item], STREAMING_BASE))
-            );
-            for (const result of built) {
-                if (result.status === 'fulfilled') {
-                    resolved.push(...result.value);
-                } else {
-                    console.warn('[index] streaming metadata failed:', result.reason);
-                }
+            const resolved = [];
+            for (const result of scenes) {
+                if (result.status === 'fulfilled') resolved.push(result.value);
+                else console.warn('[index] demo item failed:', result.reason);
             }
-
             return resolved;
         }
 

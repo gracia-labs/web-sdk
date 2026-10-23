@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gracia Player — branching</title>
+    <script type="importmap">{ "imports": {
+        "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+    } }</script>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #0d1115; }
+        #player { position: fixed; inset: 0; }
+    </style>
+</head>
+<body>
+    <div id="player"></div>
+    <script type="module">
+        import { mountGraciaPlayer } from '@gracia/web-sdk/aio';
+
+        // Demo-market scenes, opened by streamingId and view token — what a client passes.
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
+        const SINGER = '784c5fd3-810f-43bd-8495-5d2ce08998e2';
+        const DOCTOR = '70e1cf71-2293-4e5e-a0c2-82247087388f';
+        const CYCLING = '9f83632d-5c70-4213-94be-f851c4868751';
+        const JUGGLER = '236b8935-af2c-4345-9d51-93ebca7ec168';
+        const params = new URLSearchParams(location.search);
+
+        // One intro, a fork into two branches, and a two-scene branch. A scene's id is its position, from 0.
+        const streaming = [
+            { streamingId: SINGER, token, label: 'Singer', nextSceneOrders: [1, 2], modalTitle: 'Where do we go?' },
+            { streamingId: DOCTOR, token, label: 'Doctor', scenarioName: 'See the doctor', nextSceneOrders: [] },
+            { streamingId: CYCLING, token, label: 'Cycling', scenarioName: 'Go cycling' },
+            { streamingId: JUGGLER, token, label: 'Juggler', nextSceneOrders: [] },
+        ];
+        // `?many=24`: a long main line, and every sixth scene forks off to a one-scene ending.
+        if (params.has('many')) {
+            const main = Number(params.get('many')) || 24;
+            const ids = [SINGER, DOCTOR, CYCLING, JUGGLER];
+            streaming.length = 0;
+            for (let i = 0; i < main; i++) {
+                const side = main + Math.floor(i / 6);
+                const forks = i % 6 === 5 && i < main - 1;
+                streaming.push({
+                    sceneOrder: i,
+                    streamingId: ids[i % ids.length],
+                    token,
+                    label: `Scene ${i + 1}`,
+                    scenarioName: 'Keep going',
+                    nextSceneOrders: forks ? [i + 1, side] : i < main - 1 ? [i + 1] : [],
+                    ...(forks && { modalTitle: `Fork ${Math.floor(i / 6) + 1}: carry on?` }),
+                });
+                if (forks) {
+                    streaming.push({
+                        sceneOrder: side,
+                        streamingId: JUGGLER,
+                        token,
+                        label: `Ending ${Math.floor(i / 6) + 1}`,
+                        scenarioName: 'Stop here',
+                        nextSceneOrders: [],
+                    });
+                }
+            }
+        }
+        if (params.has('bad')) streaming[2].nextSceneOrders = [9];
+        if (params.has('linear')) for (const scene of streaming) delete scene.nextSceneOrders;
+
+        // `?start`: the pack opens on a question between two openings.
+        const scenario = params.has('start')
+            ? { roots: [0, 2], defaultRoot: 0, modalTitle: 'Whose story?' }
+            : undefined;
+
+        window.events = [];
+        window.graciaPlayer = mountGraciaPlayer(document.getElementById('player'), {
+            streaming,
+            scenario,
+            sceneSelector: 'menu',
+            eventLogger: {
+                event: (name, data) => window.events.push([name, data]),
+                error: (error, data) => window.events.push(['error', error.message, data]),
+            },
+        });
+    </script>
+</body>
+</html>
