@@ -86,6 +86,22 @@ left.append(
     }),
 );
 
+const origins = segmented(
+    [
+        { value: "floor", label: "Floor" },
+        { value: "eyes", label: "Eyes" },
+    ],
+    viewer.origin,
+    (value) => commit(() => viewer.setOrigin(value)),
+);
+
+left.append(
+    section("Origin", {
+        hint: "Where the initial spawn and the bounds are measured from in VR: the floor under the <b>VR viewer</b>, or their eyes for POV content. With <b>Eyes</b>, put the performer's eyes where the <b>VR viewer</b> is. The <b>2D camera</b> is where the screen player starts. In the admin, this is the <b>Is POV</b> checkbox.",
+        children: [origins],
+    }),
+);
+
 const boundsTypes = segmented(
     [
         { value: "box", label: "Box" },
@@ -143,7 +159,7 @@ const removeRow = el("div", { class: "row" }, [
 
 left.append(
     section("Boundary", {
-        hint: "The volume a viewer is expected to stay inside, placed around the <b>Viewer</b>. Moving the video does not move it. <b>Click</b> a wall, a part of a wall or the top (it lights up blue) to move, turn or resize just that part with the gizmo; <b>Shift</b>+click picks more. Points you add on an edge cut the walls into smaller parts. The dots fine-tune: <b>blue</b> ones change size, angle and height, <b>orange</b> corners move a wall edge on the floor, <b>white</b> tops lean a wall or the sector's near edge, <b>peach</b> ring points bend the walls, and <b>Shift</b>+drag moves a point up or down. On a polygon, point at an edge and click the pale dot to add a corner or a ring there; double-click a point to remove it. A <b>sphere</b> stays round, so its X, Y and Z size stay linked; a <b>sector</b> is a slice of a cylinder, so its X and Z size do.",
+        hint: "The volume a viewer is expected to stay inside, placed around the <b>VR viewer</b>. Moving the video does not move it. <b>Click</b> a wall, a part of a wall or the top (it lights up blue) to move, turn or resize just that part with the gizmo; <b>Shift</b>+click picks more. Points you add on an edge cut the walls into smaller parts. The dots fine-tune: <b>blue</b> ones change size, angle and height, <b>orange</b> corners move a wall edge on the floor, <b>white</b> tops lean a wall or the sector's near edge, <b>peach</b> ring points bend the walls, and <b>Shift</b>+drag moves a point up or down. On a polygon, point at an edge and click the pale dot to add a corner or a ring there; double-click a point to remove it. A <b>sphere</b> stays round, so its X, Y and Z size stay linked; a <b>sector</b> is a slice of a cylinder, so its X and Z size do.",
         children: [boundsTypes, angleRow, tiltRow, turnRow, removeRow],
     }),
 );
@@ -358,9 +374,10 @@ left.append(
 
 const SHOW = [
     ["grid", "Grid"],
-    ["axes", "Axes"],
+    ["origin", "0, 0, 0"],
     ["human", "Human"],
-    ["viewer", "Viewer"],
+    ["viewer", "VR viewer"],
+    ["screen", "2D camera"],
 ];
 
 right.append(
@@ -387,6 +404,7 @@ function sync() {
     envTag.set(environment ?? "No environment", !!environment);
     show(clearVideo, !!video);
     show(clearEnv, !!environment);
+    origins.select(viewer.origin);
 
     const canTransform = viewer.availableTargets;
     show(transformCard, canTransform.length > 0);
@@ -440,8 +458,8 @@ function travel(doc) {
 }
 
 function syncHistoryButtons() {
-    show(undo, history.canUndo);
-    show(redo, history.canRedo);
+    undo.disabled = !history.canUndo;
+    redo.disabled = !history.canRedo;
 }
 
 for (const event of ["transform", "bounds", "content"]) viewer.on(event, sync);

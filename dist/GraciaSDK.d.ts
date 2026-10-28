@@ -447,73 +447,6 @@ type EnvPreset = {
 };
 type EnvPresetName$1 = "daylight" | "cloudy" | "sunset" | "indoor" | "shade" | "night" | "off";
 
-type CameraControls = {
-    type: "orbit" | "fly" | "trackball";
-    update: (dt: number) => void;
-    frame: (center: ArrayLike<number> | {
-        x: number;
-        y: number;
-        z: number;
-    }, eyePos: ArrayLike<number> | {
-        x: number;
-        y: number;
-        z: number;
-    }) => void;
-    zoom: (factor: number) => void;
-    reset: (target: ArrayLike<number>, eyePos: ArrayLike<number> | {
-        x: number;
-        y: number;
-        z: number;
-    }) => void;
-    applyConstraints: (hasTransform: boolean) => void;
-    dispose: () => void;
-};
-
-declare class GraciaCamera$1 {
-    constructor(fov?: number, aspect?: number, near?: number, far?: number);
-    position: Vec3$1;
-    target: Vec3$1;
-    up: any;
-    matrixWorld: Mat4;
-    projectionMatrix: Mat4;
-    fov: number;
-    aspect: number;
-    near: number;
-    far: number;
-    lookAt(target: any): Mat4;
-    updateProjectionMatrix(): void;
-    updateMatrixWorld(): Mat4;
-    setAxes(right: any, up: any, back: any): Mat4;
-}
-declare class Camera2D {
-    constructor(canvas: HTMLCanvasElement, controlsType?: "orbit" | "fly" | "trackball");
-    get canPresent(): boolean;
-    get view(): GraciaCamera$1;
-    get controls(): CameraControls;
-    get controlsType(): "orbit" | "fly" | "trackball";
-    setControls(type: "orbit" | "fly" | "trackball"): void;
-    setSceneTransform(t: SceneTransform$1 | null): void;
-    setAudioPosition(pos: {
-        x: number;
-        y: number;
-        z: number;
-    } | null): void;
-    setBBox(bounds: {
-        minX: number;
-        minY: number;
-        minZ: number;
-        maxX: number;
-        maxY: number;
-        maxZ: number;
-    }): void;
-    update(dt: number): void;
-    apply(player: GraciaPlayer$1, w: number, h: number): void;
-    zoom(f: number): void;
-    reset(): void;
-    dispose(): void;
-    #private;
-}
-
 declare class GraciaXR$1 {
     constructor(player: GraciaPlayer$1, gl: WebGL2RenderingContext);
     onFrame: ((dt: number, frame: XRFrame) => void) | null;
@@ -602,7 +535,8 @@ declare class SceneManipulator {
     setOverlay(overlay: any): void;
     reset(): void;
     invalidateBBox(): void;
-    setInitialTransform(t: any): void;
+    setInitialTransform(t: any, origin?: "floor" | "eyes"): void;
+    reanchor(): void;
     get scene(): any;
     get scale(): number;
     get roomMatrix(): Float32Array;
@@ -718,6 +652,77 @@ type SceneBounds$1 = {
     }[][];
 };
 
+type CameraControls = {
+    type: "orbit" | "fly" | "trackball";
+    update: (dt: number) => void;
+    frame: (center: ArrayLike<number> | {
+        x: number;
+        y: number;
+        z: number;
+    }, eyePos: ArrayLike<number> | {
+        x: number;
+        y: number;
+        z: number;
+    }) => void;
+    zoom: (factor: number) => void;
+    reset: (target: ArrayLike<number>, eyePos: ArrayLike<number> | {
+        x: number;
+        y: number;
+        z: number;
+    }) => void;
+    applyConstraints: (hasTransform: boolean) => void;
+    dispose: () => void;
+};
+
+declare function screenView(center: ArrayLike<number>, origin?: "floor" | "eyes"): {
+    eye: number[];
+    target: number[];
+};
+declare class GraciaCamera$1 {
+    constructor(fov?: number, aspect?: number, near?: number, far?: number);
+    position: Vec3$1;
+    target: Vec3$1;
+    up: any;
+    matrixWorld: Mat4;
+    projectionMatrix: Mat4;
+    fov: number;
+    aspect: number;
+    near: number;
+    far: number;
+    lookAt(target: any): Mat4;
+    updateProjectionMatrix(): void;
+    updateMatrixWorld(): Mat4;
+    setAxes(right: any, up: any, back: any): Mat4;
+}
+declare class Camera2D {
+    constructor(canvas: HTMLCanvasElement, controlsType?: "orbit" | "fly" | "trackball");
+    get canPresent(): boolean;
+    get view(): GraciaCamera$1;
+    get controls(): CameraControls;
+    get controlsType(): "orbit" | "fly" | "trackball";
+    setControls(type: "orbit" | "fly" | "trackball"): void;
+    setSceneTransform(t: SceneTransform$1 | null, origin?: "floor" | "eyes"): void;
+    setAudioPosition(pos: {
+        x: number;
+        y: number;
+        z: number;
+    } | null): void;
+    setBBox(bounds: {
+        minX: number;
+        minY: number;
+        minZ: number;
+        maxX: number;
+        maxY: number;
+        maxZ: number;
+    }): void;
+    update(dt: number): void;
+    apply(player: GraciaPlayer$1, w: number, h: number): void;
+    zoom(f: number): void;
+    reset(): void;
+    dispose(): void;
+    #private;
+}
+
 type EnvPresetName = EnvPresetName$1;
 
 declare class GraciaSplats {
@@ -791,6 +796,7 @@ interface GraciaSource {
     initialTransform?: SceneTransform | null;
     staticTransform?: SceneTransform | null;
     bounds?: SceneBounds | null;
+    origin?: "floor" | "eyes";
     staticUrl?: string;
     background?: string;
     controls?: CameraControlsType;
@@ -1297,4 +1303,4 @@ declare class XRRayRenderer {
     #private;
 }
 
-export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, POLYGON_MAX_CORNERS, POLYGON_MAX_LAYERS, QuadLayer, Quat, SECTOR_TILT_MAX, type ScenarioPack, type ScenarioStreamingItem, type SceneBounds, SceneManipulator, SceneOverlay, type SceneScenarioMetadata, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, boundsShape, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, isValidBounds, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, sectorApexShift, useGraciaPlayer, useGraciaPlaylist, vec3 };
+export { BoundaryRenderer, type CameraControlsType, ClassicControls, DebugRenderer, ENV_PRESETS, type EnvPresetName, GRACIA_PLAYER_DEFAULT_CSS, GraciaApp, type GraciaCamera, type GraciaEventLogger, type GraciaMode, type GraciaPlayback, GraciaPlayer$1 as GraciaPlayer, type GraciaPlayerHandle, type GraciaPlayerProps, type GraciaPlayerState, type GraciaPlaylist, type GraciaPlaylistOptions, GraciaPlayer as GraciaReactPlayer, type GraciaSource, GraciaSplats, type GraciaXR, Mat4, ModernControls, type MountedGraciaPlayer, POLYGON_MAX_CORNERS, POLYGON_MAX_LAYERS, QuadLayer, Quat, SECTOR_TILT_MAX, type ScenarioPack, type ScenarioStreamingItem, type SceneBounds, SceneManipulator, SceneOverlay, type SceneScenarioMetadata, type SceneSelectorMode, type SceneTransform, SplatsMesh, SplatsRendererW3, type StreamingItem, type StreamingItemSettings, type UseGraciaPlayerOptions, Vec3$1 as Vec3, XROverlay, XRRayRenderer, axis, bbox, boundsShape, buildApiSources, envCoefsFromPreset, envCoefsFromSH27, fetchStreamingMetadata, installGraciaPlayerStyles, isValidBounds, loadGraciaModule, mat4, mountGraciaPlayer, num, envCoefsFromPreset as presetToLightProbe, quat, screenView, sectorApexShift, useGraciaPlayer, useGraciaPlaylist, vec3 };
