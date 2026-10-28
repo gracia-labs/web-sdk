@@ -86,6 +86,7 @@ declare class GraciaPlayer$1 {
         powerPreference: string;
         xrCompatible: boolean;
     };
+    static reportWatchTime: boolean;
     static create(Module: any, { canvas, gl, backend, maxSplatsCount }?: {
         canvas?: HTMLCanvasElement;
         gl?: WebGLRenderingContext | WebGL2RenderingContext;

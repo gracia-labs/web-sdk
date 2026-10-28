@@ -314,6 +314,24 @@ mountGraciaPlayer(root, {
 
 One option for delivering your content is Gracia's own reliable streaming infrastructure — scenes are hosted and served for you, with per-scene access control. See **[docs.gracia.ai/streaming-usage](https://docs.gracia.ai/streaming-usage)** for how to use it.
 
+## Analytics and privacy
+
+For scenes streamed from Gracia, the player reports playback to Gracia Labs — details in [PRIVACY.md](PRIVACY.md).
+
+- **Sent** — content ID, seconds played and which parts of the scene, random IDs for the page load and the browser tab
+- **Never sent** — names, emails, user or account IDs, cookies, page URLs, location
+- **IP address** — used only to rate-limit reports, not stored with them
+- **Stored in the browser** — only the tab's ID, in `sessionStorage` under `gr-wt`, until the tab closes
+- **Integrators** — don't pass personal data (user IDs, emails, your users' tokens) to the SDK
+
+To turn it off, set this before the player opens a scene, importing from the bundle you use (`core` or `aio`):
+
+```js
+import { GraciaPlayer } from "@gracia/web-sdk/core";
+
+GraciaPlayer.reportWatchTime = false;
+```
+
 ## Acknowledgements
 
 Thanks to [Martin Valigursky](https://github.com/mvaligursky) for help with the PlayCanvas integration.
