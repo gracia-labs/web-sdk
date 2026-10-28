@@ -123,7 +123,7 @@ entity represents that they are authorised to bind that entity.
    Section 2 or the institution of a challenge to Licensor's patents. Upon termination,
    Licensee shall cease all use and distribution of the Artifacts and delete all copies,
    including extracted and installed copies. Licensee's rights under Part B are unaffected.
-   Sections 2 through 6 and Section 8 survive termination.
+   Sections 2 through 6, 8 and 9 survive termination.
 
 8. GOVERNING LAW. This Part is governed by the laws of Licensor's principal place of
    business, excluding its conflict-of-law rules, and the courts located there shall have
@@ -131,6 +131,17 @@ entity represents that they are authorised to bind that entity.
    jurisdiction to protect its intellectual property. Mandatory provisions of local law and
    consumer protection law apply where required. If any provision is held unenforceable, it
    shall be limited or severed and the remaining provisions shall remain in effect.
+
+9. DATA COLLECTION. The Artifacts transmit to Licensor only the limited playback data
+   described in PRIVACY.md in this repository. Licensee shall not use the Artifacts to send
+   to Licensor, or configure the Artifacts to transmit, names, email addresses, user,
+   account or subscriber identifiers, authentication tokens, or other data that identifies
+   or could reasonably identify an individual. Licensee is solely responsible for its own
+   collection and use of end-user data, including privacy notices, consents and age
+   verification, and shall describe its use of the Artifacts in its own privacy notice
+   where required by applicable law. This Section limits only the data that Licensee causes
+   to be transmitted to Licensor and does not restrict Licensee's rights in files licensed
+   under Part B.
 
 Enquiries regarding special, enterprise, or non-standard use: support@gracia.ai
 
