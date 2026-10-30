@@ -54,7 +54,6 @@ export class Viewer {
     #splats;
     #staticPivot = new THREE.Object3D();
     #origin = new THREE.Group();
-    #stage = new THREE.Group();
     #overlay = new THREE.Scene();
     #gizmo;
     #handles;
@@ -105,8 +104,6 @@ export class Viewer {
                 this.#attachGizmo();
             } else if (this.#gizmo.object === this.#origin) {
                 this.#rebaseOnViewer();
-            } else if (this.#gizmo.object === this.#stage) {
-                this.#bakeStageScale();
             }
             this.emit("commit");
         });
@@ -122,10 +119,8 @@ export class Viewer {
             } else if (this.#target === "video") {
                 this.#unpin();
             } else if (this.#target === "bounds") {
-                this.#linkScale(this.#bounds, LINKED_AXES[this.#bounds.shapeType]);
+                this.#linkScale();
                 this.#syncHandles();
-            } else if (this.#gizmo.object === this.#stage) {
-                this.#linkScale(this.#stage, ["x", "y", "z"]);
             }
             this.emit("transform");
         });
@@ -162,8 +157,7 @@ export class Viewer {
 
         this.#splats = SplatsRendererW3.attach(player, renderer);
         this.#splats.root.add(this.#staticPivot);
-        this.#stage.add(this.#splats.root);
-        this.scene.add(this.#stage);
+        this.scene.add(this.#splats.root);
         // Nothing is loaded yet, so there is nothing to transform.
         this.#gizmo.detach();
 
@@ -270,7 +264,7 @@ export class Viewer {
 
     #object(target) {
         if (target === "bounds") return this.#bounds;
-        if (target === "viewer") return this.#gizmo.mode === "scale" ? this.#stage : this.#origin;
+        if (target === "viewer") return this.#origin;
         return target === "environment" ? this.#staticPivot : this.#splats.root;
     }
 
@@ -281,7 +275,7 @@ export class Viewer {
 
     /** One number standing in for the target's size, for the slider. */
     get overallScale() {
-        const obj = this.#object(this.#target);
+        const obj = this.#target === "viewer" ? this.#splats.root : this.#object(this.#target);
         if (!obj) return 1;
         return Math.cbrt(Math.abs(obj.scale.x * obj.scale.y * obj.scale.z));
     }
@@ -296,10 +290,14 @@ export class Viewer {
         const current = this.overallScale;
         if (!(current > 0)) return;
 
-        if (this.#target === "video") this.#pin();
-        obj.scale.multiplyScalar(value / current);
-        obj.updateMatrix();
-        if (this.#target === "video") this.#unpin();
+        if (this.#target === "viewer") {
+            this.#scaleAroundViewer(value / current);
+        } else {
+            if (this.#target === "video") this.#pin();
+            obj.scale.multiplyScalar(value / current);
+            obj.updateMatrix();
+            if (this.#target === "video") this.#unpin();
+        }
         this.#syncHandles();
         this.emit("transform");
     }
@@ -326,13 +324,15 @@ export class Viewer {
      * honour. The gizmo rebuilds every drag step from the scale at drag start, so the dragged
      * handle's axis wins; a value arriving from outside collapses to the smallest.
      */
-    #linkScale(obj, axes) {
+    #linkScale() {
+        const bounds = this.#bounds;
+        const axes = bounds && LINKED_AXES[bounds.shapeType];
         if (!axes) return;
-        const s = obj.scale;
+        const s = bounds.scale;
         const dragged = this.#gizmo.dragging ? this.#gizmo.axis?.[0].toLowerCase() : undefined;
         const size = axes.includes(dragged) ? s[dragged] : Math.min(...axes.map((a) => s[a]));
         for (const a of axes) s[a] = size;
-        obj.updateMatrix();
+        bounds.updateMatrix();
     }
 
     #rebaseOnViewer() {
@@ -352,16 +352,13 @@ export class Viewer {
         origin.updateMatrix();
     }
 
-    #bakeStageScale() {
-        const stage = this.#stage;
+    #scaleAroundViewer(factor) {
         for (const obj of [this.#splats.root, this.#bounds]) {
             if (!obj) continue;
-            obj.position.multiplyScalar(stage.scale.x);
-            obj.scale.multiplyScalar(stage.scale.x);
+            obj.position.multiplyScalar(factor);
+            obj.scale.multiplyScalar(factor);
             obj.updateMatrix();
         }
-        stage.scale.setScalar(1);
-        stage.updateMatrix();
     }
 
     /* ── bounds ── */
@@ -385,7 +382,7 @@ export class Viewer {
         }
         if (!this.#bounds) {
             this.#bounds = new BoundsObject(bounds);
-            this.#stage.add(this.#bounds);
+            this.scene.add(this.#bounds);
         } else {
             this.#bounds.setShape(bounds);
         }
@@ -394,7 +391,7 @@ export class Viewer {
             rotation: bounds.rotation,
             scale: bounds.scale,
         });
-        this.#linkScale(this.#bounds, LINKED_AXES[this.#bounds.shapeType]);
+        this.#linkScale();
         if (this.#target === "bounds") this.#syncHandles();
         else this.setGizmoTarget(this.#target);
         this.emit("bounds");
@@ -481,6 +478,7 @@ export class Viewer {
     }
 
     get availableModes() {
+        if (this.#target === "viewer") return ["translate", "rotate"];
         return this.selection?.modes ?? ["translate", "rotate", "scale"];
     }
 
