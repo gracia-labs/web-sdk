@@ -54,6 +54,7 @@ export class Viewer {
     #splats;
     #staticPivot = new THREE.Object3D();
     #origin = new THREE.Group();
+    #stage = new THREE.Group();
     #overlay = new THREE.Scene();
     #gizmo;
     #handles;
@@ -104,6 +105,8 @@ export class Viewer {
                 this.#attachGizmo();
             } else if (this.#gizmo.object === this.#origin) {
                 this.#rebaseOnViewer();
+            } else if (this.#gizmo.object === this.#stage) {
+                this.#bakeStageScale();
             }
             this.emit("commit");
         });
@@ -121,8 +124,8 @@ export class Viewer {
             } else if (this.#target === "bounds") {
                 this.#linkScale(this.#bounds, LINKED_AXES[this.#bounds.shapeType]);
                 this.#syncHandles();
-            } else if (this.#target === "viewer") {
-                this.#linkScale(this.#origin, ["x", "y", "z"]);
+            } else if (this.#gizmo.object === this.#stage) {
+                this.#linkScale(this.#stage, ["x", "y", "z"]);
             }
             this.emit("transform");
         });
@@ -159,7 +162,8 @@ export class Viewer {
 
         this.#splats = SplatsRendererW3.attach(player, renderer);
         this.#splats.root.add(this.#staticPivot);
-        this.scene.add(this.#splats.root);
+        this.#stage.add(this.#splats.root);
+        this.scene.add(this.#stage);
         // Nothing is loaded yet, so there is nothing to transform.
         this.#gizmo.detach();
 
@@ -266,7 +270,7 @@ export class Viewer {
 
     #object(target) {
         if (target === "bounds") return this.#bounds;
-        if (target === "viewer") return this.#origin;
+        if (target === "viewer") return this.#gizmo.mode === "scale" ? this.#stage : this.#origin;
         return target === "environment" ? this.#staticPivot : this.#splats.root;
     }
 
@@ -336,19 +340,28 @@ export class Viewer {
         origin.updateMatrix();
         _local.copy(origin.matrix).invert();
         _turn.copy(origin.quaternion).invert();
-        const shrink = 1 / origin.scale.x;
         for (const obj of [this.#splats.root, this.#bounds, this.camera]) {
             if (!obj) continue;
             obj.position.applyMatrix4(_local);
             obj.quaternion.premultiply(_turn);
-            if (obj !== this.camera) obj.scale.multiplyScalar(shrink);
             obj.updateMatrix();
         }
         this.#controls?.target?.applyMatrix4(_local);
         origin.position.set(0, 0, 0);
         origin.quaternion.identity();
-        origin.scale.setScalar(1);
         origin.updateMatrix();
+    }
+
+    #bakeStageScale() {
+        const stage = this.#stage;
+        for (const obj of [this.#splats.root, this.#bounds]) {
+            if (!obj) continue;
+            obj.position.multiplyScalar(stage.scale.x);
+            obj.scale.multiplyScalar(stage.scale.x);
+            obj.updateMatrix();
+        }
+        stage.scale.setScalar(1);
+        stage.updateMatrix();
     }
 
     /* ── bounds ── */
@@ -372,7 +385,7 @@ export class Viewer {
         }
         if (!this.#bounds) {
             this.#bounds = new BoundsObject(bounds);
-            this.scene.add(this.#bounds);
+            this.#stage.add(this.#bounds);
         } else {
             this.#bounds.setShape(bounds);
         }
