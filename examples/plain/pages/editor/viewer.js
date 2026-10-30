@@ -53,6 +53,7 @@ export class Viewer {
     #player;
     #splats;
     #staticPivot = new THREE.Object3D();
+    #origin = new THREE.Group();
     #overlay = new THREE.Scene();
     #gizmo;
     #handles;
@@ -90,7 +91,8 @@ export class Viewer {
             human: createHuman(),
             viewer: createEyeMarker({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.8, z: -1 }, 40, "Viewer", 0x42c6f5),
         };
-        for (const ref of Object.values(this.#refs)) this.scene.add(ref);
+        this.#origin.add(...Object.values(this.#refs));
+        this.scene.add(this.#origin);
 
         this.#gizmo = new TransformControls(this.camera, renderer.domElement);
         this.#gizmo.setSize(0.75);
@@ -100,6 +102,8 @@ export class Viewer {
             if (this.#gizmo.object === this.#part) {
                 this.#handles.endTransform();
                 this.#attachGizmo();
+            } else if (this.#gizmo.object === this.#origin) {
+                this.#rebaseOnViewer();
             }
             this.emit("commit");
         });
@@ -115,8 +119,10 @@ export class Viewer {
             } else if (this.#target === "video") {
                 this.#unpin();
             } else if (this.#target === "bounds") {
-                this.#linkScale();
+                this.#linkScale(this.#bounds, LINKED_AXES[this.#bounds.shapeType]);
                 this.#syncHandles();
+            } else if (this.#target === "viewer") {
+                this.#linkScale(this.#origin, ["x", "y", "z"]);
             }
             this.emit("transform");
         });
@@ -260,6 +266,7 @@ export class Viewer {
 
     #object(target) {
         if (target === "bounds") return this.#bounds;
+        if (target === "viewer") return this.#origin;
         return target === "environment" ? this.#staticPivot : this.#splats.root;
     }
 
@@ -315,15 +322,33 @@ export class Viewer {
      * honour. The gizmo rebuilds every drag step from the scale at drag start, so the dragged
      * handle's axis wins; a value arriving from outside collapses to the smallest.
      */
-    #linkScale() {
-        const bounds = this.#bounds;
-        const axes = bounds && LINKED_AXES[bounds.shapeType];
+    #linkScale(obj, axes) {
         if (!axes) return;
-        const s = bounds.scale;
+        const s = obj.scale;
         const dragged = this.#gizmo.dragging ? this.#gizmo.axis?.[0].toLowerCase() : undefined;
         const size = axes.includes(dragged) ? s[dragged] : Math.min(...axes.map((a) => s[a]));
         for (const a of axes) s[a] = size;
-        bounds.updateMatrix();
+        obj.updateMatrix();
+    }
+
+    #rebaseOnViewer() {
+        const origin = this.#origin;
+        origin.updateMatrix();
+        _local.copy(origin.matrix).invert();
+        _turn.copy(origin.quaternion).invert();
+        const shrink = 1 / origin.scale.x;
+        for (const obj of [this.#splats.root, this.#bounds, this.camera]) {
+            if (!obj) continue;
+            obj.position.applyMatrix4(_local);
+            obj.quaternion.premultiply(_turn);
+            if (obj !== this.camera) obj.scale.multiplyScalar(shrink);
+            obj.updateMatrix();
+        }
+        this.#controls?.target?.applyMatrix4(_local);
+        origin.position.set(0, 0, 0);
+        origin.quaternion.identity();
+        origin.scale.setScalar(1);
+        origin.updateMatrix();
     }
 
     /* ── bounds ── */
@@ -356,7 +381,7 @@ export class Viewer {
             rotation: bounds.rotation,
             scale: bounds.scale,
         });
-        this.#linkScale();
+        this.#linkScale(this.#bounds, LINKED_AXES[this.#bounds.shapeType]);
         if (this.#target === "bounds") this.#syncHandles();
         else this.setGizmoTarget(this.#target);
         this.emit("bounds");
@@ -418,6 +443,7 @@ export class Viewer {
         if (this.#content.video) available.push("video");
         if (this.#content.environment) available.push("environment");
         if (this.#bounds) available.push("bounds");
+        if (available.length) available.push("viewer");
         return available;
     }
 
@@ -453,6 +479,10 @@ export class Viewer {
         return this.#upright;
     }
 
+    get canKeepUpright() {
+        return this.#target === "bounds" || this.#target === "viewer";
+    }
+
     setUpright(on) {
         this.#upright = on;
         this.#attachGizmo();
@@ -479,7 +509,7 @@ export class Viewer {
             else this.#gizmo.detach();
         }
         const upright =
-            !selection && this.#upright && this.#target === "bounds" && this.#gizmo.mode === "rotate";
+            !selection && this.#upright && this.canKeepUpright && this.#gizmo.mode === "rotate";
         const axes = upright ? ["Y"] : (selection?.axes ?? ["X", "Y", "Z"]);
         this.#gizmo.showX = axes.includes("X");
         this.#gizmo.showY = axes.includes("Y");
