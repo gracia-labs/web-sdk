@@ -150,6 +150,7 @@ canvas { display: block; }
 }
 .btn:hover { color: var(--hi); background: var(--hover); }
 .btn.on { color: var(--accent); background: var(--accent-dim); }
+.btn:disabled { color: var(--mid); background: var(--chip); opacity: 0.4; cursor: default; }
 
 /* A segmented control reads as one object, so its buttons drop their own chrome. */
 .seg {

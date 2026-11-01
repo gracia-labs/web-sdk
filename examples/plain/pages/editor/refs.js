@@ -23,29 +23,46 @@ export function createGrid(size = 20, divisions = 40, lineWidth = 0.006) {
     return group;
 }
 
-export function createAxes(length = 2, radius = 0.008) {
-    const group = new THREE.Group();
-    const tipRadius = radius * 1.8;
-    const tipHeight = radius * 3.5;
-    const shaftLen = length - tipHeight;
+function createLabel(text, color) {
+    const canvas = Object.assign(document.createElement("canvas"), { width: 256, height: 64 });
+    const ctx = canvas.getContext("2d");
+    ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif";
+    ctx.fillStyle = `#${new THREE.Color(color).getHexString()}`;
+    ctx.textAlign = "center";
+    ctx.fillText(text, 128, 40);
 
-    const addAxis = (color, rotX, rotZ, pos) => {
-        const mat = new THREE.MeshBasicMaterial({ color });
-        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, shaftLen, 16), mat);
-        shaft.position.copy(pos);
-        shaft.rotation.set(rotX, 0, rotZ);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
 
-        const tip = new THREE.Mesh(new THREE.ConeGeometry(tipRadius, tipHeight, 16), mat);
-        tip.position
-            .copy(pos)
-            .add(new THREE.Vector3(0, shaftLen * 0.5 + tipHeight * 0.5, 0).applyEuler(shaft.rotation));
-        tip.rotation.copy(shaft.rotation);
-        group.add(shaft, tip);
-    };
+    const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true,
+            opacity: 0.85,
+            alphaTest: 0.02,
+            premultipliedAlpha: true,
+        }),
+    );
+    sprite.scale.set(0.5, 0.125, 1);
+    return sprite;
+}
 
-    addAxis(0xff4040, 0, -Math.PI / 2, new THREE.Vector3(shaftLen * 0.5, 0, 0));
-    addAxis(0x40ff40, 0, 0, new THREE.Vector3(0, shaftLen * 0.5, 0));
-    addAxis(0x4080ff, Math.PI / 2, 0, new THREE.Vector3(0, 0, shaftLen * 0.5));
+export function createOriginMarker() {
+    const onTop = { depthTest: false, depthWrite: false };
+    const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.03, 16, 12),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, ...onTop }),
+    );
+    const label = createLabel("0, 0, 0", 0xffffff);
+    Object.assign(label.material, onTop);
+    label.position.set(0, -0.1, 0);
+
+    const group = new THREE.Group().add(dot, label);
+    group.traverse((child) => {
+        child.renderOrder = -1;
+    });
     return group;
 }
 
@@ -99,8 +116,29 @@ export function createHuman(height = 1.75) {
     return group;
 }
 
+function createSightLine(from, to, color) {
+    const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.03, 10, 6),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6 }),
+    );
+    dot.position.copy(to);
+
+    const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([from, to]),
+        new THREE.LineDashedMaterial({
+            color,
+            transparent: true,
+            opacity: 0.5,
+            dashSize: 0.05,
+            gapSize: 0.03,
+        }),
+    );
+    line.computeLineDistances();
+    return [dot, line];
+}
+
 /** Marks where a viewer's eye sits, with its frustum, so scale reads correctly. */
-export function createEyeMarker(eyePos, targetPos, fov, label, color) {
+export function createEyeMarker(eyePos, targetPos, fov, label, color, labelOffset = { x: 0, y: 0.15, z: 0 }) {
     const group = new THREE.Group();
     const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 });
     const wireMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.7 });
@@ -111,23 +149,7 @@ export function createEyeMarker(eyePos, targetPos, fov, label, color) {
 
     const eyeSphere = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 8), mat);
     eyeSphere.position.copy(eye);
-
-    const targetSphere = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 6), mat.clone());
-    targetSphere.material.opacity = 0.6;
-    targetSphere.position.copy(target);
-
-    const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([eye, target]),
-        new THREE.LineDashedMaterial({
-            color,
-            transparent: true,
-            opacity: 0.5,
-            dashSize: 0.05,
-            gapSize: 0.03,
-        }),
-    );
-    line.computeLineDistances();
-    group.add(eyeSphere, targetSphere, line);
+    group.add(eyeSphere, ...createSightLine(eye, target, color));
 
     const len = 0.25;
     const halfV = Math.tan(((fov * Math.PI) / 180) * 0.5) * len;
@@ -148,31 +170,42 @@ export function createEyeMarker(eyePos, targetPos, fov, label, color) {
     for (let i = 0; i < 4; i++) points.push(eye, corners[i], corners[i], corners[(i + 1) % 4]);
     group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), wireMat));
 
-    const canvas = Object.assign(document.createElement("canvas"), { width: 256, height: 64 });
-    const ctx = canvas.getContext("2d");
-    ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif";
-    ctx.fillStyle = `#${new THREE.Color(color).getHexString()}`;
-    ctx.textAlign = "center";
-    ctx.fillText(label, 128, 40);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.generateMipmaps = false;
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-
-    const sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-            map: texture,
-            transparent: true,
-            opacity: 0.85,
-            alphaTest: 0.02,
-            premultipliedAlpha: true,
-        }),
-    );
-    sprite.position.copy(eye).add(new THREE.Vector3(0, 0.15, 0));
-    sprite.scale.set(0.5, 0.125, 1);
+    const sprite = createLabel(label, color);
+    sprite.position.copy(eye).add(new THREE.Vector3(labelOffset.x, labelOffset.y, labelOffset.z));
     group.add(sprite);
 
+    group.traverse((child) => {
+        child.raycast = () => {};
+    });
+    return group;
+}
+
+/** Marks where a VR viewer's eyes start; the ring says the headset, not the content, decides where they look. */
+export function createHeadMarker(eyePos, label, color) {
+    const group = new THREE.Group();
+    const eye = new THREE.Vector3(eyePos.x, eyePos.y, eyePos.z);
+
+    const eyeSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 12, 8),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }),
+    );
+    eyeSphere.position.copy(eye);
+
+    const ring = [];
+    for (let i = 0; i <= 48; i++) {
+        const a = (i / 48) * Math.PI * 2;
+        ring.push(eye.clone().add(new THREE.Vector3(Math.cos(a) * 0.25, 0, Math.sin(a) * 0.25)));
+    }
+    const lookAround = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(ring),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.5 }),
+    );
+
+    const sprite = createLabel(label, color);
+    sprite.position.copy(eye).add(new THREE.Vector3(0, 0.15, 0));
+
+    const ahead = eye.clone().add(new THREE.Vector3(0, 0, -0.5));
+    group.add(eyeSphere, lookAround, ...createSightLine(eye, ahead, color), sprite);
     group.traverse((child) => {
         child.raycast = () => {};
     });
