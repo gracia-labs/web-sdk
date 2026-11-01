@@ -73,6 +73,7 @@ export function readBounds(raw) {
 }
 
 const CONTROLS = ["orbit", "trackball", "fly"];
+const ORIGINS = ["floor", "eyes"];
 const BOUNDS_TYPES = ["box", "sphere", "sector", "polygon"];
 
 const isBoundsShape = (v) => !!v && typeof v === "object" && BOUNDS_TYPES.includes(v.type);
@@ -88,6 +89,8 @@ function partsOf(data) {
     if (typeof data.background === "string") found.background = data.background;
     else if (typeof data.backgroundColor === "string") found.background = data.backgroundColor;
     if (CONTROLS.includes(data.controls)) found.controls = data.controls;
+    if (ORIGINS.includes(data.origin)) found.origin = data.origin;
+    else if (typeof data.isPOV === "boolean") found.origin = data.isPOV ? "eyes" : "floor";
 
     const initial = readTrs(data.initialTransform ?? data.initialSpawn ?? data.videoTransform);
     if (initial) found.initialTransform = initial;
@@ -191,6 +194,7 @@ export function serializeDoc(doc) {
     return {
         background: doc.background,
         controls: doc.controls,
+        origin: doc.origin,
         initialTransform: serializeTrs(doc.initialTransform),
         staticTransform: serializeTrs(doc.staticTransform),
         bounds: serializeBounds(doc.bounds),
@@ -207,11 +211,11 @@ const TRAPEZOID = [
 const prism = (corners, heights = [-0.5, 0.5]) =>
     heights.map((y) => corners.map((c) => ({ x: c.x, y, z: c.z })));
 
-export function defaultBounds(type) {
+export function defaultBounds(type, floorY = 0) {
     if (type === "polygon") {
         return {
             type,
-            position: { x: 0, y: 1.2, z: 0.5 },
+            position: { x: 0, y: floorY + 1.2, z: 0.5 },
             rotation: { x: 0, y: 0, z: 0, w: 1 },
             scale: { x: 4, y: 2.4, z: 3 },
             layers: prism(TRAPEZOID),
@@ -222,7 +226,7 @@ export function defaultBounds(type) {
     const bounds = {
         type,
         // A sector's apex sits in front of the Viewer, where they look, and opens back toward them.
-        position: { x: 0, y: 1.2, z: sector ? -1 : 0 },
+        position: { x: 0, y: floorY + 1.2, z: sector ? -1 : 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         scale: { x: radial, y: type === "sphere" ? radial : 2.4, z: radial },
     };

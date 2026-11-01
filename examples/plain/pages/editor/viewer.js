@@ -5,6 +5,7 @@ import {
     loadGraciaModule,
     OrbitControls,
     SplatsRendererW3,
+    screenView,
     THREE,
     TrackballControls,
     TransformControls,
@@ -13,10 +14,12 @@ import {
 import { BoundsObject } from "./bounds.js";
 import { ShapeHandles } from "./handles.js";
 import { defaultBounds, IDENTITY_TRS } from "./metadata.js";
-import { createAxes, createEyeMarker, createGrid, createHuman } from "./refs.js";
+import { createEyeMarker, createGrid, createHeadMarker, createHuman, createOriginMarker } from "./refs.js";
 
 const DEFAULT_EYE = new THREE.Vector3(-2, 2.5, -4);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0.4, 0);
+const EYE_HEIGHT = 1.6;
+const SCREEN_FOV = 60;
 const FRAME_MARGIN = 1.15;
 const UNIT_BOX = new THREE.Box3(
     new THREE.Vector3(-0.5, -0.5, -0.5),
@@ -39,6 +42,7 @@ function applyTrs(obj, trs) {
 }
 
 const _local = new THREE.Matrix4();
+const _point = new THREE.Vector3();
 const _turn = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -62,6 +66,16 @@ export class Viewer {
     #controls = null;
     #controlsType = "orbit";
     #refs;
+    #onFloor = new THREE.Group();
+    #origin = "floor";
+    #screenCamera = createEyeMarker(
+        { x: 0, y: 0, z: 0 },
+        { x: 0, y: 0, z: 0.5 },
+        SCREEN_FOV,
+        "2D camera",
+        0xffb020,
+        { x: 0, y: 0.1, z: 0.35 },
+    );
     #bounds = null;
     #target = "video";
     #content = { video: null, environment: null };
@@ -86,11 +100,15 @@ export class Viewer {
 
         this.#refs = {
             grid: createGrid(),
-            axes: createAxes(),
+            origin: createOriginMarker(),
             human: createHuman(),
-            viewer: createEyeMarker({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.8, z: -1 }, 40, "Viewer", 0x42c6f5),
+            viewer: createHeadMarker({ x: 0, y: EYE_HEIGHT, z: 0 }, "VR viewer", 0x42c6f5),
+            screen: new THREE.Group().add(this.#screenCamera),
         };
-        for (const ref of Object.values(this.#refs)) this.scene.add(ref);
+        const { origin, screen, ...onFloor } = this.#refs;
+        this.#onFloor.add(...Object.values(onFloor));
+        this.scene.add(this.#onFloor, screen);
+        this.#overlay.add(origin);
 
         this.#gizmo = new TransformControls(this.camera, renderer.domElement);
         this.#gizmo.setSize(0.75);
@@ -363,7 +381,7 @@ export class Viewer {
     }
 
     addBounds(type) {
-        this.setBounds(defaultBounds(type));
+        this.setBounds(defaultBounds(type, this.#onFloor.position.y));
         this.setGizmoTarget("bounds");
         this.#frameBounds();
         this.emit("commit");
@@ -564,12 +582,38 @@ export class Viewer {
         if (this.#refs[key]) this.#refs[key].visible = visible;
     }
 
+    get origin() {
+        return this.#origin;
+    }
+
+    /** With "eyes", the VR viewer's eyes sit at the origin and the floor drops below them. */
+    setOrigin(origin) {
+        if (origin === this.#origin) return;
+        this.#origin = origin;
+        this.#onFloor.position.y = origin === "eyes" ? -EYE_HEIGHT : 0;
+        this.emit("transform");
+    }
+
+    #syncScreenCamera() {
+        const bb = this.#content.video ? this.#player.getBBox() : null;
+        this.#screenCamera.visible = !!bb;
+        if (!bb) return;
+        this.#splats.root.updateMatrixWorld();
+        _point
+            .set((bb.minX + bb.maxX) / 2, (bb.minY + bb.maxY) / 2, (bb.minZ + bb.maxZ) / 2)
+            .applyMatrix4(this.#splats.root.matrixWorld);
+        const { eye, target } = screenView(_point.toArray(), this.#origin);
+        this.#screenCamera.position.fromArray(eye);
+        this.#screenCamera.lookAt(_point.fromArray(target));
+    }
+
     /* ── document ── */
 
     toDoc() {
         return {
             background: this.background,
             controls: this.#controlsType,
+            origin: this.#origin,
             initialTransform: this.getTrs("video"),
             staticTransform: this.getTrs("environment"),
             bounds: this.getBounds(),
@@ -580,6 +624,7 @@ export class Viewer {
     applyDoc(doc) {
         if (doc.background) this.setBackground(doc.background);
         if (doc.controls) this.setControls(doc.controls);
+        if (doc.origin) this.setOrigin(doc.origin);
         if (doc.initialTransform) {
             // A spawn pasted on its own re-aligns the video only; whatever the document also
             // carries is applied afterwards and wins.
@@ -612,6 +657,7 @@ export class Viewer {
             this.#bounds?.refresh();
             this.#bounds?.faceCamera(this.camera);
             this.#handles.update();
+            this.#syncScreenCamera();
             this.#splats.render(this.renderer, this.scene, this.camera, this.#overlay);
 
             const now = performance.now();
