@@ -169,6 +169,7 @@ const targets = segmented(
         { value: "video", label: "Video" },
         { value: "environment", label: "Environment" },
         { value: "bounds", label: "Bounds" },
+        { value: "viewer", label: "Viewer" },
     ],
     "video",
     (value) => viewer.setGizmoTarget(value),
@@ -208,7 +209,7 @@ const uprightRow = el("div", { class: "row" }, [upright]);
 const scaleRow = el("div", { class: "row" }, [el("span", { class: "lbl w", text: "Scale" }), scale]);
 
 const transformCard = section("Transform", {
-    hint: "Pick what to move, then drag the gizmo — <b>W</b> to move, <b>E</b> to rotate, <b>R</b> to scale along an axis. <b>Click</b> a wall, the top or a point of the boundary to put the gizmo on just that part; <b>Shift</b>+click adds more. <b>Esc</b>, a click on empty space or <b>Whole boundary</b> brings the gizmo back. <b>Keep upright</b> lets the whole boundary turn only around the vertical. The slider resizes the whole thing, keeping its proportions.",
+    hint: "Pick what to move, then drag the gizmo — <b>W</b> to move, <b>E</b> to rotate, <b>R</b> to scale along an axis. <b>Click</b> a wall, the top or a point of the boundary to put the gizmo on just that part; <b>Shift</b>+click adds more. <b>Esc</b>, a click on empty space or <b>Whole boundary</b> brings the gizmo back. <b>Viewer</b> moves or turns the human where the viewer stands: the video, the environment and the boundary stay where they are, and their metadata changes instead. With the Viewer picked, the slider resizes all three around the human, which keeps its real size. <b>Keep upright</b> lets the whole boundary or the Viewer turn only around the vertical. The slider resizes the whole thing, keeping its proportions.",
     children: [targets, editingRow, modes, uprightRow, scaleRow],
 });
 left.append(transformCard);
@@ -408,8 +409,9 @@ function sync() {
 
     const canTransform = viewer.availableTargets;
     show(transformCard, canTransform.length > 0);
-    targets.setHidden("video", !video);
-    targets.setHidden("environment", !environment);
+    for (const target of ["video", "environment", "bounds", "viewer"]) {
+        targets.setHidden(target, !canTransform.includes(target));
+    }
     targets.select(viewer.gizmoTarget);
     modes.select(viewer.gizmoMode);
     scale.set(viewer.overallScale);
@@ -420,12 +422,11 @@ function sync() {
         modes.setHidden(mode, !viewer.availableModes.includes(mode));
     }
     show(scaleRow, !selection);
-    show(uprightRow, viewer.gizmoTarget === "bounds" && !selection);
+    show(uprightRow, viewer.canKeepUpright && !selection);
     upright.set(viewer.upright);
 
     const bounds = viewer.getBounds();
     boundsTypes.select(bounds?.type ?? null);
-    targets.setHidden("bounds", !bounds);
     show(angleRow, bounds?.type === "sector");
     show(tiltRow, bounds?.type === "sector" && (bounds.angleDeg ?? 90) < 360);
     show(turnRow, !!bounds && bounds.type !== "sphere");

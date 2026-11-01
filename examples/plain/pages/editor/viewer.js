@@ -57,6 +57,7 @@ export class Viewer {
     #player;
     #splats;
     #staticPivot = new THREE.Object3D();
+    #viewerRig = new THREE.Group();
     #overlay = new THREE.Scene();
     #gizmo;
     #handles;
@@ -107,7 +108,8 @@ export class Viewer {
         };
         const { origin, screen, ...onFloor } = this.#refs;
         this.#onFloor.add(...Object.values(onFloor));
-        this.scene.add(this.#onFloor, screen);
+        this.#viewerRig.add(this.#onFloor, screen);
+        this.scene.add(this.#viewerRig);
         this.#overlay.add(origin);
 
         this.#gizmo = new TransformControls(this.camera, renderer.domElement);
@@ -118,6 +120,8 @@ export class Viewer {
             if (this.#gizmo.object === this.#part) {
                 this.#handles.endTransform();
                 this.#attachGizmo();
+            } else if (this.#gizmo.object === this.#viewerRig) {
+                this.#rebaseOnViewer();
             }
             this.emit("commit");
         });
@@ -278,6 +282,7 @@ export class Viewer {
 
     #object(target) {
         if (target === "bounds") return this.#bounds;
+        if (target === "viewer") return this.#viewerRig;
         return target === "environment" ? this.#staticPivot : this.#splats.root;
     }
 
@@ -288,7 +293,7 @@ export class Viewer {
 
     /** One number standing in for the target's size, for the slider. */
     get overallScale() {
-        const obj = this.#object(this.#target);
+        const obj = this.#target === "viewer" ? this.#splats.root : this.#object(this.#target);
         if (!obj) return 1;
         return Math.cbrt(Math.abs(obj.scale.x * obj.scale.y * obj.scale.z));
     }
@@ -303,10 +308,14 @@ export class Viewer {
         const current = this.overallScale;
         if (!(current > 0)) return;
 
-        if (this.#target === "video") this.#pin();
-        obj.scale.multiplyScalar(value / current);
-        obj.updateMatrix();
-        if (this.#target === "video") this.#unpin();
+        if (this.#target === "viewer") {
+            this.#scaleAroundViewer(value / current);
+        } else {
+            if (this.#target === "video") this.#pin();
+            obj.scale.multiplyScalar(value / current);
+            obj.updateMatrix();
+            if (this.#target === "video") this.#unpin();
+        }
         this.#syncHandles();
         this.emit("transform");
     }
@@ -342,6 +351,32 @@ export class Viewer {
         const size = axes.includes(dragged) ? s[dragged] : Math.min(...axes.map((a) => s[a]));
         for (const a of axes) s[a] = size;
         bounds.updateMatrix();
+    }
+
+    #rebaseOnViewer() {
+        const rig = this.#viewerRig;
+        rig.updateMatrix();
+        _local.copy(rig.matrix).invert();
+        _turn.copy(rig.quaternion).invert();
+        for (const obj of [this.#splats.root, this.#bounds, this.camera]) {
+            if (!obj) continue;
+            obj.position.applyMatrix4(_local);
+            obj.quaternion.premultiply(_turn);
+            obj.updateMatrix();
+        }
+        this.#controls?.target?.applyMatrix4(_local);
+        rig.position.set(0, 0, 0);
+        rig.quaternion.identity();
+        rig.updateMatrix();
+    }
+
+    #scaleAroundViewer(factor) {
+        for (const obj of [this.#splats.root, this.#bounds]) {
+            if (!obj) continue;
+            obj.position.multiplyScalar(factor);
+            obj.scale.multiplyScalar(factor);
+            obj.updateMatrix();
+        }
     }
 
     /* ── bounds ── */
@@ -436,6 +471,7 @@ export class Viewer {
         if (this.#content.video) available.push("video");
         if (this.#content.environment) available.push("environment");
         if (this.#bounds) available.push("bounds");
+        if (available.length) available.push("viewer");
         return available;
     }
 
@@ -460,6 +496,7 @@ export class Viewer {
     }
 
     get availableModes() {
+        if (this.#target === "viewer") return ["translate", "rotate"];
         return this.selection?.modes ?? ["translate", "rotate", "scale"];
     }
 
@@ -469,6 +506,10 @@ export class Viewer {
 
     get upright() {
         return this.#upright;
+    }
+
+    get canKeepUpright() {
+        return this.#target === "bounds" || this.#target === "viewer";
     }
 
     setUpright(on) {
@@ -497,7 +538,7 @@ export class Viewer {
             else this.#gizmo.detach();
         }
         const upright =
-            !selection && this.#upright && this.#target === "bounds" && this.#gizmo.mode === "rotate";
+            !selection && this.#upright && this.canKeepUpright && this.#gizmo.mode === "rotate";
         const axes = upright ? ["Y"] : (selection?.axes ?? ["X", "Y", "Z"]);
         this.#gizmo.showX = axes.includes("X");
         this.#gizmo.showY = axes.includes("Y");
@@ -599,12 +640,21 @@ export class Viewer {
         this.#screenCamera.visible = !!bb;
         if (!bb) return;
         this.#splats.root.updateMatrixWorld();
+        this.#viewerRig.updateMatrixWorld();
         _point
             .set((bb.minX + bb.maxX) / 2, (bb.minY + bb.maxY) / 2, (bb.minZ + bb.maxZ) / 2)
             .applyMatrix4(this.#splats.root.matrixWorld);
-        const { eye, target } = screenView(_point.toArray(), this.#origin);
+        const { eye, target } = screenView(
+            this.#viewerRig.worldToLocal(_point).toArray(),
+            this.#origin,
+        );
         this.#screenCamera.position.fromArray(eye);
-        this.#screenCamera.lookAt(_point.fromArray(target));
+        this.#screenCamera.lookAt(this.#viewerRig.localToWorld(_point.fromArray(target)));
+    }
+
+    #syncOriginMarker() {
+        this.#refs.origin.position.copy(this.#viewerRig.position);
+        this.#refs.origin.quaternion.copy(this.#viewerRig.quaternion);
     }
 
     /* ── document ── */
@@ -658,6 +708,7 @@ export class Viewer {
             this.#bounds?.faceCamera(this.camera);
             this.#handles.update();
             this.#syncScreenCamera();
+            this.#syncOriginMarker();
             this.#splats.render(this.renderer, this.scene, this.camera, this.#overlay);
 
             const now = performance.now();
