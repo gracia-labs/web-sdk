@@ -428,6 +428,7 @@ declare class SceneBoundary {
     get meshMatrix(): Mat4 | null;
     setBounds(config: object | null): this;
     setRoomMatrix(m: ArrayLike<number> | null): this;
+    setHidden(hidden: boolean): this;
     queueIntro(): this;
     reset(look?: BoundaryLook): this;
     update(head: ArrayLike<number> | {
@@ -624,6 +625,7 @@ declare class GraciaApp {
     reset(): void;
     setControls(type: "orbit" | "fly" | "trackball"): void;
     setBounds(bounds: SceneBounds$1 | null): void;
+    setBoundaryVisible(visible: boolean): void;
     setAudioPosition(pos: {
         x: number;
         y: number;
