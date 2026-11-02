@@ -140,7 +140,7 @@
                 let handles;
                 try {
                     handles = await showOpenFilePicker({
-                        types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint'] } }],
+                        types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint', '.grv'] } }],
                     });
                 } catch { return; }
                 const handle = handles[0];
@@ -158,7 +158,7 @@
             player.play();
         }, [player]);
         return html`<button class="btn" onClick=${onClick}>Open file\u2026</button>
-            <input ref=${inputRef} type="file" accept=".mint" style=${{ display: 'none' }} onChange=${onFile} />`;
+            <input ref=${inputRef} type="file" accept=".mint,.grv" style=${{ display: 'none' }} onChange=${onFile} />`;
     }
 
     function TestApp() {

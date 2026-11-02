@@ -78,7 +78,7 @@
                 <span class="lbl">WebGPU</span>
                 <div class="divider"></div>
                 <button type="button" class="btn" id="fileBtn">Open file&hellip;</button>
-                <input type="file" id="fileInput" accept=".mint,.sog" style="display:none">
+                <input type="file" id="fileInput" accept=".mint,.grv,.sog" style="display:none">
             </div>
             <div class="panel hide-sm">
                 <span class="lbl">Gizmo</span>
@@ -227,7 +227,7 @@
                 let handles;
                 try {
                     handles = await showOpenFilePicker({
-                        types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint', '.sog'] } }],
+                        types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint', '.grv', '.sog'] } }],
                     });
                 } catch { return; }
                 const handle = handles[0];

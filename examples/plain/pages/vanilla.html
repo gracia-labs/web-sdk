@@ -146,7 +146,7 @@
                     <div class="dd-menu" id="srcMenu"></div>
                 </div>
                 <button type="button" class="pill-btn icon-only" id="fileBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="btn-label">Open file</span></button>
-                <input type="file" id="fileInput" accept=".sog,.mint" style="display:none">
+                <input type="file" id="fileInput" accept=".sog,.mint,.grv" style="display:none">
             </div>
             <div class="top-center">
                 <button type="button" class="pill-btn on" data-mode="pw">2D</button>
@@ -589,7 +589,7 @@
                     let handles;
                     try {
                         handles = await showOpenFilePicker({
-                            types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint', '.sog'] } }],
+                            types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint', '.grv', '.sog'] } }],
                         });
                     } catch { return; }
                     const handle = handles[0];

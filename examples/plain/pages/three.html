@@ -122,7 +122,7 @@
                 </div>
                 <div class="divider"></div>
                 <button type="button" class="btn" id="fileBtn">Open file&hellip;</button>
-                <input type="file" id="fileInput" accept=".mint" style="display:none">
+                <input type="file" id="fileInput" accept=".mint,.grv" style="display:none">
             </div>
             <div class="panel">
                 <span class="lbl">Scene</span>
@@ -422,7 +422,7 @@
                 let handles;
                 try {
                     handles = await showOpenFilePicker({
-                        types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint'] } }],
+                        types: [{ description: 'Volumetric video', accept: { 'application/octet-stream': ['.mint', '.grv'] } }],
                     });
                 } catch { return; }
                 const handle = handles[0];
