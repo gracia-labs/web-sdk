@@ -14,18 +14,31 @@ import {
 import { BoundsObject } from "./bounds.js";
 import { ShapeHandles } from "./handles.js";
 import { defaultBounds, IDENTITY_TRS } from "./metadata.js";
-import { createEyeMarker, createGrid, createHeadMarker, createHuman, createOriginMarker } from "./refs.js";
+import {
+    createCenterMarker,
+    createEyeMarker,
+    createGrid,
+    createHeadMarker,
+    createHuman,
+    createOriginMarker,
+} from "./refs.js";
 
 const DEFAULT_EYE = new THREE.Vector3(-2, 2.5, -4);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0.4, 0);
 const EYE_HEIGHT = 1.6;
+const CENTER_AHEAD = 2;
 const SCREEN_FOV = 60;
+const SCREEN_COLOR = 0xffb020;
+const EDITOR_FOV = 55;
 const FRAME_MARGIN = 1.15;
 const UNIT_BOX = new THREE.Box3(
     new THREE.Vector3(-0.5, -0.5, -0.5),
     new THREE.Vector3(0.5, 0.5, 0.5),
 );
 const FRAME_FROM = new THREE.Vector3(-2, 4.5, -4).normalize();
+
+const bboxCenter = (bb, out) =>
+    out.set((bb.minX + bb.maxX) / 2, (bb.minY + bb.maxY) / 2, (bb.minZ + bb.maxZ) / 2);
 
 const trsOf = (obj) => ({
     translation: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
@@ -74,9 +87,13 @@ export class Viewer {
         { x: 0, y: 0, z: 0.5 },
         SCREEN_FOV,
         "2D camera",
-        0xffb020,
+        SCREEN_COLOR,
         { x: 0, y: 0.1, z: 0.35 },
     );
+    #screenTarget = new THREE.Vector3();
+    #sceneCenter = null;
+    #centerMarker = createCenterMarker(SCREEN_COLOR);
+    #throughEye = null;
     #bounds = null;
     #target = "video";
     #content = { video: null, environment: null };
@@ -92,7 +109,12 @@ export class Viewer {
 
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x2a2a32);
-        this.camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.05, 10000);
+        this.camera = new THREE.PerspectiveCamera(
+            EDITOR_FOV,
+            innerWidth / innerHeight,
+            0.05,
+            10000,
+        );
 
         this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
         const sun = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -110,7 +132,8 @@ export class Viewer {
         this.#onFloor.add(...Object.values(onFloor));
         this.#viewerRig.add(this.#onFloor, screen);
         this.scene.add(this.#viewerRig);
-        this.#overlay.add(origin);
+        this.#centerMarker.visible = false;
+        this.#overlay.add(origin, this.#centerMarker);
 
         this.#gizmo = new TransformControls(this.camera, renderer.domElement);
         this.#gizmo.setSize(0.75);
@@ -139,6 +162,8 @@ export class Viewer {
             } else if (this.#target === "bounds") {
                 this.#linkScale();
                 this.#syncHandles();
+            } else if (this.#target === "center") {
+                this.#centerFromMarker();
             }
             this.emit("transform");
         });
@@ -283,6 +308,7 @@ export class Viewer {
     #object(target) {
         if (target === "bounds") return this.#bounds;
         if (target === "viewer") return this.#viewerRig;
+        if (target === "center") return this.#centerMarker;
         return target === "environment" ? this.#staticPivot : this.#splats.root;
     }
 
@@ -471,6 +497,7 @@ export class Viewer {
         if (this.#content.video) available.push("video");
         if (this.#content.environment) available.push("environment");
         if (this.#bounds) available.push("bounds");
+        if (this.#sceneCenter) available.push("center");
         if (available.length) available.push("viewer");
         return available;
     }
@@ -497,6 +524,7 @@ export class Viewer {
 
     get availableModes() {
         if (this.#target === "viewer") return ["translate", "rotate"];
+        if (this.#target === "center") return ["translate"];
         return this.selection?.modes ?? ["translate", "rotate", "scale"];
     }
 
@@ -506,6 +534,10 @@ export class Viewer {
 
     get upright() {
         return this.#upright;
+    }
+
+    get canResize() {
+        return this.#target !== "center";
     }
 
     get canKeepUpright() {
@@ -565,6 +597,7 @@ export class Viewer {
 
     resetCamera() {
         this.#controls?.dispose();
+        this.#setFov(EDITOR_FOV);
         this.camera.position.copy(DEFAULT_EYE);
         this.camera.up.set(0, 1, 0);
         this.camera.lookAt(DEFAULT_TARGET);
@@ -611,6 +644,31 @@ export class Viewer {
         this.#controls.update();
     }
 
+    lookFromScreenCamera() {
+        if (!this.#screenCamera.visible) return;
+        this.#setFov(SCREEN_FOV);
+        this.#screenCamera.getWorldPosition(this.camera.position);
+        this.camera.up.set(0, 1, 0);
+        this.camera.lookAt(this.#screenTarget);
+        if (this.#controls?.target) {
+            this.#controls.target.copy(this.#screenTarget);
+            this.#controls.update();
+        }
+        this.#throughEye = this.camera.position.clone();
+    }
+
+    #syncLookThrough() {
+        if (this.#throughEye && this.camera.position.distanceToSquared(this.#throughEye) > 1e-6) {
+            this.#throughEye = null;
+        }
+        this.#viewerRig.visible = !this.#throughEye;
+    }
+
+    #setFov(fov) {
+        this.camera.fov = fov;
+        this.camera.updateProjectionMatrix();
+    }
+
     get background() {
         return `#${this.scene.background.getHexString()}`;
     }
@@ -641,15 +699,50 @@ export class Viewer {
         if (!bb) return;
         this.#splats.root.updateMatrixWorld();
         this.#viewerRig.updateMatrixWorld();
-        _point
-            .set((bb.minX + bb.maxX) / 2, (bb.minY + bb.maxY) / 2, (bb.minZ + bb.maxZ) / 2)
-            .applyMatrix4(this.#splats.root.matrixWorld);
+        if (this.#sceneCenter) _point.copy(this.#sceneCenter);
+        else bboxCenter(bb, _point);
+        _point.applyMatrix4(this.#splats.root.matrixWorld);
         const { eye, target } = screenView(
             this.#viewerRig.worldToLocal(_point).toArray(),
             this.#origin,
         );
         this.#screenCamera.position.fromArray(eye);
-        this.#screenCamera.lookAt(this.#viewerRig.localToWorld(_point.fromArray(target)));
+        this.#viewerRig.localToWorld(this.#screenTarget.fromArray(target));
+        this.#screenCamera.lookAt(this.#screenTarget);
+    }
+
+    /* ── scene center ── */
+
+    get sceneCenter() {
+        const c = this.#sceneCenter;
+        return c ? { x: c.x, y: c.y, z: c.z } : null;
+    }
+
+    /** @param {{ x: number, y: number, z: number } | null} point in the video's own space; null looks at its bounding-box center */
+    setSceneCenter(point) {
+        this.#sceneCenter = point ? new THREE.Vector3(point.x, point.y, point.z) : null;
+        this.#centerMarker.visible = !!point;
+        this.#syncCenterMarker();
+        this.setGizmoTarget(this.#target);
+    }
+
+    addSceneCenter() {
+        this.#viewerRig.updateMatrixWorld();
+        this.#splats.root.updateMatrixWorld();
+        const ahead = new THREE.Vector3(0, EYE_HEIGHT, -CENTER_AHEAD);
+        this.setSceneCenter(this.#splats.root.worldToLocal(this.#onFloor.localToWorld(ahead)));
+        this.setGizmoTarget("center");
+    }
+
+    #centerFromMarker() {
+        this.#splats.root.updateMatrixWorld();
+        this.#splats.root.worldToLocal(this.#sceneCenter.copy(this.#centerMarker.position));
+    }
+
+    #syncCenterMarker() {
+        if (!this.#sceneCenter) return;
+        this.#splats.root.updateMatrixWorld();
+        this.#splats.root.localToWorld(this.#centerMarker.position.copy(this.#sceneCenter));
     }
 
     #syncOriginMarker() {
@@ -667,6 +760,7 @@ export class Viewer {
             initialTransform: this.getTrs("video"),
             staticTransform: this.getTrs("environment"),
             bounds: this.getBounds(),
+            sceneCenter: this.sceneCenter,
         };
     }
 
@@ -685,6 +779,7 @@ export class Viewer {
         }
         if (doc.staticTransform) applyTrs(this.#staticPivot, doc.staticTransform);
         if ("bounds" in doc) this.setBounds(doc.bounds);
+        if ("sceneCenter" in doc) this.setSceneCenter(doc.sceneCenter);
         this.#syncHandles();
         this.emit("transform");
         this.emit("bounds");
@@ -708,7 +803,9 @@ export class Viewer {
             this.#bounds?.faceCamera(this.camera);
             this.#handles.update();
             this.#syncScreenCamera();
+            this.#syncCenterMarker();
             this.#syncOriginMarker();
+            this.#syncLookThrough();
             this.#splats.render(this.renderer, this.scene, this.camera, this.#overlay);
 
             const now = performance.now();

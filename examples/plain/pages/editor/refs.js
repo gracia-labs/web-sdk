@@ -211,3 +211,31 @@ export function createHeadMarker(eyePos, label, color) {
     });
     return group;
 }
+
+/** Marks the point the 2D camera looks at, drawn over the splats so it stays visible inside them. */
+export function createCenterMarker(color) {
+    const onTop = { depthTest: false, depthWrite: false };
+    const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 16, 12),
+        new THREE.MeshBasicMaterial({ color, ...onTop }),
+    );
+    const arms = [];
+    for (let i = 0; i < 3; i++) {
+        const arm = new THREE.Vector3().setComponent(i, 0.15);
+        arms.push(arm.clone().negate(), arm);
+    }
+    const cross = new THREE.LineSegments(
+        new THREE.BufferGeometry().setFromPoints(arms),
+        new THREE.LineBasicMaterial({ color, ...onTop }),
+    );
+    const label = createLabel("Scene center", color);
+    Object.assign(label.material, onTop);
+    label.position.set(0, 0.15, 0);
+
+    const group = new THREE.Group().add(dot, cross, label);
+    group.traverse((child) => {
+        child.renderOrder = -1;
+        child.raycast = () => {};
+    });
+    return group;
+}

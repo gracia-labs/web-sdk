@@ -99,6 +99,7 @@ function partsOf(data) {
     if (environment) found.staticTransform = environment;
 
     if ("bounds" in data) found.bounds = readBounds(data.bounds);
+    if ("sceneCenter" in data) found.sceneCenter = readVec3(data.sceneCenter);
     return found;
 }
 
@@ -129,6 +130,7 @@ export const PARTS = {
     initialTransform: "initial spawn",
     staticTransform: "environment transform",
     bounds: "bounds",
+    sceneCenter: "scene center",
 };
 
 export function readPart(text, part) {
@@ -145,6 +147,12 @@ export function readPart(text, part) {
     if (!raw || typeof raw !== "object") throw new Error(`No ${name} in the clipboard`);
 
     const data = sceneOf(raw);
+
+    if (part === "sceneCenter") {
+        const point = readVec3("sceneCenter" in data ? data.sceneCenter : data);
+        if (!point) throw new Error("No scene center in the clipboard");
+        return point;
+    }
 
     if (part === "bounds") {
         const candidate = "bounds" in data ? data.bounds : isBoundsShape(data) ? data : undefined;
@@ -190,6 +198,8 @@ export function serializeTrs(trs) {
     return { translation: vec3(trs.translation), rotation: quat(trs.rotation), scale: vec3(trs.scale) };
 }
 
+export const serializePoint = (point) => (point ? vec3(point) : null);
+
 export function serializeDoc(doc) {
     return {
         background: doc.background,
@@ -198,6 +208,7 @@ export function serializeDoc(doc) {
         initialTransform: serializeTrs(doc.initialTransform),
         staticTransform: serializeTrs(doc.staticTransform),
         bounds: serializeBounds(doc.bounds),
+        sceneCenter: serializePoint(doc.sceneCenter),
     };
 }
 

@@ -1,7 +1,15 @@
 import { SECTOR_TILT_MAX } from "@gracia/web-sdk/aio";
 import { createFpsMeter } from "./fps.js";
 import { History } from "./history.js";
-import { PARTS, readAny, readPart, serializeBounds, serializeDoc, serializeTrs } from "./metadata.js";
+import {
+    PARTS,
+    readAny,
+    readPart,
+    serializeBounds,
+    serializeDoc,
+    serializePoint,
+    serializeTrs,
+} from "./metadata.js";
 import { mountTimeline } from "./timeline.js";
 import {
     button,
@@ -34,7 +42,8 @@ try {
     throw error;
 }
 
-const history = new History(viewer.toDoc());
+const emptyScene = viewer.toDoc();
+const history = new History(emptyScene);
 let restoring = false;
 
 /* ── Top: history and view ── */
@@ -99,6 +108,27 @@ left.append(
     section("Origin", {
         hint: "Where the initial spawn and the bounds are measured from in VR: the floor under the <b>VR viewer</b>, or their eyes for POV content. With <b>Eyes</b>, put the performer's eyes where the <b>VR viewer</b> is. The <b>2D camera</b> is where the screen player starts. In the admin, this is the <b>Is POV</b> checkbox.",
         children: [origins],
+    }),
+);
+
+const centerTag = tag("screen", "");
+const setCenter = button("Set", {
+    title: "Put the center where the VR viewer looks, 2 m ahead, then move it with the gizmo",
+    onClick: () => commit(() => viewer.addSceneCenter()),
+});
+const removeCenter = button("Remove", {
+    title: "Look at the middle of the video's bounding box again",
+    onClick: () => commit(() => viewer.setSceneCenter(null)),
+});
+const lookThrough = button("Look through", {
+    title: "See the scene from where the 2D camera starts; Reset view goes back",
+    onClick: () => viewer.lookFromScreenCamera(),
+});
+
+left.append(
+    section("Scene center", {
+        hint: "The point the <b>2D camera</b> turns to when the screen player starts. Without a center it turns to the middle of the video's bounding box, which misses when the content has an odd shape or stray splats. The center belongs to the video and moves with it; move it on its own with the <b>Center</b> gizmo. <b>Look through</b> shows the scene from the 2D camera, without the reference objects until the camera moves.",
+        children: [el("div", { class: "row" }, [centerTag, setCenter, removeCenter, lookThrough])],
     }),
 );
 
@@ -170,6 +200,7 @@ const targets = segmented(
         { value: "environment", label: "Environment" },
         { value: "bounds", label: "Bounds" },
         { value: "viewer", label: "Viewer" },
+        { value: "center", label: "Center" },
     ],
     "video",
     (value) => viewer.setGizmoTarget(value),
@@ -248,6 +279,8 @@ const sceneCard = section("Surroundings", {
 });
 left.append(sceneCard);
 
+/* ── Right column: the scene's metadata, then view state that never leaves the editor ── */
+
 const partError = el("div", { class: "err" });
 
 function partRow(label, part, getText, copyTitle) {
@@ -293,6 +326,12 @@ const boundsRow = partRow(
     () => JSON.stringify(serializeBounds(viewer.getBounds()), null, 2),
     "Copy the bounds object for the admin's Bounds field",
 );
+const centerRow = partRow(
+    "Scene center",
+    "sceneCenter",
+    () => JSON.stringify(serializePoint(viewer.sceneCenter), null, 2),
+    "Copy the scene center point",
+);
 
 const json = el("textarea", { class: "json", spellcheck: "false" });
 const jsonError = el("div", { class: "err" });
@@ -324,7 +363,7 @@ json.addEventListener("input", () => setDirty(true));
 
 function applyJson(text) {
     try {
-        viewer.applyDoc(readAny(JSON.parse(text)));
+        viewer.applyDoc({ ...emptyScene, ...readAny(JSON.parse(text)) });
         setDirty(false);
         viewer.emit("commit");
     } catch (error) {
@@ -333,14 +372,15 @@ function applyJson(text) {
     }
 }
 
-left.append(
+right.append(
     section("Metadata", {
-        hint: "Each part copies and pastes on its own. <b>Copy</b> gives the bare objects the content admin's Initial Spawn and Bounds fields expect. <b>Paste</b> takes just that part from whatever is on the clipboard — a bare object from the admin, a whole scene or a playlist — and leaves the rest of the scene as it is. The JSON below is the whole scene — edit it and press Apply.",
+        hint: "Each part copies and pastes on its own. <b>Copy</b> gives the bare objects the content admin's Initial Spawn and Bounds fields expect. <b>Paste</b> takes just that part from whatever is on the clipboard — a bare object from the admin, a whole scene or a playlist — and leaves the rest of the scene as it is. The JSON below is the whole scene — edit or paste it and press Apply; what it leaves out goes back to the defaults.",
         children: [
             groupLabel("By part"),
             spawnRow,
             envRow,
             boundsRow,
+            centerRow,
             partError,
 
             groupLabel("Whole scene as JSON"),
@@ -370,8 +410,6 @@ left.append(
         ],
     }),
 );
-
-/* ── Right column: view state that never leaves the editor ── */
 
 const SHOW = [
     ["grid", "Grid"],
@@ -409,7 +447,7 @@ function sync() {
 
     const canTransform = viewer.availableTargets;
     show(transformCard, canTransform.length > 0);
-    for (const target of ["video", "environment", "bounds", "viewer"]) {
+    for (const target of ["video", "environment", "bounds", "viewer", "center"]) {
         targets.setHidden(target, !canTransform.includes(target));
     }
     targets.select(viewer.gizmoTarget);
@@ -421,7 +459,7 @@ function sync() {
     for (const mode of ["translate", "rotate", "scale"]) {
         modes.setHidden(mode, !viewer.availableModes.includes(mode));
     }
-    show(scaleRow, !selection);
+    show(scaleRow, viewer.canResize && !selection);
     show(uprightRow, viewer.canKeepUpright && !selection);
     upright.set(viewer.upright);
 
@@ -436,6 +474,14 @@ function sync() {
     }
     show(removeRow, !!bounds);
     show(boundsRow.copy, !!bounds);
+
+    const center = viewer.sceneCenter;
+    const where = center && [center.x, center.y, center.z].map((n) => n.toFixed(1)).join(", ");
+    centerTag.set(where || "Bounding box center", !!center);
+    show(setCenter, !center && !!video);
+    show(removeCenter, !!center);
+    show(lookThrough, !!video);
+    show(centerRow.copy, !!center);
 
     bgInput.value = viewer.background;
     cameras.select(viewer.controlsType);
@@ -492,6 +538,7 @@ addEventListener("keydown", (e) => {
 const tickTimeline = mountTimeline(document.getElementById("timeline"), viewer);
 setInterval(tickTimeline, 1000 / 30);
 
+setDirty(false);
 sync();
 syncHistoryButtons();
 viewer.start((deltaMs) => fpsMeter.sample(deltaMs));
