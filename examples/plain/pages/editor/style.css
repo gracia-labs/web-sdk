@@ -272,13 +272,14 @@ canvas { display: block; }
 .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: rgba(255,255,255,.15); }
 .dot.video { background: #f59b42; }
 .dot.env { background: #42c6f5; }
+.dot.screen { background: #ffb020; }
 
 /* ── Metadata ── */
 
 .json {
     width: 100%;
     min-height: 72px;
-    max-height: 280px;
+    height: 36vh;
     resize: vertical;
     padding: 8px;
     border: 0;

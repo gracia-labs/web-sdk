@@ -631,6 +631,11 @@ declare class GraciaApp {
         y: number;
         z: number;
     } | null): void;
+    setSceneCenter(pos: {
+        x: number;
+        y: number;
+        z: number;
+    } | null): void;
     dispose(): void;
     #private;
 }
@@ -734,6 +739,11 @@ declare class Camera2D {
         y: number;
         z: number;
     } | null): void;
+    setSceneCenter(pos: {
+        x: number;
+        y: number;
+        z: number;
+    } | null): void;
     setBBox(bounds: {
         minX: number;
         minY: number;
@@ -825,6 +835,11 @@ interface GraciaSource {
     staticTransform?: SceneTransform | null;
     bounds?: SceneBounds | null;
     origin?: "floor" | "eyes";
+    sceneCenter?: {
+        x: number;
+        y: number;
+        z: number;
+    } | null;
     staticUrl?: string;
     background?: string;
     controls?: CameraControlsType;
@@ -946,6 +961,7 @@ interface StreamingMetadata {
     rewindable: boolean;
     hasBestView: boolean;
     bounds?: SceneBounds | null;
+    sceneCenter?: Vec3 | null;
 }
 interface StreamingContentResponse {
     metadata: StreamingMetadata | null;
