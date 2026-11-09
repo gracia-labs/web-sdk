@@ -91,6 +91,8 @@ function partsOf(data) {
     if (CONTROLS.includes(data.controls)) found.controls = data.controls;
     if (ORIGINS.includes(data.origin)) found.origin = data.origin;
     else if (typeof data.isPOV === "boolean") found.origin = data.isPOV ? "eyes" : "floor";
+    const slowMo = data.slowMo ?? data.slowMoAllowed;
+    if (typeof slowMo === "boolean") found.slowMo = slowMo;
 
     const initial = readTrs(data.initialTransform ?? data.initialSpawn ?? data.videoTransform);
     if (initial) found.initialTransform = initial;
@@ -205,6 +207,7 @@ export function serializeDoc(doc) {
         background: doc.background,
         controls: doc.controls,
         origin: doc.origin,
+        slowMo: doc.slowMo || undefined,
         initialTransform: serializeTrs(doc.initialTransform),
         staticTransform: serializeTrs(doc.staticTransform),
         bounds: serializeBounds(doc.bounds),

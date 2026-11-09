@@ -840,6 +840,7 @@ interface GraciaSource {
         y: number;
         z: number;
     } | null;
+    slowMo?: boolean;
     staticUrl?: string;
     background?: string;
     controls?: CameraControlsType;
@@ -875,6 +876,7 @@ interface GraciaPlayback {
     duration: number;
     isMuted: boolean;
     volume: number;
+    speed: number;
     play(): void;
     pause(): void;
     togglePlay(): void;
@@ -1277,7 +1279,8 @@ declare class ModernControls extends ControlsBase {
     onReset: null;
     onAbLoopToggle: null;
     onAbLoopSet: null;
-    update({ loading, playing, spinning, buffering, progress, timeText, presetName, muted, locked, scaleLocked, abLoop, sceneText, sceneLabel, bannerText, scenario, }: {
+    onSettingsToggle: null;
+    update({ loading, playing, spinning, buffering, progress, timeText, presetName, muted, locked, scaleLocked, abLoop, speed, settingsOpen, sceneText, sceneLabel, bannerText, scenario, }: {
         loading?: boolean | undefined;
         playing?: boolean | undefined;
         spinning?: boolean | undefined;
@@ -1294,6 +1297,8 @@ declare class ModernControls extends ControlsBase {
             end: number;
             gap: number;
         } | undefined;
+        speed?: number | undefined;
+        settingsOpen?: boolean | undefined;
         sceneText?: null | undefined;
         sceneLabel?: null | undefined;
         bannerText?: null | undefined;
@@ -1312,7 +1317,7 @@ declare class XROverlay {
     get uiStyle(): string;
     set manipulator(m: null);
     get manipulator(): null;
-    get uiActive(): any;
+    get uiActive(): boolean;
     get uiDragging(): any;
     get quads(): any[];
     set sources(arr: any[]);
@@ -1327,6 +1332,12 @@ declare class XROverlay {
     get onLock(): null;
     set onScaleLock(fn: null);
     get onScaleLock(): null;
+    set boundaryVisible(v: boolean);
+    get boundaryVisible(): boolean;
+    set onBoundaryToggle(fn: null);
+    get onBoundaryToggle(): null;
+    set raysVisible(v: boolean);
+    get raysVisible(): boolean;
     set scenario(v: object | null);
     get scenario(): object | null;
     set bannerText(t: string | null);

@@ -82,6 +82,7 @@ export class Viewer {
     #refs;
     #onFloor = new THREE.Group();
     #origin = "floor";
+    slowMo = false;
     #screenCamera = createEyeMarker(
         { x: 0, y: 0, z: 0 },
         { x: 0, y: 0, z: 0.5 },
@@ -757,6 +758,7 @@ export class Viewer {
             background: this.background,
             controls: this.#controlsType,
             origin: this.#origin,
+            slowMo: this.slowMo,
             initialTransform: this.getTrs("video"),
             staticTransform: this.getTrs("environment"),
             bounds: this.getBounds(),
@@ -769,6 +771,7 @@ export class Viewer {
         if (doc.background) this.setBackground(doc.background);
         if (doc.controls) this.setControls(doc.controls);
         if (doc.origin) this.setOrigin(doc.origin);
+        if ("slowMo" in doc) this.slowMo = doc.slowMo;
         if (doc.initialTransform) {
             // A spawn pasted on its own re-aligns the video only; whatever the document also
             // carries is applied afterwards and wins.

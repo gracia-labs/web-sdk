@@ -279,6 +279,19 @@ const sceneCard = section("Surroundings", {
 });
 left.append(sceneCard);
 
+const slowMo = toggle("Slow motion", viewer.slowMo, (on) =>
+    commit(() => {
+        viewer.slowMo = on;
+    }),
+);
+
+left.append(
+    section("Playback", {
+        hint: "<b>Slow motion</b> lets viewers play the scene at 0.75×, 0.5× or 0.25×. In the admin, a Streaming ID takes it from its scene's <b>SlowMo Allowed</b> when the JSON has no <b>slowMo</b>.",
+        children: [el("div", { class: "row" }, [slowMo])],
+    }),
+);
+
 /* ── Right column: the scene's metadata, then view state that never leaves the editor ── */
 
 const partError = el("div", { class: "err" });
@@ -485,6 +498,7 @@ function sync() {
 
     bgInput.value = viewer.background;
     cameras.select(viewer.controlsType);
+    slowMo.set(viewer.slowMo);
 
     if (!dirty) json.value = JSON.stringify(serializeDoc(viewer.toDoc()), null, 2);
 }
