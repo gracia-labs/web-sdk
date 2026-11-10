@@ -428,7 +428,7 @@
                 const handle = handles[0];
                 $('srcToggle').textContent = handle.name;
                 for (const i of menu.querySelectorAll('.dd-item')) i.classList.remove('active');
-                openSource({ localFile: handle });
+                openSource({ localFile: handle, type: handle.name.endsWith('.grv') ? 'grv' : undefined });
             } else {
                 $('fileInput').click();
             }
@@ -438,7 +438,7 @@
             e.target.value = '';
             $('srcToggle').textContent = f.name;
             for (const i of menu.querySelectorAll('.dd-item')) i.classList.remove('active');
-            openSource({ file: f });
+            openSource({ file: f, type: f.name.endsWith('.grv') ? 'grv' : undefined });
         };
     }
 

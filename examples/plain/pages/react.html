@@ -145,7 +145,7 @@
                 } catch { return; }
                 const handle = handles[0];
                 if (!player) return;
-                player.open({ localFile: handle });
+                player.open({ localFile: handle, type: handle.name.endsWith('.grv') ? 'grv' : undefined });
                 player.play();
             } else {
                 inputRef.current?.click();
@@ -154,7 +154,7 @@
         const onFile = useCallback(e => {
             const f = e.target.files[0]; if (!f || !player) return;
             e.target.value = '';
-            player.open({ file: f });
+            player.open({ file: f, type: f.name.endsWith('.grv') ? 'grv' : undefined });
             player.play();
         }, [player]);
         return html`<button class="btn" onClick=${onClick}>Open file\u2026</button>

@@ -600,7 +600,7 @@
                         const f = await handle.getFile();
                         app.open({ file: f, type: 'static' });
                     } else {
-                        app.open({ localFile: handle });
+                        app.open({ localFile: handle, type: name.endsWith('.grv') ? 'grv' : undefined });
                     }
                 } else {
                     $('fileInput').click();
@@ -612,7 +612,7 @@
                 $('srcToggle').textContent = f.name;
                 showLoader(firstReady);
                 const isSog = f.name.endsWith('.sog');
-                app.open(isSog ? { file: f, type: 'static' } : { file: f });
+                app.open({ file: f, type: isSog ? 'static' : f.name.endsWith('.grv') ? 'grv' : undefined });
             };
 
             const origLoadScene = app.loadScene.bind(app);
