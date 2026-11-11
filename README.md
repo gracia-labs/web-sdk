@@ -316,21 +316,13 @@ One option for delivering your content is Gracia's own reliable streaming infras
 
 ## Analytics and privacy
 
-For scenes streamed from Gracia, the player reports playback to Gracia Labs — details in [PRIVACY.md](PRIVACY.md).
+The player reports playback to Gracia Labs, for streamed scenes and for files opened by URL. Details in [PRIVACY.md](PRIVACY.md).
 
-- **Sent** — content ID, seconds played and which parts of the scene, random IDs for the page load and the browser tab
-- **Never sent** — names, emails, user or account IDs, cookies, page URLs, location
-- **IP address** — used only to rate-limit reports, not stored with them
-- **Stored in the browser** — only the tab's ID, in `sessionStorage` under `gr-wt`, until the tab closes
-- **Integrators** — don't pass personal data (user IDs, emails, your users' tokens) to the SDK
-
-To turn it off, set this before the player opens a scene, importing from the bundle you use (`core` or `aio`):
-
-```js
-import { GraciaPlayer } from "@gracia/web-sdk/core";
-
-GraciaPlayer.reportWatchTime = false;
-```
+- **Sent** — play, pause, buffering, seek, end, hidden page, close, 2D/VR/AR switches and a signal every minute of playback, with the position, speed and mode; the content ID or the file URL without its query; random IDs for the view and the viewer; the page's domain and the browser's User-Agent
+- **Never sent** — names, emails, user or account IDs, cookies, page paths, location
+- **IP address** — used to rate-limit reports and stored only as a hash keyed daily
+- **Stored in the browser** — the viewer ID in `localStorage` under `gr-viewer`, and undelivered reports under `gr-outbox` for at most 7 days
+- **Integrators** — reporting can't be turned off; describe it in your privacy notice, and don't pass personal data (user IDs, emails, your users' tokens) to the SDK
 
 ## Acknowledgements
 

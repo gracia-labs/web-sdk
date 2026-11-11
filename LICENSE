@@ -133,15 +133,18 @@ entity represents that they are authorised to bind that entity.
    shall be limited or severed and the remaining provisions shall remain in effect.
 
 9. DATA COLLECTION. The Artifacts transmit to Licensor only the limited playback data
-   described in PRIVACY.md in this repository. Licensee shall not use the Artifacts to send
-   to Licensor, or configure the Artifacts to transmit, names, email addresses, user,
-   account or subscriber identifiers, authentication tokens, or other data that identifies
-   or could reasonably identify an individual. Licensee is solely responsible for its own
-   collection and use of end-user data, including privacy notices, consents and age
-   verification, and shall describe its use of the Artifacts in its own privacy notice
-   where required by applicable law. This Section limits only the data that Licensee causes
-   to be transmitted to Licensor and does not restrict Licensee's rights in files licensed
-   under Part B.
+   described in PRIVACY.md in this repository. Licensee shall not block, delay, alter, forge
+   or suppress that data, whether by modifying the Artifacts, by intercepting, rewriting or
+   refusing their network requests or their browser storage, or by any other means, and
+   shall not cause the Artifacts to report playback that did not take place. Licensee shall
+   not use the Artifacts to send to Licensor, or configure the Artifacts to transmit, names,
+   email addresses, user, account or subscriber identifiers, authentication tokens other
+   than view tokens issued by Licensor, or other data that identifies or could reasonably
+   identify an individual. Licensee is solely responsible for its own collection and use of
+   end-user data, including privacy notices, consents and age verification, and shall
+   describe its use of the Artifacts in its own privacy notice where required by applicable
+   law. This Section does not otherwise restrict Licensee's rights in files licensed under
+   Part B.
 
 Enquiries regarding special, enterprise, or non-standard use: support@gracia.ai
 

@@ -90,7 +90,6 @@ declare class GraciaPlayer$1 {
         powerPreference: string;
         xrCompatible: boolean;
     };
-    static reportWatchTime: boolean;
     static create(Module: any, { canvas, gl, backend, maxSplatsCount, xrCompatible }?: {
         canvas?: HTMLCanvasElement;
         gl?: WebGLRenderingContext | WebGL2RenderingContext;
@@ -192,6 +191,7 @@ declare class GraciaPlayer$1 {
     setAudioSourceMatrix(matrixWorld: any, localPosition: any, positionScale: any): void;
     setAudioListenerMatrix(matrixWorld: any): void;
     setAudioPanner(attr: any): void;
+    setViewMode(mode: "2d" | "vr" | "ar"): void;
     setCamera(viewL: any, projL: any, viewR: any, projR: any): void;
     getBBox(): {
         minX: number;
