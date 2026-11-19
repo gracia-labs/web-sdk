@@ -318,11 +318,11 @@ One option for delivering your content is Gracia's own reliable streaming infras
 
 The player reports playback to Gracia Labs, for streamed scenes and for files opened by URL. Details in [PRIVACY.md](PRIVACY.md).
 
-- **Sent** — play, pause, buffering, seek, end, hidden page, close, 2D/VR/AR switches and a signal every minute of playback, with the position, speed and mode; the content ID or the file URL without its query; random IDs for the view and the viewer; the page's domain and the browser's User-Agent
-- **Never sent** — names, emails, user or account IDs, cookies, page paths, location
+- **Sent** — play, pause, buffering, seek, end, hidden page, close, 2D/VR/AR switches and a signal every minute of playback, with the position, speed and mode; the content ID or the file URL without its query; random IDs for the view and the viewer; the embedding page’s origin and available path, and the browser’s User-Agent
+- **Never sent** — names, emails, user or account IDs, cookies, page query strings or fragments, precise location
 - **IP address** — used to rate-limit reports and stored only as a hash keyed daily
 - **Stored in the browser** — the viewer ID in `localStorage` under `gr-viewer`, and undelivered reports under `gr-outbox` for at most 7 days
-- **Integrators** — reporting can't be turned off; describe it in your privacy notice, and don't pass personal data (user IDs, emails, your users' tokens) to the SDK
+- **Integrators** — Contact Gracia to turn off collection for your partner account. Describe playback reporting in your privacy notice and keep personal data out of SDK inputs and embedding page paths.
 
 ## Acknowledgements
 
