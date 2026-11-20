@@ -31,7 +31,7 @@ To count playback sessions for billing, to prevent fraud and abuse, to maintain 
 
 ## Retention and reporting
 
-The embedding page path, the User-Agent and the IP address hash are deleted after 30 days. Raw playback events are deleted or irreversibly aggregated within 1 year. Partners receive aggregated figures only.
+The User-Agent and the IP address hash are deleted after 30 days. Raw playback events are deleted or irreversibly aggregated within 1 year. Partners receive aggregated figures only.
 
 ## No re-identification
 
