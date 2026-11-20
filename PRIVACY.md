@@ -1,6 +1,6 @@
 # Privacy and data collection
 
-Last updated: 19 November 2026
+Last updated: 20 November 2026
 
 ## Who receives the data
 
@@ -12,7 +12,8 @@ For each playback session the SDK sends the following technical data to Gracia:
 
 - a randomly generated viewer ID (created by the SDK, separate for each website, not derived from any user, account, email or device identifier, and kept in the browser's `localStorage` for that website until it is cleared);
 - a randomly generated view ID for each page load and for each time the player is closed (kept in memory only);
-- the ID of the content item played, or the address of the file played without its query string, and the length of the content item;
+- the ID of the content item played, or the address of the file played without its credentials or query string, and the length of the content item;
+- the view token the website gave the player, which identifies the website's Gracia account, not the viewer;
 - playback events: play, pause, waiting for data, seeking, reaching the end, hiding the page, closing a content item or the player, switching between 2D, VR and AR, and a signal every minute of playback, each with its time, the position in the content item, the playback speed and the viewing mode (2D, VR or AR);
 - the embedding page’s origin and available path, with the query string and fragment removed, and the browser’s User-Agent;
 - the SDK version and whether the browser reports that it is controlled by automation software;
@@ -30,7 +31,7 @@ To count playback sessions for billing, to prevent fraud and abuse, to maintain 
 
 ## Retention and reporting
 
-Raw playback events are deleted or irreversibly aggregated within 1 year. Partners receive aggregated figures only.
+The embedding page path, the User-Agent and the IP address hash are deleted after 30 days. Raw playback events are deleted or irreversibly aggregated within 1 year. Partners receive aggregated figures only.
 
 ## No re-identification
 
