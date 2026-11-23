@@ -44,7 +44,7 @@
     <script type="module">
         import { buildApiSources, mountGraciaPlayer } from '@gracia/web-sdk/aio';
 
-        const STREAMING_BASE = '/api/market/api/v1/streaming/content';
+        const STREAMING_BASE = 'https://market.gracia.ai/api/v1/streaming/content';
         const DEMO_DOMAIN = '__DEMO_DOMAIN__';
         const DEMO_URL = `/api/market/api/v1/demo${DEMO_DOMAIN ? `?domain=${DEMO_DOMAIN}` : ''}`;
         const DEMO_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzMyMjg4OTcsImV4cCI6MTg5NDM2MTY0MH0.U9kEeoph8JFV9zZ9ht7F7NAFpaLRIKRuMyFAYR9xqsw';
