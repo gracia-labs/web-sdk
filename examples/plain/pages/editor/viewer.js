@@ -118,7 +118,7 @@ export class Viewer {
 
         const GraciaModule = await loadGraciaModule();
         const player = await GraciaPlayer.create(
-            (opts) => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
+            GraciaModule,
             { canvas: document.createElement("canvas"), maxSplatsCount: 8_000_000 },
         );
 

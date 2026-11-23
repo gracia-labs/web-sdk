@@ -9,7 +9,7 @@
         "shadow-catcher": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/scripts/esm/shadow-catcher.mjs",
         "camera-controls": "https://cdn.jsdelivr.net/npm/playcanvas@2.17.0/scripts/esm/camera-controls.mjs",
         "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
-        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebPlayer.__WASM_HASH__.js"
     } }</script>
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -458,7 +458,7 @@
     async function initGracia() {
         if (!navigator.gpu) throw new Error('WebGPU not available');
         const player = await GraciaPlayer.create(
-            opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
+            GraciaModule,
             { gl: app.graphicsDevice.gl, backend: 'hybrid' },
         );
         splats = GraciaSplats.attach(player, app, camera);

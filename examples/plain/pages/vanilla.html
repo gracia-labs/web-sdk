@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script type="importmap">{ "imports": {
         "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
-        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebPlayer.__WASM_HASH__.js"
     } }</script>
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -521,7 +521,7 @@
             await loadSources();
 
             app = await GraciaApp.create(
-                opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
+                GraciaModule,
                 {
                     container: $('canvasWrap'),
                     overlay,

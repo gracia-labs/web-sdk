@@ -17,7 +17,7 @@ Volumetric video player for the web. Lifelike 3D content in the browser — flat
 
 | File | Description |
 |------|-------------|
-| `GraciaWebCore.js` | WASM engine — core playback runtime (zero JS dependencies) |
+| `GraciaWebPlayer.js` | Web player — its WASM core and the player over it (zero JS dependencies) |
 | `GraciaSDK.js` | Tree-shakeable ES module — player, Three.js, React hooks, XR |
 | `GraciaAIO.js` | Self-contained demo bundle (includes Three.js, React, styled player, mount helper) |
 
@@ -80,7 +80,7 @@ With the Vite plugin, WASM is wired at build time — no `moduleUrl` prop needed
 ```html
 <script type="importmap">{ "imports": {
   "@gracia/web-sdk/aio": "/path/to/GraciaAIO.<hash>.js",
-  "@gracia/web-sdk/wasm": "/path/to/GraciaWebCore.<hash>.js"
+  "@gracia/web-sdk/wasm": "/path/to/GraciaWebPlayer.<hash>.js"
 } }</script>
 <div id="player"></div>
 <script type="module">
@@ -147,17 +147,17 @@ The plugin provides:
 })
 ```
 
-## Serving `GraciaWebCore.js` (non-Vite)
+## Serving `GraciaWebPlayer.js` (non-Vite)
 
-`GraciaWebCore.js` is precompiled Emscripten glue — serve it as a **static file**, not processed by your bundler.
+`GraciaWebPlayer.js` is precompiled Emscripten glue — serve it as a **static file**, not processed by your bundler.
 
 **Webpack** — read the manifest and copy the **hashed** WASM file:
 
 ```js
 import manifest from "@gracia/web-sdk/manifest";
 
-const wasmHash = manifest.files["GraciaWebCore.js"].hash;
-const hashedName = `GraciaWebCore.${wasmHash}.js`;
+const wasmHash = manifest.files["GraciaWebPlayer.js"].hash;
+const hashedName = `GraciaWebPlayer.${wasmHash}.js`;
 
 new CopyPlugin({
   patterns: [{
@@ -170,7 +170,7 @@ new CopyPlugin({
 Then reference it:
 
 ```js
-useGraciaPlayer({ containerRef, moduleUrl: `/assets/GraciaWebCore.${wasmHash}.js` });
+useGraciaPlayer({ containerRef, moduleUrl: `/assets/GraciaWebPlayer.${wasmHash}.js` });
 ```
 
 ## Caching
@@ -180,8 +180,8 @@ The SDK uses **content-hash filenames** for cache busting. After `npm install`, 
 ```ts
 import manifest from "@gracia/web-sdk/manifest";
 
-const wasmHash = manifest.files["GraciaWebCore.js"].hash; // e.g. "a1b2c3d4e5f67890"
-const hashedName = `GraciaWebCore.${wasmHash}.js`;         // copy this to your public assets
+const wasmHash = manifest.files["GraciaWebPlayer.js"].hash; // e.g. "a1b2c3d4e5f67890"
+const hashedName = `GraciaWebPlayer.${wasmHash}.js`;         // copy this to your public assets
 ```
 
 **Vite users:** `graciaPlugin` handles this automatically — no manual steps needed.
@@ -285,7 +285,7 @@ This repository is covered by two licenses, both in the single [`LICENSE`](./LIC
 
 | What | License | Where |
 |------|---------|-------|
-| **Gracia Web SDK** — `GraciaWebCore.js`, `GraciaSDK.js`, `GraciaAIO.js`, WASM modules, type definitions, and other distributed SDK artifacts | Proprietary | [`LICENSE`](./LICENSE) — Part A |
+| **Gracia Web SDK** — `GraciaWebPlayer.js`, `GraciaSDK.js`, `GraciaAIO.js`, WASM modules, type definitions, and other distributed SDK artifacts | Proprietary | [`LICENSE`](./LICENSE) — Part A |
 | **Examples, samples & documentation** — wherever located | MIT | [`LICENSE`](./LICENSE) — Part B |
 
 All other files are © Gracia Labs. Third-party dependencies keep their own licenses.

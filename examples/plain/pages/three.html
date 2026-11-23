@@ -6,7 +6,7 @@
     <title>Gracia Three.js</title>
     <script type="importmap">{ "imports": {
         "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
-        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebPlayer.__WASM_HASH__.js"
     } }</script>
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -325,7 +325,7 @@
     async function initGracia() {
         if (!navigator.gpu) throw new Error('WebGPU not available');
         const player = await GraciaPlayer.create(
-            opts => GraciaModule({ ...opts, print: console.log, printErr: console.error }),
+            GraciaModule,
             { gl: renderer.getContext(), backend: 'hybrid' },
         );
         splats = new SplatsMesh(player);

@@ -6,7 +6,7 @@
     <title>Gracia Three.js WebGPU</title>
     <script type="importmap">{ "imports": {
         "@gracia/web-sdk/aio": "/dist/GraciaAIO.__SDK_HASH__.js",
-        "@gracia/web-sdk/wasm": "/dist/GraciaWebCore.__WASM_HASH__.js"
+        "@gracia/web-sdk/wasm": "/dist/GraciaWebPlayer.__WASM_HASH__.js"
     } }</script>
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -108,8 +108,7 @@
 
     if (!navigator.gpu) { document.body.textContent = 'WebGPU not supported'; throw new Error('No WebGPU'); }
 
-    const moduleOpts = opts => GraciaModule({ ...opts, print: console.log, printErr: console.error });
-    const player = await GraciaPlayer.create(moduleOpts, { canvas: document.createElement('canvas') });
+    const player = await GraciaPlayer.create(GraciaModule, { canvas: document.createElement('canvas') });
 
     /* ── Three.js WebGPU scene ──────────────────────── */
 
