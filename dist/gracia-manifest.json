@@ -5,13 +5,13 @@
     "size": 312234
   },
   "aio": {
-    "filename": "GraciaAIO.4700f83dcb687cfb.js",
-    "hash": "4700f83dcb687cfb79a79786cd140223f15b2776eb3e34ce4b0630af1cfe8aee",
-    "size": 2833151
+    "filename": "GraciaAIO.0a0b1cb7cf9f840e.js",
+    "hash": "0a0b1cb7cf9f840e104e8211d5839e3bc11fc7e2b487250c6f379055831bef68",
+    "size": 2831718
   },
   "wasm": {
-    "filename": "GraciaWebCore.546296aa5ead20b9.js",
-    "hash": "546296aa5ead20b93d431c7016979bee083348d0a2faf68893e37f9224143b0a",
-    "size": 1004392
+    "filename": "GraciaWebCore.a641ccabf6b6c535.js",
+    "hash": "a641ccabf6b6c5350c3a8a7b8ca6b01f3610cb5c571f09c11b458e768d3dcdea",
+    "size": 976902
   }
 }

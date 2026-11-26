@@ -8,11 +8,11 @@
             "default": "./dist/GraciaSDK.de07bcfdfd32ceb8.js"
         },
         "./aio": {
-            "default": "./dist/GraciaAIO.4700f83dcb687cfb.js"
+            "default": "./dist/GraciaAIO.0a0b1cb7cf9f840e.js"
         },
         "./wasm": {
             "types": "./dist/GraciaWebCore.d.ts",
-            "default": "./dist/GraciaWebCore.546296aa5ead20b9.js"
+            "default": "./dist/GraciaWebCore.a641ccabf6b6c535.js"
         },
         "./manifest": "./dist/gracia-manifest.json",
         "./vite-plugin": {
